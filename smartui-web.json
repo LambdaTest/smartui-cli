@@ -1,0 +1,15 @@
+{
+    "web": {
+      "browsers": [
+        "chrome",
+        "firefox"
+      ],
+      "resolutions": [
+        [
+          1920,
+          1080
+        ]
+      ]
+    }
+  }
+  
