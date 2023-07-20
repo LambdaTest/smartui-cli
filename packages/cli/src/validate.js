@@ -66,7 +66,7 @@ export function validateScreenshotConfig(configFile, options, log) {
     // Parse JSON
     let webConfig;
     try {
-        webConfig = JSON.parse(fs.readFileSync(webConfigFile)).web;
+        webConfig = JSON.parse(fs.readFileSync(webConfigFile));
     } catch (error) {
         log.error('Error: ', error.message);
         process.exit(ABNORMAL_EXIT);
