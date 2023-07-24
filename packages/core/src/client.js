@@ -85,7 +85,8 @@ export class SmartUIClient {
 }
 
 function getRequest(url, options, log) {
-    log.debug(`${url} ${options}`)
+    log.debug(url)
+    log.debug(options)
     return axios.get(url, options)
         .then(function (response) {
             return response && response.data
@@ -103,7 +104,9 @@ function getRequest(url, options, log) {
 }
 
 function postRequest(url, body, options, log) {
-    log.debug(`${url} ${body} ${options}`)
+    log.debug(url)
+    log.debug(body)
+    log.debug(options)
     return axios.post(url, body, options)
         .then(async function (response) {
             log.info('Build Created');
