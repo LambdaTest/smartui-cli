@@ -26,9 +26,7 @@ export const defaultSmartUIWebConfig = {
             [1920, 1080],
             [1366, 768],
             [360, 640],
-        ],
-        include: [],
-        exclude: []
+        ]
     }
 };
 
