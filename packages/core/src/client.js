@@ -115,17 +115,16 @@ function postRequest(url, body, options, log) {
             return response && response.data
         })
         .catch(function (error) {
+            log.debug(error);
             if (error && error.response && error.response.data) {
-                log.debug(error.response.data);
-                log.info('Build Creation Failed');
-                return error.response.data;
-            }
-            if (error.response) {
+                log.error('Build Creation Failed');
+                log.error(error.response.data)
+            } else if (error.response) {
                 log.error('Build creation failed: response: ', error.response.data.error?.message);
             } else {
                 log.error('Build creation failed: Error: ', error);
             }
-            process.exitCode = constants.ABNORMAL_EXIT;
+            process.exit(constants.ABNORMAL_EXIT);
         })
 }
 
