@@ -1,4 +1,4 @@
-import SmartUI from "@smartui/core"
+import SmartUI from "@lambdatest/smartui-core"
 import { parse } from './validate.js';
 
 async function capture(file, options, log) {
