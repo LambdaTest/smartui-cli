@@ -1,6 +1,6 @@
 import { Command, Option } from 'commander';
 import { capture } from './capture.js';
-import { logger } from '@smartui/logger';
+import { logger } from '@lambdatest/smartui-logger';
 import { validateScreenshotConfig } from './validate.js';
 import packageJson from '../package.json' assert { type: 'json' };
 import { createWebConfig, createWebStaticConfig } from './config.js';

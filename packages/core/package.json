@@ -1,5 +1,5 @@
 {
-  "name": "@smartui/core",
+  "name": "@lambdatest/smartui-core",
   "version": "1.0.0",
   "description": "",
   "main": "./src/index.js",
