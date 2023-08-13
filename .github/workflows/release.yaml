@@ -25,19 +25,19 @@ jobs:
           node-version: 16.x
           registry-url: https://registry.npmjs.org/
 
-      - name: Publish Logger Package
+      - name: Publish Core Package
         run: |
           ls -la
-          cd packages/logger
+          cd packages/core
           npm install
           npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
 
-      - name: Publish Logger Package
+      - name: Publish CLI Package
         run: |
           ls -la
-          cd packages/logger
+          cd packages/cli
           npm install
           npm publish --access public
         env:
