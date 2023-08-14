@@ -27,3 +27,17 @@ npm run capture
 ```
 npm run capture-with-deafult-config
 ```
+
+### To Create Web config for multiple browser and viewports
+```
+npm run config:create-web
+or 
+npm run config:create-web smartui-web.json
+```
+
+### To Create Static config for multiple URLs
+```
+npm run config:web-static
+or 
+npm run config:web-static urls.json
+```

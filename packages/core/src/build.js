@@ -10,13 +10,12 @@ export async function fetchBuildStatus(client, build, log, retries = 0) {
     if (response && response.data) {
         if (response.data.buildStatus === 'completed') {
             log.info('Build successful\n');
-            log.info('Build details:\n',
-                'Build URL: ', response.data.buildURL, '\n',
-                'Build Name: ', response.data.buildName, '\n',
-                'Total Screenshots: ', response.data.totalScreenshots, '\n',
-                'Approved: ', response.data.buildResults.approved, '\n',
-                'Changes found: ', response.data.buildResults.changesFound, '\n',
-                'Rejected:' , response.data.buildResults.rejected, '\n'
+            log.info('Build details:\n Build URL: '+ response.data.buildURL +
+                '\n Build Name: '+ response.data.buildName +
+                '\n Total Screenshots: '+ response.data.totalScreenshots +
+                '\n Approved: '+ response.data.buildResults.approved+
+                '\n Changes found: '+ response.data.buildResults.changesFound+
+                '\n Rejected:'+ response.data.buildResults.rejected+ '\n'
             );
             
             if (response.data.screenshots && response.data.screenshots.length > 0) {

@@ -85,7 +85,8 @@ export class SmartUIClient {
 }
 
 function getRequest(url, options, log) {
-    log.debug(`${url} ${options}`)
+    log.debug(url)
+    log.debug(options)
     return axios.get(url, options)
         .then(function (response) {
             return response && response.data
@@ -103,7 +104,9 @@ function getRequest(url, options, log) {
 }
 
 function postRequest(url, body, options, log) {
-    log.debug(`${url} ${body} ${options}`)
+    log.debug(url)
+    log.debug(body)
+    log.debug(options)
     return axios.post(url, body, options)
         .then(async function (response) {
             log.info('Build Created');
@@ -112,17 +115,16 @@ function postRequest(url, body, options, log) {
             return response && response.data
         })
         .catch(function (error) {
+            log.debug(error);
             if (error && error.response && error.response.data) {
-                log.debug(error.response.data);
-                log.info('Build Creation Failed');
-                return error.response.data;
-            }
-            if (error.response) {
+                log.error('Build Creation Failed');
+                log.error(error.response.data)
+            } else if (error.response) {
                 log.error('Build creation failed: response: ', error.response.data.error?.message);
             } else {
                 log.error('Build creation failed: Error: ', error);
             }
-            process.exitCode = constants.ABNORMAL_EXIT;
+            process.exit(constants.ABNORMAL_EXIT);
         })
 }
 

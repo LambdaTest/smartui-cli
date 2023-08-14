@@ -40,8 +40,12 @@ export function validateScreenshotConfig(configFile, options, log) {
 
     //Check for URLs should not be empty
     for (const screenshot of screenshots) {
+        if (!screenshot.name || screenshot.name == '') {
+            log.error(`Error: Missing screenshot name in ${configFile}`);
+            process.exit(ABNORMAL_EXIT);
+        }
         if (!screenshot.url || screenshot.url == '') {
-            log.error('Error: Missing required URL for screenshot');
+            log.error('Error: Missing required URL for screenshot : '+screenshot.name);
             process.exit(ABNORMAL_EXIT);
         }
         //Check for URLs should valid (like abcd in URL)
@@ -66,7 +70,7 @@ export function validateScreenshotConfig(configFile, options, log) {
     // Parse JSON
     let webConfig;
     try {
-        webConfig = JSON.parse(fs.readFileSync(webConfigFile)).web;
+        webConfig = JSON.parse(fs.readFileSync(webConfigFile));
     } catch (error) {
         log.error('Error: ', error.message);
         process.exit(ABNORMAL_EXIT);
