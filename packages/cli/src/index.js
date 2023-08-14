@@ -1,3 +1,4 @@
+#! /usr/bin/env node
 import { Command, Option } from 'commander';
 import { capture } from './capture.js';
 import { logger } from '@lambdatest/smartui-logger';
