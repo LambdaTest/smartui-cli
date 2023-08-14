@@ -1,6 +1,6 @@
 {
   "name": "@lambdatest/smartui-cli",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "",
   "main": "./src/index.js",
   "type": "module",
@@ -21,8 +21,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@lambdatest/smartui-core": "1.0.1",
-    "@lambdatest/smartui-logger": "1.0.1",
+    "@lambdatest/smartui-core": "1.0.2",
+    "@lambdatest/smartui-logger": "1.0.2",
     "commander": "^11.0.0",
     "fs": "^0.0.1-security",
     "path": "^0.12.7",
