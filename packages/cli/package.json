@@ -7,6 +7,13 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "bin": {
+    "smartui": "./src/index.js"
+  },
+  "keywords": [
+    "lambdatest",
+    "smartui"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/Lambdatest/smartui-cli"
