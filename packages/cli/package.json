@@ -18,8 +18,11 @@
     "type": "git",
     "url": "https://github.com/Lambdatest/smartui-cli"
   },
-  "author": "",
-  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Lambdatest/smartui-cli/issues"
+  },
+  "author": "LambdaTest <keys@lambdatest.com>",
+  "license": "MIT",
   "dependencies": {
     "@lambdatest/smartui-core": "1.0.2",
     "@lambdatest/smartui-logger": "1.0.2",

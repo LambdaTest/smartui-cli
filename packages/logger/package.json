@@ -11,8 +11,11 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "",
-  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Lambdatest/smartui-cli/issues"
+  },
+  "author": "LambdaTest <keys@lambdatest.com>",
+  "license": "MIT",
   "dependencies": {
     "chalk": "^5.3.0",
     "winston": "^3.10.0"
