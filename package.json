@@ -1,1 +1,33 @@
-packages/cli/package.json
+{
+  "name": "@lambdatest/smartui-cli",
+  "version": "2.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsup",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "bin": {
+    "smartui": "./dist/index.cjs"
+  },
+  "type": "module",
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@types/cross-spawn": "^6.0.4",
+    "@types/node": "^20.8.9",
+    "@types/which": "^3.0.2",
+    "axios": "^1.6.0",
+    "chalk": "^4.1.2",
+    "commander": "^11.1.0",
+    "cross-spawn": "^7.0.3",
+    "fastify": "^4.24.3",
+    "form-data": "^4.0.0",
+    "listr2": "^7.0.1",
+    "playwright": "^1.39.0",
+    "tsup": "^7.2.0",
+    "which": "^4.0.0",
+    "winston": "^3.10.0"
+  }
+}
