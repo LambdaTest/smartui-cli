@@ -1,53 +1,32 @@
-name: Publish SmartUI CLI packages
+name: Build and Publish
 
 on:
   release:
      types: [published]
 
 jobs:
-  build:
-    if: startsWith(github.ref, 'refs/tags/prod-')
+  build-and-publish:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v2
-        with:
-          node-version: 16.x
-      - run: npm install
+    - name: Check out code
+      uses: actions/checkout@v3
 
-  publish-npm:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v2
-        with:
-          node-version: 16.x
-          registry-url: https://registry.npmjs.org/
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '16'
+        registry-url: 'https://registry.npmjs.org'
 
-      - name: Publish Core Package
-        run: |
-          ls -la
-          cd packages/core
-          npm install
-          npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
+    - name: Install pnpm
+      run: npm install -g pnpm
 
-      - name: Publish CLI Package
-        run: |
-          ls -la
-          cd packages/cli
-          npm install
-          npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
+    - name: Install dependencies
+      run: pnpm install
 
-      - name: Publish Logger Package
-        run: |
-          ls -la
-          cd packages/logger
-          npm install
-          npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
+    - name: Release the package
+      run: pnpm run release
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+

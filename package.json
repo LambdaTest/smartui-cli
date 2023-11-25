@@ -1,19 +1,25 @@
 {
   "name": "@lambdatest/smartui-cli",
   "version": "2.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "A command line interface (CLI) to run SmartUI tests on LambdaTest",
+  "files": [
+    "dist/**/*"
+  ],
   "scripts": {
     "build": "tsup",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "release": "pnpm run build && pnpm publish --access public"
   },
   "bin": {
     "smartui": "./dist/index.cjs"
   },
   "type": "module",
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "lambdatest",
+    "smartui",
+    "cli"
+  ],
+  "author": "LambdaTest <keys@lambdatest.com>",
+  "license": "MIT",
   "dependencies": {
     "@types/cross-spawn": "^6.0.4",
     "@types/node": "^20.8.9",
@@ -29,5 +35,8 @@
     "tsup": "^7.2.0",
     "which": "^4.0.0",
     "winston": "^3.10.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.2"
   }
 }
