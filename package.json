@@ -1,1 +1,42 @@
-packages/cli/package.json
+{
+  "name": "@lambdatest/smartui-cli",
+  "version": "2.0.0",
+  "description": "A command line interface (CLI) to run SmartUI tests on LambdaTest",
+  "files": [
+    "dist/**/*"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "release": "pnpm run build && pnpm publish --access public"
+  },
+  "bin": {
+    "smartui": "./dist/index.cjs"
+  },
+  "type": "module",
+  "keywords": [
+    "lambdatest",
+    "smartui",
+    "cli"
+  ],
+  "author": "LambdaTest <keys@lambdatest.com>",
+  "license": "MIT",
+  "dependencies": {
+    "@types/cross-spawn": "^6.0.4",
+    "@types/node": "^20.8.9",
+    "@types/which": "^3.0.2",
+    "axios": "^1.6.0",
+    "chalk": "^4.1.2",
+    "commander": "^11.1.0",
+    "cross-spawn": "^7.0.3",
+    "fastify": "^4.24.3",
+    "form-data": "^4.0.0",
+    "listr2": "^7.0.1",
+    "playwright": "^1.39.0",
+    "tsup": "^7.2.0",
+    "which": "^4.0.0",
+    "winston": "^3.10.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.2"
+  }
+}
