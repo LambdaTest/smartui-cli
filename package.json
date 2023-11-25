@@ -7,7 +7,7 @@
   ],
   "scripts": {
     "build": "tsup",
-    "release": "pnpm run build && pnpm publish --access public"
+    "release": "pnpm run build && pnpm publish --access public --no-git-checks"
   },
   "bin": {
     "smartui": "./dist/index.cjs"
