@@ -1,4 +1,4 @@
-import { chromium, firefox, webkit, Browser } from "playwright"
+import { chromium, firefox, webkit, Browser } from "@playwright/test"
 import { Context, WebStaticConfigSchema } from "../types.js"
 import { delDir } from "./utils.js"
 
@@ -7,6 +7,7 @@ const BROWSER_SAFARI = 'safari';
 const BROWSER_FIREFOX = 'firefox';
 const BROWSER_EDGE = 'edge';
 const EDGE_CHANNEL = 'msedge';
+const PW_WEBKIT = 'webkit';
 
 export async function captureScreenshots(ctx: Context, screenshots: WebStaticConfigSchema): Promise<number> {
     // Clean up directory to store screenshots
@@ -54,6 +55,7 @@ export async function captureScreenshots(ctx: Context, screenshots: WebStaticCon
                 await page.screenshot({ path: ssPath, fullPage: true });
 
                 let completed = (i == (totalBrowsers-1) && j == (totalScreenshots-1) && k == (totalViewports-1)) ? true : false;
+                browserName = browserName === BROWSER_SAFARI ? PW_WEBKIT : browserName;
                 ctx.client.uploadScreenshot(ctx.build, ssPath, screenshot.name, browserName, `${width}x${height}`, completed);
             }
 

@@ -21,6 +21,10 @@
   "author": "LambdaTest <keys@lambdatest.com>",
   "license": "MIT",
   "dependencies": {
+    "@playwright/browser-chromium": "^1.40.1",
+    "@playwright/browser-firefox": "^1.40.1",
+    "@playwright/browser-webkit": "^1.40.1",
+    "@playwright/test": "^1.40.1",
     "@types/cross-spawn": "^6.0.4",
     "@types/node": "^20.8.9",
     "@types/which": "^3.0.2",
@@ -31,7 +35,6 @@
     "fastify": "^4.24.3",
     "form-data": "^4.0.0",
     "listr2": "^7.0.1",
-    "playwright": "^1.39.0",
     "tsup": "^7.2.0",
     "which": "^4.0.0",
     "winston": "^3.10.0"

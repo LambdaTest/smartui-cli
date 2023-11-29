@@ -54,7 +54,8 @@ export interface Build {
 export interface WebConfigSchema {
     web: {
         browsers: Array<string>;
-        viewports: Array<Array<number>>;
+        viewports?: Array<Array<number>>;
+        resolutions?: Array<Array<number>>; // for backward compatibility
     }
 }
 
