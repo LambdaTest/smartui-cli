@@ -15,7 +15,7 @@ export default (options: Record<string, string>): Context => {
         if (options.config) {
             webConfig = JSON.parse(fs.readFileSync(options.config, 'utf-8'));
         }
-        for (let viewport of webConfig.web.viewports) {
+        for (let viewport of webConfig.web.resolutions || webConfig.web.viewports) {
             viewports.push({ width: viewport[0], height: viewport[1]})
         }
     } catch (error: any) {
