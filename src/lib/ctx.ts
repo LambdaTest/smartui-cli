@@ -47,6 +47,7 @@ export default (options: Record<string, string>): Context => {
             projectId: '',
         },
         args: {},
-        cliVersion: version
+        cliVersion: version,
+        totalSnapshots: -1
     }
 }
