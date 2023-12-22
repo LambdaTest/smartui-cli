@@ -20,6 +20,7 @@ export interface Context {
         execCommand?: Array<string>
     }
     cliVersion: string;
+    totalSnapshots: number;
     
 }
 
