@@ -26,7 +26,8 @@ export const DEFAULT_WEB_CONFIG: WebConfigSchema = {
             [1920, 1080],
             [1366, 768],
             [360, 640],
-        ]
+        ],
+        waitForTimeout: 0,
     }
 };
 

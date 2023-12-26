@@ -29,7 +29,9 @@ export default (options: Record<string, string>): Context => {
         client: new httpClient(env),
         config: {
             browsers: webConfig.web.browsers,
-            viewports: viewports
+            viewports: viewports,
+            waitForPageRender: webConfig.web.waitForPageRender || 0,
+            waitForTimeout: webConfig.web.waitForTimeout || 0
         },
         staticConfig: [],
         git: {
