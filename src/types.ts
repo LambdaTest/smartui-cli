@@ -12,6 +12,8 @@ export interface Context {
     config: {
         browsers: Array<string>;
         viewports: Array<{width: number, height: number}>;
+        waitForPageRender: number;
+        waitForTimeout: number;
     };
     staticConfig: WebStaticConfigSchema;
     build: Build;
@@ -57,6 +59,8 @@ export interface WebConfigSchema {
         browsers: Array<string>;
         viewports?: Array<Array<number>>;
         resolutions?: Array<Array<number>>; // for backward compatibility
+        waitForPageRender?: number;
+        waitForTimeout?: number;
     }
 }
 

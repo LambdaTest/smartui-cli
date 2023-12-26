@@ -59,7 +59,9 @@ export default class httpClient {
                 },
                 config: {
                     browsers: config.browsers,
-                    resolutions: config.viewports
+                    resolutions: config.viewports,
+                    waitForPageRender: config.waitForPageRender,
+                    waitForTimeout: config.waitForTimeout
                 }
             }
         }, log)
