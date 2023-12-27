@@ -54,7 +54,7 @@ export async function captureScreenshots(ctx: Context, screenshots: WebStaticCon
                     let ssName = `${browserName}-${width}x${height}-${screenshotId}.png`
                     let ssPath = `screenshots/${screenshotId}/${ssName}.png`
                     await page.setViewportSize({ width, height})
-                    await page.screenshot({ path: ssPath, fullPage: true });
+                    await page.screenshot({ path: ssPath });
 
                     let completed = (i == (totalBrowsers-1) && j == (totalScreenshots-1) && k == (totalViewports-1)) ? true : false;
                     browserName = browserName === BROWSER_SAFARI ? PW_WEBKIT : browserName;
