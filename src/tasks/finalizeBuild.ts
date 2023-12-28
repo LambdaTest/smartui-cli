@@ -11,8 +11,9 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
                 await ctx.client.finalizeBuild(ctx.build.id, ctx.totalSnapshots, ctx.log);
                 task.output = chalk.gray(`build url: ${ctx.build.url}`);
                 task.title = 'Finalized build'
-            } catch (error) {
-                // log.debug(error)
+            } catch (error: any) {
+                ctx.log.debug(error.message);
+                task.output = chalk.gray(error.message);
                 throw new Error('Finalize build error');
             }
         },
