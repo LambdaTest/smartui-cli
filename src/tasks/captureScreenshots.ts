@@ -18,6 +18,7 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
                 throw new Error('Capturing screenshots failed');
             }
         },
-        rendererOptions: { persistentOutput: true }
+        rendererOptions: { persistentOutput: true },
+        exitOnError: false
     }
 }
