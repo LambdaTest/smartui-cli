@@ -10,7 +10,7 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
             updateLogContext({task: 'createBuild'});
 
             try {
-                let resp = await ctx.client.createBuild(ctx.git, ctx.config, ctx.log);
+                let resp = await ctx.client.createBuild(ctx.git, ctx.webConfig, ctx.log);
                 ctx.build = {
                     id: resp.data.buildId,
                     name: resp.data.buildName,

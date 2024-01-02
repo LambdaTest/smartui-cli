@@ -1,6 +1,7 @@
-import { Context, Env, WebConfigSchema, WebStaticConfigSchema } from '../types.js'
-import { DEFAULT_WEB_CONFIG, DEFAULT_WEB_STATIC_CONFIG } from './config.js'
+import { Context, Env, Config } from '../types.js'
+import { DEFAULT_CONFIG } from './config.js'
 import { version } from '../../package.json'
+import { validateConfig } from './schemaValidation.js'
 import logger from '../lib/logger.js'
 import getEnv from '../lib/env.js'
 import httpClient from './httpClient.js'
@@ -9,31 +10,37 @@ import fs from 'fs'
 export default (options: Record<string, string>): Context => {
     let env: Env = getEnv();
     let viewports: Array<{width: number, height: number}> = []
-    let webConfig: WebConfigSchema = DEFAULT_WEB_CONFIG;
+    let config: Config = DEFAULT_CONFIG;
 
     try {
         if (options.config) {
-            webConfig = JSON.parse(fs.readFileSync(options.config, 'utf-8'));
+            config = JSON.parse(fs.readFileSync(options.config, 'utf-8'));
+            // resolutions supported for backward compatibility
+            if (config.web.resolutions) {
+                config.web.viewports = config.web.resolutions;
+                delete config.web.resolutions;
+            }
         }
-        for (let viewport of webConfig.web.resolutions || webConfig.web.viewports) {
-            viewports.push({ width: viewport[0], height: viewport[1]})
-        }
+        
+        // validate config
+        if (!validateConfig(config)) throw new Error(validateConfig.errors[0].message);
     } catch (error: any) {
-        throw new Error(error.message);
+        console.log(`[smartui] Error: ${error.message}`);
+        process.exit();
     }
-    // TODO: validate config
 
+    for (let viewport of config.web.viewports) viewports.push({ width: viewport[0], height: viewport[1]});
     return {
         env: env,
         log: logger,
         client: new httpClient(env),
-        config: {
-            browsers: webConfig.web.browsers,
+        webConfig: {
+            browsers: config.web.browsers,
             viewports: viewports,
-            waitForPageRender: webConfig.web.waitForPageRender || 0,
-            waitForTimeout: webConfig.web.waitForTimeout || 0
+            waitForPageRender: config.web.waitForPageRender || 0,
+            waitForTimeout: config.web.waitForTimeout || 0
         },
-        staticConfig: [],
+        webStaticConfig: [],
         git: {
             branch: '',
             commitId: '',
