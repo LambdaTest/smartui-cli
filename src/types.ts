@@ -3,19 +3,18 @@ import { FastifyInstance } from 'fastify'
 import httpClient from './lib/httpClient.js'
 import type { Logger } from 'winston'
 
-
 export interface Context {
     env: Env;
     log: Logger;
     server?: FastifyInstance<Server, IncomingMessage, ServerResponse>;
     client: httpClient;
-    config: {
+    webConfig: {
         browsers: Array<string>;
         viewports: Array<{width: number, height: number}>;
         waitForPageRender: number;
         waitForTimeout: number;
     };
-    staticConfig: WebStaticConfigSchema;
+    webStaticConfig: WebStaticConfig;
     build: Build;
     git: Git;
     args: {
@@ -54,17 +53,19 @@ export interface Build {
     projectId: string;
 }
 
-export interface WebConfigSchema {
-    web: {
-        browsers: Array<string>;
-        viewports?: Array<Array<number>>;
-        resolutions?: Array<Array<number>>; // for backward compatibility
-        waitForPageRender?: number;
-        waitForTimeout?: number;
-    }
+export interface Config {
+    web: WebConfig
 }
 
-export type WebStaticConfigSchema = Array<{
+export interface WebConfig {
+    browsers: Array<string>;
+    viewports?: Array<Array<number>>;
+    resolutions?: Array<Array<number>>; // for backward compatibility
+    waitForPageRender?: number;
+    waitForTimeout?: number;
+}
+
+export type WebStaticConfig = Array<{
     name: string;
     url: string;
     waitForTimeout?: number

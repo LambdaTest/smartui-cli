@@ -8,6 +8,7 @@ import getGitInfo from '../tasks/getGitInfo.js'
 import createBuild from '../tasks/createBuild.js'
 import captureScreenshots from '../tasks/captureScreenshots.js'
 import finalizeBuild from '../tasks/finalizeBuild.js'
+import { validateWebStaticConfig } from '../lib/schemaValidation.js'
 
 const command = new Command();
 
@@ -17,6 +18,18 @@ command
     .argument('<file>', 'Web static config file')
     .action(async function(file, _, command) {
         let ctx: Context = ctxInit(command.optsWithGlobals());
+
+        if (!fs.existsSync(file)) {
+            console.log(`Error: Web Static Config file ${file} not found.`);
+            return;
+        }
+        try {
+            ctx.webStaticConfig = JSON.parse(fs.readFileSync(file, 'utf8'));
+            if (!validateWebStaticConfig(ctx.webStaticConfig)) throw new Error(validateWebStaticConfig.errors[0].message);
+        } catch (error: any) {
+            console.log(`[smartui] Error: Invalid Web Static Config; ${error.message}`);
+            return;
+        }
 
         let tasks = new Listr<Context>(
             [
@@ -39,12 +52,6 @@ command
         )
 
         try {
-            if (!fs.existsSync(file)) {
-                console.log(`Error: Config file ${file} not found.`);
-                return;
-            }
-            ctx.staticConfig = JSON.parse(fs.readFileSync(file, 'utf8'));
-
             await tasks.run(ctx);
         } catch (error) {
             console.log('\nRefer docs: https://www.lambdatest.com/support/docs/smart-visual-regression-testing/');

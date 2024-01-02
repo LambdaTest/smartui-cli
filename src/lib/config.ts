@@ -1,8 +1,8 @@
 import path from 'path'
 import fs from 'fs'
-import { WebConfigSchema, WebStaticConfigSchema } from '../types.js'
+import { Config, WebStaticConfig } from '../types.js'
 
-export const DEFAULT_WEB_STATIC_CONFIG: WebStaticConfigSchema = [
+export const DEFAULT_WEB_STATIC_CONFIG: WebStaticConfig = [
     {
         "name": "lambdatest-home-page",
         "url": "https://www.lambdatest.com",
@@ -14,7 +14,7 @@ export const DEFAULT_WEB_STATIC_CONFIG: WebStaticConfigSchema = [
     }
 ]
 
-export const DEFAULT_WEB_CONFIG: WebConfigSchema = {
+export const DEFAULT_CONFIG: Config = {
     web: {
         browsers: [
             'chrome',
@@ -27,13 +27,13 @@ export const DEFAULT_WEB_CONFIG: WebConfigSchema = {
             [1366, 768],
             [360, 640],
         ],
-        waitForTimeout: 0,
+        waitForTimeout: 1000,
     }
 };
 
-export function createWebConfig(filepath: string) {
+export function createConfig(filepath: string) {
     // default filepath
-    filepath = filepath || 'smartui-web.json';
+    filepath = filepath || '.smartui.json';
     let filetype = path.extname(filepath);
     if (filetype != '.json') {
         console.log('Error: Config file must have .json extension');
@@ -42,15 +42,15 @@ export function createWebConfig(filepath: string) {
 
     // verify the file does not already exist
     if (fs.existsSync(filepath)) {
-        console.log(`Error: SmartUI Web Config already exists: ${filepath}`);
-        console.log(`To create a new file, please specify the file name like: 'smartui config:create-web webConfig.json'`);
+        console.log(`Error: SmartUI Config already exists: ${filepath}`);
+        console.log(`To create a new file, please specify the file name like: 'smartui config:create .smartui-config.json'`);
         return
     }
 
     // write stringified default config options to the filepath
     fs.mkdirSync(path.dirname(filepath), { recursive: true });
-    fs.writeFileSync(filepath, JSON.stringify(DEFAULT_WEB_CONFIG, null, 2) + '\n');
-    console.log(`Created SmartUI Web Config: ${filepath}`);
+    fs.writeFileSync(filepath, JSON.stringify(DEFAULT_CONFIG, null, 2) + '\n');
+    console.log(`Created SmartUI Config: ${filepath}`);
 };
 
 export function createWebStaticConfig(filepath: string) {
@@ -65,7 +65,7 @@ export function createWebStaticConfig(filepath: string) {
     // verify the file does not already exist
     if (fs.existsSync(filepath)) {
         console.log(`Error: web-static config already exists: ${filepath}`);
-        console.log(`To create a new file, please specify the file name like: 'smartui config:create-web links.json'`);
+        console.log(`To create a new file, please specify the file name like: 'smartui config:create-web-static links.json'`);
         return
     }
 

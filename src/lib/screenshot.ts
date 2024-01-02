@@ -1,5 +1,5 @@
 import { chromium, firefox, webkit, Browser } from "@playwright/test"
-import { Context, WebStaticConfigSchema } from "../types.js"
+import { Context, WebStaticConfig } from "../types.js"
 import { delDir } from "./utils.js"
 
 const BROWSER_CHROME = 'chrome';
@@ -9,16 +9,16 @@ const BROWSER_EDGE = 'edge';
 const EDGE_CHANNEL = 'msedge';
 const PW_WEBKIT = 'webkit';
 
-export async function captureScreenshots(ctx: Context, screenshots: WebStaticConfigSchema): Promise<number> {
+export async function captureScreenshots(ctx: Context, screenshots: WebStaticConfig): Promise<number> {
     // Clean up directory to store screenshots
     delDir('screenshots');
 
     // Capture screenshots for every browser-viewport and upload them
-    let totalBrowsers: number = ctx.config.browsers.length;
-    let totalViewports: number = ctx.config.viewports.length;
+    let totalBrowsers: number = ctx.webConfig.browsers.length;
+    let totalViewports: number = ctx.webConfig.viewports.length;
     let totalScreenshots: number = screenshots.length
     for (let i = 0; i < totalBrowsers; i++) {
-        let browserName = ctx.config.browsers[i]?.toLowerCase();
+        let browserName = ctx.webConfig.browsers[i]?.toLowerCase();
         let browser: Browser;
         let launchOptions: Record<string, any> = { headless: true };
         let pageOptions = { waitUntil: process.env.SMARTUI_PAGE_WAIT_UNTIL_EVENT || 'load' }
@@ -50,7 +50,7 @@ export async function captureScreenshots(ctx: Context, screenshots: WebStaticCon
                 await page.waitForTimeout(screenshot.waitForTimeout || 0)
 
                 for (let k = 0; k < totalViewports; k++) {
-                    let { width, height } = ctx.config.viewports[k];
+                    let { width, height } = ctx.webConfig.viewports[k];
                     let ssName = `${browserName}-${width}x${height}-${screenshotId}.png`
                     let ssPath = `screenshots/${screenshotId}/${ssName}.png`
                     await page.setViewportSize({ width, height})
