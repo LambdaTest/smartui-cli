@@ -38,6 +38,7 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
                 });
             });
         },
-        rendererOptions: { persistentOutput: true }
+        rendererOptions: { persistentOutput: true },
+        exitOnError: false
     }
 }

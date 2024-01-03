@@ -29,6 +29,8 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 		} catch (error: any) {
 			reply.code(500).send({ error: { message: error.message}})
 		}
+
+		ctx.totalSnapshots++
 		reply.code(200).send({data: { message: "success" }});
 	});
 

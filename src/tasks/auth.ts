@@ -15,6 +15,7 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
                 task.title = 'Authenticated with SmartUI';
             } catch (error: any) {
                 ctx.log.debug(error.message);
+                task.output = chalk.gray(error.message);
                 throw new Error('Authentication failed');
             }
         },

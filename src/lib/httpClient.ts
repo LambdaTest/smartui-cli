@@ -59,19 +59,22 @@ export default class httpClient {
                 },
                 config: {
                     browsers: config.browsers,
-                    resolutions: config.viewports
+                    resolutions: config.viewports,
+                    waitForPageRender: config.waitForPageRender,
+                    waitForTimeout: config.waitForTimeout
                 }
             }
         }, log)
     }
 
-    finalizeBuild(buildId: string, log: Logger) {
+    finalizeBuild(buildId: string, totalSnapshots: number, log: Logger) {
+        let params: Record<string, string | number> = {buildId};
+        if (totalSnapshots > -1) params.totalSnapshots = totalSnapshots;
+
         return this.request({
             url: '/build',
             method: 'DELETE',
-            params: {
-                buildId: buildId
-            }
+            params: params
         }, log)
     }
 

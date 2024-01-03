@@ -24,6 +24,7 @@ command
             return
         }
         ctx.args.execCommand = execCommand
+        ctx.totalSnapshots = 0
 
         let tasks = new Listr<Context>(
             [
@@ -32,7 +33,7 @@ command
                 getGitInfo(ctx),
                 createBuild(ctx),
                 exec(ctx),
-                finalizeBuild(ctx, 30000)
+                finalizeBuild(ctx)
             ],
             {
                 rendererOptions: {
