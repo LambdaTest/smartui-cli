@@ -23,9 +23,9 @@ export const DEFAULT_CONFIG: Config = {
             'edge'
         ],
         viewports: [
-            [1920, 1080],
-            [1366, 768],
-            [360, 640],
+            [1920],
+            [1366],
+            [360],
         ],
         waitForTimeout: 1000,
     }
