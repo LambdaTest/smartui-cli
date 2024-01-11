@@ -8,6 +8,7 @@ const BROWSER_FIREFOX = 'firefox';
 const BROWSER_EDGE = 'edge';
 const EDGE_CHANNEL = 'msedge';
 const PW_WEBKIT = 'webkit';
+const MIN_RESOLUTION_HEIGHT = 320;
 
 export async function captureScreenshots(ctx: Context, screenshots: WebStaticConfig): Promise<number> {
     // Clean up directory to store screenshots
@@ -53,8 +54,8 @@ export async function captureScreenshots(ctx: Context, screenshots: WebStaticCon
                     let { width, height } = ctx.webConfig.viewports[k];
                     let ssName = `${browserName}-${width}x${height}-${screenshotId}.png`
                     let ssPath = `screenshots/${screenshotId}/${ssName}.png`
-                    await page.setViewportSize({ width, height})
-                    await page.screenshot({ path: ssPath });
+                    await page.setViewportSize({ width, height: height || MIN_RESOLUTION_HEIGHT })
+                    await page.screenshot({ path: ssPath, fullPage: height ? false: true });
 
                     let completed = (i == (totalBrowsers-1) && j == (totalScreenshots-1) && k == (totalViewports-1)) ? true : false;
                     browserName = browserName === BROWSER_SAFARI ? PW_WEBKIT : browserName;
