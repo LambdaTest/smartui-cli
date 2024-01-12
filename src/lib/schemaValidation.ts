@@ -12,7 +12,7 @@ ajv.addFormat('web-url', {
             '(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*' + // port and path
             '(\\?[;&a-z\\d%_.~+=-]*)?' + // query string
             '(\\#[-a-z\\d_]*)?$', 'i'); // fragment locator
-        return urlPattern.test(url);
+        return urlPattern.test(url.trim());
     }
 });
 addErrors(ajv);

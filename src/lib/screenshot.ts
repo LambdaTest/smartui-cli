@@ -1,6 +1,6 @@
 import { chromium, firefox, webkit, Browser } from "@playwright/test"
 import { Context, WebStaticConfig } from "../types.js"
-import { delDir } from "./utils.js"
+import { delDir, ensureHttps } from "./utils.js"
 
 const BROWSER_CHROME = 'chrome';
 const BROWSER_SAFARI = 'safari';
@@ -47,6 +47,10 @@ export async function captureScreenshots(ctx: Context, screenshots: WebStaticCon
                 let screenshotId = screenshot.name.toLowerCase().replace(/\s/g, '-');
 
                 const page = await context.newPage();
+                if(screenshot.url){
+                    screenshot.url = screenshot.url.trim();
+                    screenshot.url = ensureHttps(screenshot.url)
+                }
                 await page.goto(screenshot.url, pageOptions);
                 await page.waitForTimeout(screenshot.waitForTimeout || 0)
 
