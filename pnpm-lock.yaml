@@ -53,6 +53,9 @@ dependencies:
   listr2:
     specifier: ^7.0.1
     version: 7.0.2
+  scroll-to-bottomjs:
+    specifier: ^1.1.0
+    version: 1.1.0
   tsup:
     specifier: ^7.2.0
     version: 7.2.0(typescript@5.3.2)
@@ -1445,6 +1448,10 @@ packages:
   /safe-stable-stringify@2.4.3:
     resolution: {integrity: sha512-e2bDA2WJT0wxseVd4lsDP4+3ONX6HpMXQa1ZhFQ7SU+GjvORCmShbCMltrtIDfkYhVHrOcPtj+KhmDBdPdZD1g==}
     engines: {node: '>=10'}
+    dev: false
+
+  /scroll-to-bottomjs@1.1.0:
+    resolution: {integrity: sha512-+e7MRrUwY7M1V93ebqxIyPwIC8rPkvcmmmdSrOnNnCpbDP2Fpva3B6RadoRQ+ubZoYdYxye3Cculgbzb/CZiGw==}
     dev: false
 
   /secure-json-parse@2.7.0:
