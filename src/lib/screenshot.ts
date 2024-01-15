@@ -1,6 +1,7 @@
 import { chromium, firefox, webkit, Browser } from "@playwright/test"
 import { Context, WebStaticConfig } from "../types.js"
 import { delDir, ensureHttps } from "./utils.js"
+import scrollToBottom from 'scroll-to-bottomjs'
 
 const BROWSER_CHROME = 'chrome';
 const BROWSER_SAFARI = 'safari';
@@ -52,13 +53,15 @@ export async function captureScreenshots(ctx: Context, screenshots: WebStaticCon
                     screenshot.url = ensureHttps(screenshot.url)
                 }
                 await page.goto(screenshot.url, pageOptions);
-                await page.waitForTimeout(screenshot.waitForTimeout || 0)
+                
 
                 for (let k = 0; k < totalViewports; k++) {
                     let { width, height } = ctx.webConfig.viewports[k];
                     let ssName = `${browserName}-${width}x${height}-${screenshotId}.png`
                     let ssPath = `screenshots/${screenshotId}/${ssName}.png`
                     await page.setViewportSize({ width, height: height || MIN_RESOLUTION_HEIGHT })
+                    if (height === 0) await page.evaluate(scrollToBottom)
+                    await page.waitForTimeout(screenshot.waitForTimeout || 0)
                     await page.screenshot({ path: ssPath, fullPage: height ? false: true });
 
                     let completed = (i == (totalBrowsers-1) && j == (totalScreenshots-1) && k == (totalViewports-1)) ? true : false;
