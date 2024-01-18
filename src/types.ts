@@ -2,10 +2,12 @@ import { Server, IncomingMessage, ServerResponse } from 'http'
 import { FastifyInstance } from 'fastify'
 import httpClient from './lib/httpClient.js'
 import type { Logger } from 'winston'
+import { ListrTaskWrapper, ListrRenderer } from "listr2";
 
 export interface Context {
     env: Env;
     log: Logger;
+    task: ListrTaskWrapper<Context, typeof ListrRenderer, typeof ListrRenderer>
     server?: FastifyInstance<Server, IncomingMessage, ServerResponse>;
     client: httpClient;
     webConfig: {
@@ -22,7 +24,6 @@ export interface Context {
     }
     cliVersion: string;
     totalSnapshots: number;
-    
 }
 
 export interface Env {

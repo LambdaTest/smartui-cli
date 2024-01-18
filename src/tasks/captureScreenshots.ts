@@ -8,9 +8,9 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
         title: 'Capturing screenshots',
         task: async (ctx, task): Promise<void> => {
             try {
-                let { webStaticConfig: screenshots } = ctx;
+                ctx.task = task;
 
-                let totalScreenshots = await captureScreenshots(ctx, screenshots);
+                let totalScreenshots = await captureScreenshots(ctx, ctx.webStaticConfig);
                 task.title = 'Screenshots captured successfully'
                 task.output = chalk.gray(`total screenshots: ${totalScreenshots}`)
             } catch (error: any) {
