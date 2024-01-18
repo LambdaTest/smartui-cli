@@ -1,7 +1,7 @@
 import { chromium, firefox, webkit, Browser } from "@playwright/test"
 import { Context, WebStaticConfig } from "../types.js"
-import { delDir, ensureHttps } from "./utils.js"
-import scrollToBottom from 'scroll-to-bottomjs'
+import { delDir, ensureHttps, scrollToBottomAndBackToTop } from "./utils.js"
+import chalk from 'chalk';
 
 const BROWSER_CHROME = 'chrome';
 const BROWSER_SAFARI = 'safari';
@@ -18,7 +18,8 @@ export async function captureScreenshots(ctx: Context, screenshots: WebStaticCon
     // Capture screenshots for every browser-viewport and upload them
     let totalBrowsers: number = ctx.webConfig.browsers.length;
     let totalViewports: number = ctx.webConfig.viewports.length;
-    let totalScreenshots: number = screenshots.length
+    let totalScreenshots: number = screenshots.length;
+    let capturedScreenshots: number = 0;
     for (let i = 0; i < totalBrowsers; i++) {
         let browserName = ctx.webConfig.browsers[i]?.toLowerCase();
         let browser: Browser;
@@ -60,13 +61,16 @@ export async function captureScreenshots(ctx: Context, screenshots: WebStaticCon
                     let ssName = `${browserName}-${width}x${height}-${screenshotId}.png`
                     let ssPath = `screenshots/${screenshotId}/${ssName}.png`
                     await page.setViewportSize({ width, height: height || MIN_RESOLUTION_HEIGHT })
-                    if (height === 0) await page.evaluate(scrollToBottom)
-                    await page.waitForTimeout(screenshot.waitForTimeout || 0)
+                    if (height === 0) await page.evaluate(scrollToBottomAndBackToTop);
+                    await page.waitForTimeout(screenshot.waitForTimeout || 0);
                     await page.screenshot({ path: ssPath, fullPage: height ? false: true });
 
                     let completed = (i == (totalBrowsers-1) && j == (totalScreenshots-1) && k == (totalViewports-1)) ? true : false;
                     browserName = browserName === BROWSER_SAFARI ? PW_WEBKIT : browserName;
                     ctx.client.uploadScreenshot(ctx.build, ssPath, screenshot.name, browserName, `${width}x${height}`, completed);
+                    capturedScreenshots++;
+
+                    ctx.task.output = chalk.gray(`screenshots captured: ${capturedScreenshots}/${totalBrowsers * totalViewports * totalScreenshots}`);
                 }
 
                 await page.close();
