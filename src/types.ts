@@ -3,13 +3,15 @@ import { FastifyInstance } from 'fastify'
 import httpClient from './lib/httpClient.js'
 import type { Logger } from 'winston'
 import { ListrTaskWrapper, ListrRenderer } from "listr2";
+import { Browser } from '@playwright/test';
 
 export interface Context {
     env: Env;
     log: Logger;
-    task: ListrTaskWrapper<Context, typeof ListrRenderer, typeof ListrRenderer>
+    task?: ListrTaskWrapper<Context, typeof ListrRenderer, typeof ListrRenderer>;
     server?: FastifyInstance<Server, IncomingMessage, ServerResponse>;
     client: httpClient;
+    browser?: Browser;
     webConfig: {
         browsers: Array<string>;
         viewports: Array<{width: number, height: number}>;
@@ -34,8 +36,33 @@ export interface Env {
 }
 
 export interface Snapshot {
+    url: string;
     name: string;
-    dom: string;
+    dom: Record<string, any>;
+    options: {
+        ignoreDOM?: {
+            id?: Array<string>,
+            class?: Array<string>,
+            cssSelector?: Array<string>,
+            xpath?: Array<string>
+        },
+        selectDOM?: {
+            id?: Array<string>,
+            class?: Array<string>,
+            cssSelector?: Array<string>,
+            xpath?: Array<string>
+        }
+    }
+}
+
+export interface ProcessedSnapshot {
+    url: string,
+    name: string,
+    dom: string,
+    options: {
+        ignoreBoxes?: Record<string, Array<Record<string, number>>>,
+        selectBoxes?: Record<string, Array<Record<string, number>>>
+    }
 }
 
 export interface Git {

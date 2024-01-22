@@ -9,7 +9,7 @@ const BROWSER_FIREFOX = 'firefox';
 const BROWSER_EDGE = 'edge';
 const EDGE_CHANNEL = 'msedge';
 const PW_WEBKIT = 'webkit';
-const MIN_RESOLUTION_HEIGHT = 320;
+const MIN_VIEWPORT_HEIGHT = 1080;
 
 export async function captureScreenshots(ctx: Context, screenshots: WebStaticConfig): Promise<number> {
     // Clean up directory to store screenshots
@@ -60,7 +60,7 @@ export async function captureScreenshots(ctx: Context, screenshots: WebStaticCon
                     let { width, height } = ctx.webConfig.viewports[k];
                     let ssName = `${browserName}-${width}x${height}-${screenshotId}.png`
                     let ssPath = `screenshots/${screenshotId}/${ssName}.png`
-                    await page.setViewportSize({ width, height: height || MIN_RESOLUTION_HEIGHT })
+                    await page.setViewportSize({ width, height: height || MIN_VIEWPORT_HEIGHT });
                     if (height === 0) await page.evaluate(scrollToBottomAndBackToTop);
                     await page.waitForTimeout(screenshot.waitForTimeout || 0);
                     await page.screenshot({ path: ssPath, fullPage: height ? false: true });
