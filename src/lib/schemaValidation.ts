@@ -12,7 +12,7 @@ ajv.addFormat('web-url', {
             '(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*' + // port and path
             '(\\?[;&a-z\\d%_.~+=-]*)?' + // query string
             '(\\#[-a-z\\d_]*)?$', 'i'); // fragment locator
-        return urlPattern.test(url);
+        return urlPattern.test(url.trim());
     }
 });
 addErrors(ajv);
@@ -34,17 +34,26 @@ const ConfigSchema = {
 					type: "array",
 					items: {
 						type: "array",
-						items: [
-							{ type: "number", minimum: 320, maximum: 7680 },
-							{ type: "number", minimum: 320, maximum: 7680 } 
-						],
-						additionalItems: false,
-						minItems: 2,
-						maxItems: 2
+                        oneOf: [
+                            {
+                                items: [{ type: "number", minimum: 320, maximum: 7680 }],
+                                minItems: 1,
+                                maxItems: 1
+                            },
+                            {
+                                items: [
+                                    { type: "number", minimum: 320, maximum: 7680 },
+                                    { type: "number", minimum: 320, maximum: 7680 } 
+                                ],
+                                minItems: 2,
+                                maxItems: 2
+                            }
+                        ],
+                        errorMessage: "Invalid config; width/height must be >= 320 and <= 7680"
 					},
 					uniqueItems: true,
 					maxItems: 5,
-                    errorMessage: "Invalid config; width/height must be >= 320 and <= 7680; max viewports allowed - 5"
+                    errorMessage: "Invalid config; max unique viewports allowed - 5"
 				},
 				waitForPageRender: {
                     type: "number",

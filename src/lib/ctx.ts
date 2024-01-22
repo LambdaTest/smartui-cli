@@ -29,7 +29,7 @@ export default (options: Record<string, string>): Context => {
         process.exit();
     }
 
-    for (let viewport of config.web.viewports) viewports.push({ width: viewport[0], height: viewport[1]});
+    for (let viewport of config.web.viewports) viewports.push({ width: viewport[0], height: viewport[1] || 0});
     return {
         env: env,
         log: logger,
