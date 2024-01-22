@@ -53,6 +53,7 @@ command
             console.log('\nRefer docs: https://www.lambdatest.com/support/docs/smart-visual-regression-testing/')
         } finally {
             await ctx.server?.close();
+            await ctx.browser?.close();
         }
     })
 
