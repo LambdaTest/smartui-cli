@@ -12,8 +12,6 @@ export default async (snapshot: Snapshot, ctx: Context): Promise<ProcessedSnapsh
         
         if ((options.ignoreDOM && Object.keys(options.ignoreDOM).length !== 0) || (options.selectDOM && Object.keys(options.selectDOM).length !== 0)) {
             if (!ctx.browser) ctx.browser = await chromium.launch({ headless: true });
-            const page = await ctx.browser.newPage();
-            await page.setContent(snapshot.dom.html);
     
             let ignoreOrSelectDOM: string;
             let ignoreOrSelectBoxes: string;
@@ -39,14 +37,16 @@ export default async (snapshot: Snapshot, ctx: Context): Promise<ProcessedSnapsh
                     case 'xpath':
                         selectors.push(...value.map(e => 'xpath=' + e));
                         break;
-                    case 'cssSelectors':
+                    case 'cssSelector':
                         selectors.push(...value);
                         break;
                 }
             }
     
             for (const vp of ctx.webConfig.viewports) {
-                await page.setViewportSize({ width: vp.width, height: vp.height || MIN_VIEWPORT_HEIGHT});
+                const page = await ctx.browser.newPage({ viewport: { width: vp.width, height: vp.height || MIN_VIEWPORT_HEIGHT}});
+                await page.setContent(snapshot.dom.html);
+
                 let viewport: string = `${vp.width}${vp.height ? 'x'+vp.height : ''}`;
                 if (!Array.isArray(processedOptions[ignoreOrSelectBoxes][viewport])) processedOptions[ignoreOrSelectBoxes][viewport] = []
 
@@ -54,6 +54,10 @@ export default async (snapshot: Snapshot, ctx: Context): Promise<ProcessedSnapsh
                 let boxes: Array<Record<string, number>> = [];
                 for (const selector of selectors) {
                     let l = await page.locator(selector).all()
+                    if (l.length === 0) {
+                        await page.close();
+                        throw new Error(`no element found for selector ${selector}`);
+                    }
                     locators.push(...l);
                 }
                 for (const locator of locators) {
@@ -67,6 +71,7 @@ export default async (snapshot: Snapshot, ctx: Context): Promise<ProcessedSnapsh
                 }
         
                 processedOptions[ignoreOrSelectBoxes][viewport].push(...boxes);
+                await page.close();
             }
         }
     }

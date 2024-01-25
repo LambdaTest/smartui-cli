@@ -30,7 +30,7 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 			let processedSnapshot = await processSnapshot(snapshot, ctx);
 			await ctx.client.uploadSnapshot(ctx.build.id, processedSnapshot, testType, ctx.log)
 		} catch (error: any) {
-			reply.code(500).send({ error: { message: error.message}})
+			return reply.code(500).send({ error: { message: error.message}});
 		}
 
 		ctx.totalSnapshots++
