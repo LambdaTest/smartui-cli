@@ -129,27 +129,27 @@ const SnapshotSchema: JSONSchemaType<Snapshot> = {
                     properties: {
                         id: {
                             type: "array",
-                            items: { type: "string", minLength: 1 },
+                            items: { type: "string", minLength: 1, pattern: "^[^;]*$", errorMessage: "Invalid snapshot options; id cannot be empty or have semicolon" },
                             uniqueItems: true,
-                            errorMessage: "Invalid snapshot options; id array must be of unique and non-empty items"
+                            errorMessage: "Invalid snapshot options; id array must have unique items"
                         },
                         class: {
                             type: "array",
-                            items: { type: "string", minLength: 1 },
+                            items: { type: "string", minLength: 1, pattern: "^[^;]*$", errorMessage: "Invalid snapshot options; class cannot be empty or have semicolon" },
                             uniqueItems: true,
-                            errorMessage: "Invalid snapshot options; class array must be of unique and non-empty items"
+                            errorMessage: "Invalid snapshot options; class array must have unique items"
                         },
                         cssSelector: {
                             type: "array",
-                            items: { type: "string", minLength: 1 },
+                            items: { type: "string", minLength: 1, pattern: "^[^;]*$", errorMessage: "Invalid snapshot options; cssSelector cannot be empty or have semicolon" },
                             uniqueItems: true,
-                            errorMessage: "Invalid snapshot options; cssSelector array must be of unique and non-empty items"
+                            errorMessage: "Invalid snapshot options; cssSelector array must have unique items"
                         },
                         xpath: {
                             type: "array",
                             items: { type: "string", minLength: 1 },
                             uniqueItems: true,
-                            errorMessage: "Invalid snapshot options; xpath array must be of unique and non-empty items"
+                            errorMessage: "Invalid snapshot options; xpath array must have unique and non-empty items"
                         },   
                     }
                 },
@@ -158,28 +158,28 @@ const SnapshotSchema: JSONSchemaType<Snapshot> = {
                     properties: {
                         id: {
                             type: "array",
-                            items: { type: "string", minLength: 1 },
+                            items: { type: "string", minLength: 1, pattern: "^[^;]*$", errorMessage: "Invalid snapshot options; id cannot be empty or have semicolon" },
                             uniqueItems: true,
-                            errorMessage: "Invalid snapshot options; id array must be of unique and non-empty items"
+                            errorMessage: "Invalid snapshot options; id array must have unique items"
                         },
                         class: {
                             type: "array",
-                            items: { type: "string", minLength: 1 },
+                            items: { type: "string", minLength: 1, pattern: "^[^;]*$", errorMessage: "Invalid snapshot options; class cannot be empty or have semicolon" },
                             uniqueItems: true,
-                            errorMessage: "Invalid snapshot options; class array must be of unique and non-empty items"
+                            errorMessage: "Invalid snapshot options; class array must have unique items"
                         },
                         cssSelector: {
                             type: "array",
-                            items: { type: "string", minLength: 1 },
+                            items: { type: "string", minLength: 1, pattern: "^[^;]*$", errorMessage: "Invalid snapshot options; cssSelector cannot be empty or have semicolon" },
                             uniqueItems: true,
-                            errorMessage: "Invalid snapshot options; cssSelector array must be of unique and non-empty items"
+                            errorMessage: "Invalid snapshot options; cssSelector array must have unique items"
                         },
                         xpath: {
                             type: "array",
                             items: { type: "string", minLength: 1 },
                             uniqueItems: true,
-                            errorMessage: "Invalid snapshot options; xpath array must be of unique and non-empty items"
-                        },   
+                            errorMessage: "Invalid snapshot options; xpath array must have unique and non-empty items"
+                        }, 
                     }
                 }
             },
