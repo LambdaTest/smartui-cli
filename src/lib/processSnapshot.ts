@@ -3,9 +3,10 @@ import { chromium, Locator } from "@playwright/test"
 
 const MIN_VIEWPORT_HEIGHT = 1080;
 
-export default async (snapshot: Snapshot, ctx: Context): Promise<ProcessedSnapshot> => {
+export default async (snapshot: Snapshot, ctx: Context): Promise<Record<string, any>> => {
     // Process snapshot options
     let options = snapshot.options;
+    let warnings: Array<string> = [];
     let processedOptions: Record<string, any> = {};
     if (options && Object.keys(options).length !== 0) {
         ctx.log.debug(`Processing options: ${JSON.stringify(options)}`);
@@ -55,8 +56,8 @@ export default async (snapshot: Snapshot, ctx: Context): Promise<ProcessedSnapsh
                 for (const selector of selectors) {
                     let l = await page.locator(selector).all()
                     if (l.length === 0) {
-                        await page.close();
-                        throw new Error(`no element found for selector ${selector}`);
+                        warnings.push(`For snapshot ${snapshot.name}, no element found for selector ${selector}`);
+                        continue;
                     }
                     locators.push(...l);
                 }
@@ -76,10 +77,14 @@ export default async (snapshot: Snapshot, ctx: Context): Promise<ProcessedSnapsh
         }
     }
 
+    warnings.push(...snapshot.dom.warnings);
     return {
-        name: snapshot.name,
-        url: snapshot.url,
-        dom: Buffer.from(snapshot.dom.html).toString('base64'),
-        options: processedOptions
+        processedSnapshot: {
+            name: snapshot.name,
+            url: snapshot.url,
+            dom: Buffer.from(snapshot.dom.html).toString('base64'),
+            options: processedOptions
+        },
+        warnings
     }
 }
