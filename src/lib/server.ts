@@ -27,14 +27,14 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 		try {
 			let { snapshot, testType } = request.body;
 			if (!validateSnapshot(snapshot)) throw new Error(validateSnapshot.errors[0].message);
-			let processedSnapshot = await processSnapshot(snapshot, ctx);
-			await ctx.client.uploadSnapshot(ctx.build.id, processedSnapshot, testType, ctx.log)
+			let { processedSnapshot, warnings } = await processSnapshot(snapshot, ctx);
+			await ctx.client.uploadSnapshot(ctx.build.id, processedSnapshot, testType, ctx.log);
+
+			ctx.totalSnapshots++
+			reply.code(200).send({data: { message: "success", warnings }});
 		} catch (error: any) {
 			return reply.code(500).send({ error: { message: error.message}});
 		}
-
-		ctx.totalSnapshots++
-		reply.code(200).send({data: { message: "success" }});
 	});
 
 
