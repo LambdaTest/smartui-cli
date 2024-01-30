@@ -1,7 +1,7 @@
 import fs from 'fs';
 import FormData from 'form-data';
 import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
-import { Env, Snapshot, Git, Build, Context } from '../types.js';
+import { Env, ProcessedSnapshot, Git, Build } from '../types.js';
 import { delDir } from './utils.js';
 import type { Logger } from 'winston'
 
@@ -78,7 +78,7 @@ export default class httpClient {
         }, log)
     }
 
-    uploadSnapshot(buildId: string, snapshot: Snapshot, testType: string, log: Logger) {
+    uploadSnapshot(buildId: string, snapshot: ProcessedSnapshot, testType: string, log: Logger) {
         return this.request({
             url: `/builds/${buildId}/snapshot`,
             method: 'POST',

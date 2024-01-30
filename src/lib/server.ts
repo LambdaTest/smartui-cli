@@ -3,6 +3,8 @@ import path from 'path';
 import fastify, { FastifyInstance, RouteShorthandOptions } from 'fastify';
 import { readFileSync } from 'fs'
 import { Context } from '../types.js'
+import processSnapshot from './processSnapshot.js'
+import { validateSnapshot } from './schemaValidation.js'
 
 export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMessage, ServerResponse>> => {
 	
@@ -22,16 +24,17 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 
 	// upload snpashot
 	server.post('/snapshot', opts, async (request, reply) => {
-		let { snapshot, testType } = request.body;
-		snapshot.dom = Buffer.from(snapshot.dom).toString('base64');
 		try {
-			await ctx.client.uploadSnapshot(ctx.build.id, snapshot, testType, ctx.log)
-		} catch (error: any) {
-			reply.code(500).send({ error: { message: error.message}})
-		}
+			let { snapshot, testType } = request.body;
+			if (!validateSnapshot(snapshot)) throw new Error(validateSnapshot.errors[0].message);
+			let { processedSnapshot, warnings } = await processSnapshot(snapshot, ctx);
+			await ctx.client.uploadSnapshot(ctx.build.id, processedSnapshot, testType, ctx.log);
 
-		ctx.totalSnapshots++
-		reply.code(200).send({data: { message: "success" }});
+			ctx.totalSnapshots++
+			reply.code(200).send({data: { message: "success", warnings }});
+		} catch (error: any) {
+			return reply.code(500).send({ error: { message: error.message}});
+		}
 	});
 
 

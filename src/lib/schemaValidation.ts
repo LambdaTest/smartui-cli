@@ -1,4 +1,4 @@
-import { WebStaticConfig } from '../types.js'
+import { Snapshot, WebStaticConfig } from '../types.js'
 import Ajv, { JSONSchemaType } from 'ajv'
 import addErrors from 'ajv-errors'
 
@@ -105,5 +105,92 @@ const WebStaticConfigSchema: JSONSchemaType<WebStaticConfig> = {
     uniqueItems: true
 }
 
+const SnapshotSchema: JSONSchemaType<Snapshot> = {
+    type: "object",
+    properties: {
+        name: {
+            type: "string",
+            minLength: 1,
+            errorMessage: "Invalid snapshot; name is mandatory and cannot be empty"
+        },
+        url: {
+            type: "string", 
+            format: "web-url",
+            errorMessage: "Invalid snapshot; url is mandatory and must be a valid web URL"
+        },
+        dom: {
+            type: "object",
+        },
+        options: {
+            type: "object",
+            properties: {
+                ignoreDOM: {
+                    type: "object",
+                    properties: {
+                        id: {
+                            type: "array",
+                            items: { type: "string", minLength: 1, pattern: "^[^;]*$", errorMessage: "Invalid snapshot options; id cannot be empty or have semicolon" },
+                            uniqueItems: true,
+                            errorMessage: "Invalid snapshot options; id array must have unique items"
+                        },
+                        class: {
+                            type: "array",
+                            items: { type: "string", minLength: 1, pattern: "^[^;]*$", errorMessage: "Invalid snapshot options; class cannot be empty or have semicolon" },
+                            uniqueItems: true,
+                            errorMessage: "Invalid snapshot options; class array must have unique items"
+                        },
+                        cssSelector: {
+                            type: "array",
+                            items: { type: "string", minLength: 1, pattern: "^[^;]*$", errorMessage: "Invalid snapshot options; cssSelector cannot be empty or have semicolon" },
+                            uniqueItems: true,
+                            errorMessage: "Invalid snapshot options; cssSelector array must have unique items"
+                        },
+                        xpath: {
+                            type: "array",
+                            items: { type: "string", minLength: 1 },
+                            uniqueItems: true,
+                            errorMessage: "Invalid snapshot options; xpath array must have unique and non-empty items"
+                        },   
+                    }
+                },
+                selectDOM: {
+                    type: "object",
+                    properties: {
+                        id: {
+                            type: "array",
+                            items: { type: "string", minLength: 1, pattern: "^[^;]*$", errorMessage: "Invalid snapshot options; id cannot be empty or have semicolon" },
+                            uniqueItems: true,
+                            errorMessage: "Invalid snapshot options; id array must have unique items"
+                        },
+                        class: {
+                            type: "array",
+                            items: { type: "string", minLength: 1, pattern: "^[^;]*$", errorMessage: "Invalid snapshot options; class cannot be empty or have semicolon" },
+                            uniqueItems: true,
+                            errorMessage: "Invalid snapshot options; class array must have unique items"
+                        },
+                        cssSelector: {
+                            type: "array",
+                            items: { type: "string", minLength: 1, pattern: "^[^;]*$", errorMessage: "Invalid snapshot options; cssSelector cannot be empty or have semicolon" },
+                            uniqueItems: true,
+                            errorMessage: "Invalid snapshot options; cssSelector array must have unique items"
+                        },
+                        xpath: {
+                            type: "array",
+                            items: { type: "string", minLength: 1 },
+                            uniqueItems: true,
+                            errorMessage: "Invalid snapshot options; xpath array must have unique and non-empty items"
+                        }, 
+                    }
+                }
+            },
+            additionalProperties: false
+        }
+    },
+    required: ["name", "url", "dom", "options"],
+    additionalProperties: false,
+    errorMessage: "Invalid snapshot"
+}
+
 export const validateConfig = ajv.compile(ConfigSchema);
 export const validateWebStaticConfig = ajv.compile(WebStaticConfigSchema);
+export const validateSnapshot = ajv.compile(SnapshotSchema);
