@@ -4,6 +4,7 @@ import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
 import { Env, ProcessedSnapshot, Git, Build } from '../types.js';
 import { delDir } from './utils.js';
 import type { Logger } from 'winston'
+import pkgJSON from './../../package.json'
 
 export default class httpClient {
     axiosInstance: AxiosInstance;
@@ -29,11 +30,18 @@ export default class httpClient {
             })
             .catch(error => {
                 if (error.response) {
+                    log.debug(`http response: ${JSON.stringify({
+                        status: error.response.status,
+                        headers: error.response.headers,
+                        body: error.response.data
+                    })}`);
                     throw new Error(JSON.stringify(error.response.data));
                 }
                 if (error.request) {
+                    log.debug(`http request failed: ${error.toJSON()}`);
                     throw new Error(error.toJSON().message);
                 }
+                log.debug(`http request failed: ${error.message}`);
                 throw new Error(error.message);
             })
     }
@@ -127,5 +135,17 @@ export default class httpClient {
             }
             throw new Error(error.message);
         })
+    }
+
+    checkUpdate(log: Logger) {
+        return this.request({
+            url: `/packageinfo`,
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' },
+            params: {
+                packageName: pkgJSON.name,
+                packageVersion: pkgJSON.version
+            }
+        }, log)
     }
 }

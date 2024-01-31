@@ -15,10 +15,9 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
                 task.output = chalk.gray(`listening on port ${ctx.server.addresses()[0]?.port}`);
                 task.title = 'SmartUI started'
             } catch (error: any) {
-                if (error.code === 'EADDRINUSE') {
-                    task.output = chalk.gray(`port 8080 is already in use`);
-                }
-                throw new Error('SmartUI server setup failed')
+                ctx.log.debug(error);
+                task.output = chalk.gray(error.message);
+                throw new Error('SmartUI server setup failed');
             }
         },
         rendererOptions: { persistentOutput: true }
