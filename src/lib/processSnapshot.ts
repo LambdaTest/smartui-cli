@@ -6,7 +6,7 @@ const MIN_VIEWPORT_HEIGHT = 1080;
 export default async (snapshot: Snapshot, ctx: Context): Promise<Record<string, any>> => {
     // Process snapshot options
     let options = snapshot.options;
-    let warnings: Array<string> = [];
+    let optionWarnings: Set<string> = new Set();
     let processedOptions: Record<string, any> = {};
     if (options && Object.keys(options).length !== 0) {
         ctx.log.debug(`Processing options: ${JSON.stringify(options)}`);
@@ -56,7 +56,7 @@ export default async (snapshot: Snapshot, ctx: Context): Promise<Record<string, 
                 for (const selector of selectors) {
                     let l = await page.locator(selector).all()
                     if (l.length === 0) {
-                        warnings.push(`For snapshot ${snapshot.name}, no element found for selector ${selector}`);
+                        optionWarnings.add(`For snapshot ${snapshot.name}, no element found for selector ${selector}`);
                         continue;
                     }
                     locators.push(...l);
@@ -77,7 +77,6 @@ export default async (snapshot: Snapshot, ctx: Context): Promise<Record<string, 
         }
     }
 
-    warnings.push(...snapshot.dom.warnings);
     return {
         processedSnapshot: {
             name: snapshot.name,
@@ -85,6 +84,6 @@ export default async (snapshot: Snapshot, ctx: Context): Promise<Record<string, 
             dom: Buffer.from(snapshot.dom.html).toString('base64'),
             options: processedOptions
         },
-        warnings
+        warnings: [...optionWarnings, ...snapshot.dom.warnings]
     }
 }

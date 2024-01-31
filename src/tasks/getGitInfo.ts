@@ -16,6 +16,7 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
                 task.output = chalk.gray(`branch: ${ctx.git.branch}, commit: ${ctx.git.commitId}, author: ${ctx.git.commitAuthor}`);
                 task.title = 'Fetched git information'
             } catch (error: any) {
+                ctx.log.debug(error);
                 task.output = chalk.gray(`${error.message}`)
                 throw new Error('Error fetching git repo details')
             }

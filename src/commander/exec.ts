@@ -20,7 +20,7 @@ command
         let ctx: Context = ctxInit(command.optsWithGlobals());
 
         if (!which.sync(execCommand[0], { nothrow: true })) {
-            console.log(`Error: Command not found "${execCommand[0]}"`);
+            ctx.log.error(`Error: Command not found "${execCommand[0]}"`);
             return
         }
         ctx.args.execCommand = execCommand
@@ -50,7 +50,7 @@ command
         try {
             await tasks.run(ctx);
         } catch (error) {
-            console.log('\nRefer docs: https://www.lambdatest.com/support/docs/smart-visual-regression-testing/')
+            ctx.log.info('\nRefer docs: https://www.lambdatest.com/support/docs/smart-visual-regression-testing/');
         } finally {
             await ctx.server?.close();
             await ctx.browser?.close();

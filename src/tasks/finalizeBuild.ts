@@ -12,9 +12,9 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
                 task.output = chalk.gray(`build url: ${ctx.build.url}`);
                 task.title = 'Finalized build'
             } catch (error: any) {
-                ctx.log.debug(error.message);
+                ctx.log.debug(error);
                 task.output = chalk.gray(error.message);
-                throw new Error('Finalize build error');
+                throw new Error('Finalize build failed');
             }
         },
         rendererOptions: { persistentOutput: true }

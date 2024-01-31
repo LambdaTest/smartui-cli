@@ -186,7 +186,7 @@ const SnapshotSchema: JSONSchemaType<Snapshot> = {
             additionalProperties: false
         }
     },
-    required: ["name", "url", "dom", "options"],
+    required: ["name", "url", "dom"],
     additionalProperties: false,
     errorMessage: "Invalid snapshot"
 }

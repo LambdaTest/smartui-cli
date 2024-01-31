@@ -14,7 +14,7 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
                 task.output = chalk.gray(`using project token '******#${ctx.env.PROJECT_TOKEN.split('#').pop()}'`);
                 task.title = 'Authenticated with SmartUI';
             } catch (error: any) {
-                ctx.log.debug(error.message);
+                ctx.log.debug(error);
                 task.output = chalk.gray(error.message);
                 throw new Error('Authentication failed');
             }
