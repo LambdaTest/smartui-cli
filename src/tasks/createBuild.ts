@@ -21,6 +21,7 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
                 task.output = chalk.gray(`build id: ${resp.data.buildId}`);
                 task.title = 'SmartUI build created'
             } catch (error: any) {
+                ctx.log.debug(error);
                 task.output = chalk.gray(JSON.parse(error.message).message);
                 throw new Error('SmartUI build creation failed');
             }

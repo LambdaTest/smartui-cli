@@ -31,15 +31,15 @@ export interface Context {
 export interface Env {
     PROJECT_TOKEN: string;
     SMARTUI_CLIENT_API_URL: string;
-    SMARTUI_LOG_LEVEL: string | undefined;
-    SMARTUI_DEBUG: string | undefined;
+    LT_SDK_LOG_LEVEL: string | undefined;
+    LT_SDK_DEBUG: string | undefined;
 }
 
 export interface Snapshot {
     url: string;
     name: string;
     dom: Record<string, any>;
-    options: {
+    options?: {
         ignoreDOM?: {
             id?: Array<string>,
             class?: Array<string>,
