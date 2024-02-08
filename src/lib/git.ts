@@ -44,6 +44,6 @@ export default (ctx: Context): Git => {
 		commitId: res[0] || '',
 		commitMessage: res[2] || '',
 		commitAuthor: res[7] || '',
-		githubURL: (ctx.env.GITHUB_ACTIONS) ? `${constants.GITHUB_API_HOST}/repos/${process.env.GITHUB_REPOSITORY}/statuses/${res[0]}` : ''
+		githubURL: (ctx.env.GITHUB_ACTIONS) ? `${constants.GITHUB_API_HOST}/repos/${process.env.GITHUB_REPOSITORY}/statuses/${res[1]}` : ''
     };
 }
