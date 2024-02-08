@@ -1,5 +1,6 @@
 import { execSync } from 'child_process'
-import { Git } from '../types.js'
+import { Git, Context } from '../types.js'
+import constants from './constants.js';
 
 function executeCommand(command: string): string {
 	let dst = process.cwd()
@@ -24,7 +25,7 @@ export function isGitRepo(): boolean {
 	}
 }
 
-export default (): Git => {
+export default (ctx: Context): Git => {
 	const splitCharacter = '<##>';
 	const prettyFormat = ["%h", "%H", "%s", "%f", "%b", "%at", "%ct", "%an", "%ae", "%cn", "%ce", "%N", ""];
 	const command = 'git log -1 --pretty=format:"' + prettyFormat.join(splitCharacter) + '"' +
@@ -42,6 +43,7 @@ export default (): Git => {
         branch: branch,
 		commitId: res[0] || '',
 		commitMessage: res[2] || '',
-		commitAuthor: res[7] || ''
+		commitAuthor: res[7] || '',
+		githubURL: (ctx.env.GITHUB_ACTIONS) ? `${constants.GITHUB_API_HOST}/repos/${process.env.GITHUB_REPOSITORY}/statuses/${res[0]}` : ''
     };
 }

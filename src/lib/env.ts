@@ -5,13 +5,15 @@ export default (): Env => {
         PROJECT_TOKEN = '',
         SMARTUI_CLIENT_API_URL = 'https://api.lambdatest.com/visualui/1.0',
         LT_SDK_LOG_LEVEL,
-        LT_SDK_DEBUG
+        LT_SDK_DEBUG,
+        GITHUB_ACTIONS
     } = process.env
         
     return {
         PROJECT_TOKEN,
         SMARTUI_CLIENT_API_URL,
         LT_SDK_LOG_LEVEL,
-        LT_SDK_DEBUG
+        LT_SDK_DEBUG,
+        GITHUB_ACTIONS
     }
 }

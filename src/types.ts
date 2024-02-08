@@ -33,6 +33,7 @@ export interface Env {
     SMARTUI_CLIENT_API_URL: string;
     LT_SDK_LOG_LEVEL: string | undefined;
     LT_SDK_DEBUG: string | undefined;
+    GITHUB_ACTIONS: string | undefined;
 }
 
 export interface Snapshot {

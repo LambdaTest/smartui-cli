@@ -12,7 +12,7 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
         },
         task: async (ctx, task): Promise<void> => {
             try {
-                ctx.git = getGitInfo();
+                ctx.git = getGitInfo(ctx);
                 task.output = chalk.gray(`branch: ${ctx.git.branch}, commit: ${ctx.git.commitId}, author: ${ctx.git.commitAuthor}`);
                 task.title = 'Fetched git information'
             } catch (error: any) {
