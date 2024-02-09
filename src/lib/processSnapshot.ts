@@ -11,20 +11,25 @@ export default async (snapshot: Snapshot, ctx: Context): Promise<Record<string, 
     if (options && Object.keys(options).length !== 0) {
         ctx.log.debug(`Processing options: ${JSON.stringify(options)}`);
         
-        if ((options.ignoreDOM && Object.keys(options.ignoreDOM).length !== 0) || (options.selectDOM && Object.keys(options.selectDOM).length !== 0)) {
+        const isNotAllEmpty = (obj: Record<string, Array<string>>): boolean => {
+            for (let key in obj) if (obj[key]?.length) return true;
+            return false;
+        }
+
+        let ignoreOrSelectDOM: string;
+        let ignoreOrSelectBoxes: string;
+        if (options.ignoreDOM && Object.keys(options.ignoreDOM).length && isNotAllEmpty(options.ignoreDOM)) {
+            processedOptions.ignoreBoxes = {};
+            ignoreOrSelectDOM = 'ignoreDOM';
+            ignoreOrSelectBoxes = 'ignoreBoxes';
+        } else if (options.selectDOM && Object.keys(options.selectDOM).length && isNotAllEmpty(options.selectDOM)) {
+            processedOptions.selectBoxes = {};
+            ignoreOrSelectDOM = 'selectDOM';
+            ignoreOrSelectBoxes = 'selectBoxes';
+        }
+
+        if (ignoreOrSelectDOM) {
             if (!ctx.browser) ctx.browser = await chromium.launch({ headless: true });
-    
-            let ignoreOrSelectDOM: string;
-            let ignoreOrSelectBoxes: string;
-            if (options.ignoreDOM && Object.keys(options.ignoreDOM).length !== 0) {
-                processedOptions.ignoreBoxes = {};
-                ignoreOrSelectDOM = 'ignoreDOM';
-                ignoreOrSelectBoxes = 'ignoreBoxes';
-            } else {
-                processedOptions.selectBoxes = {};
-                ignoreOrSelectDOM = 'selectDOM';
-                ignoreOrSelectBoxes = 'selectBoxes';
-            }
 
             let selectors: Array<string> = [];
             for (const [key, value] of Object.entries(options[ignoreOrSelectDOM])) {
