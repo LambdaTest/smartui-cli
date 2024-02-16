@@ -8,7 +8,7 @@ export default async (snapshot: Snapshot, ctx: Context): Promise<Record<string, 
     let options = snapshot.options;
     let optionWarnings: Set<string> = new Set();
     let processedOptions: Record<string, any> = {};
-    if (options && Object.keys(options).length !== 0) {
+    if (options && Object.keys(options).length) {
         ctx.log.debug(`Processing options: ${JSON.stringify(options)}`);
         
         const isNotAllEmpty = (obj: Record<string, Array<string>>): boolean => {
@@ -18,7 +18,12 @@ export default async (snapshot: Snapshot, ctx: Context): Promise<Record<string, 
 
         let ignoreOrSelectDOM: string;
         let ignoreOrSelectBoxes: string;
-        if (options.ignoreDOM && Object.keys(options.ignoreDOM).length && isNotAllEmpty(options.ignoreDOM)) {
+        if (options.element && Object.keys(options.element).length) {
+            if (options.element.id) processedOptions.element = '#' + options.element.id;
+            else if (options.element.class) processedOptions.element = '.' + options.element.class;
+            else if (options.element.cssSelector) processedOptions.element = options.element.cssSelector;
+            else if (options.element.xpath) processedOptions.element = 'xpath=' + options.element.xpath;
+        } else if (options.ignoreDOM && Object.keys(options.ignoreDOM).length && isNotAllEmpty(options.ignoreDOM)) {
             processedOptions.ignoreBoxes = {};
             ignoreOrSelectDOM = 'ignoreDOM';
             ignoreOrSelectBoxes = 'ignoreBoxes';
@@ -28,7 +33,18 @@ export default async (snapshot: Snapshot, ctx: Context): Promise<Record<string, 
             ignoreOrSelectBoxes = 'selectBoxes';
         }
 
-        if (ignoreOrSelectDOM) {
+        if (processedOptions.element) {
+            if (!ctx.browser) ctx.browser = await chromium.launch({ headless: true });
+            for (const viewport of ctx.webConfig.viewports) {
+                const page = await ctx.browser.newPage({ viewport: { width: viewport.width, height: viewport.height || MIN_VIEWPORT_HEIGHT}});
+                await page.setContent(snapshot.dom.html);
+                let l = await page.locator(processedOptions.element).all();
+                await page.close();
+                if (l.length === 0) {
+                    throw new Error(`for snapshot ${snapshot.name} and viewport ${viewport.width}${viewport.height ? 'x'+viewport.height : ''}, no element found with selector/xpath ${processedOptions.element}`);
+                }
+            }
+        } else if (ignoreOrSelectDOM) {
             if (!ctx.browser) ctx.browser = await chromium.launch({ headless: true });
 
             let selectors: Array<string> = [];
@@ -61,7 +77,7 @@ export default async (snapshot: Snapshot, ctx: Context): Promise<Record<string, 
                 for (const selector of selectors) {
                     let l = await page.locator(selector).all()
                     if (l.length === 0) {
-                        optionWarnings.add(`For snapshot ${snapshot.name}, no element found for selector ${selector}`);
+                        optionWarnings.add(`for snapshot ${snapshot.name}, no element found with selector/xpath ${selector}`);
                         continue;
                     }
                     locators.push(...l);

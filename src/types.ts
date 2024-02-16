@@ -51,6 +51,12 @@ export interface Snapshot {
             class?: Array<string>,
             cssSelector?: Array<string>,
             xpath?: Array<string>
+        },
+        element?: {
+            id?: string,
+            class?: string,
+            cssSelector?: string,
+            xpath?: string
         }
     }
 }
