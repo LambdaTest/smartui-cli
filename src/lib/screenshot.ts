@@ -49,11 +49,7 @@ export async function captureScreenshots(ctx: Context, screenshots: WebStaticCon
                 let screenshotId = screenshot.name.toLowerCase().replace(/\s/g, '-');
 
                 const page = await context.newPage();
-                if(screenshot.url){
-                    screenshot.url = screenshot.url.trim();
-                    screenshot.url = ensureHttps(screenshot.url)
-                }
-                await page.goto(screenshot.url, pageOptions);
+                await page.goto(screenshot.url.trim(), pageOptions);
                 
 
                 for (let k = 0; k < totalViewports; k++) {

@@ -6,13 +6,12 @@ const ajv = new Ajv({ allErrors: true });
 ajv.addFormat('web-url', {
     type: 'string',
     validate: (url: string) => {
-        const urlPattern = new RegExp('^(https?:\\/\\/)?' + // protocol
-            '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|' + // domain name
-            '((\\d{1,3}\\.){3}\\d{1,3}))' + // OR ip (v4) address
-            '(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*' + // port and path
-            '(\\?[;&a-z\\d%_.~+=-]*)?' + // query string
-            '(\\#[-a-z\\d_]*)?$', 'i'); // fragment locator
-        return urlPattern.test(url.trim());
+        try {
+            new URL(url.trim());
+            return true;
+        } catch (error) {
+            return false;
+        }
     }
 });
 addErrors(ajv);
