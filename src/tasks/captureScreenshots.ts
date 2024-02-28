@@ -10,7 +10,7 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
             try {
                 ctx.task = task;
 
-                let totalScreenshots = await captureScreenshots(ctx, ctx.webStaticConfig);
+                let totalScreenshots = await captureScreenshots(ctx);
                 task.title = 'Screenshots captured successfully'
                 task.output = chalk.gray(`total screenshots: ${totalScreenshots}`)
             } catch (error: any) {
