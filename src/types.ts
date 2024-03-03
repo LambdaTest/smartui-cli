@@ -17,6 +17,7 @@ export interface Context {
         viewports: Array<{width: number, height: number}>;
         waitForPageRender: number;
         waitForTimeout: number;
+        enableJavaScript: boolean;
     };
     webStaticConfig: WebStaticConfig;
     build: Build;
@@ -59,6 +60,7 @@ export interface ProcessedSnapshot {
     url: string,
     name: string,
     dom: string,
+    resources: Record<string, any>,
     options: {
         ignoreBoxes?: Record<string, Array<Record<string, number>>>,
         selectBoxes?: Record<string, Array<Record<string, number>>>
@@ -91,6 +93,7 @@ export interface WebConfig {
     resolutions?: Array<Array<number>>; // for backward compatibility
     waitForPageRender?: number;
     waitForTimeout?: number;
+    enableJavaScript?: boolean;
 }
 
 export type WebStaticConfig = Array<{

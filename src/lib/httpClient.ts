@@ -17,7 +17,7 @@ export default class httpClient {
     }
 
     async request(config: AxiosRequestConfig, log: Logger): Promise<Record<string, any>> {
-        log.debug(`http request: ${JSON.stringify(config)}`);
+        log.debug(`http request: ${config.method} ${config.url}`);
 
         return this.axiosInstance.request(config)
             .then(resp => {
