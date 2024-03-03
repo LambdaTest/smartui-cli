@@ -17,6 +17,7 @@ export interface Context {
         mobile?: MobileConfig,
         waitForPageRender: number;
         waitForTimeout: number;
+        enableJavaScript: boolean;
     };
     webStaticConfig: WebStaticConfig;
     build: Build;
@@ -66,6 +67,7 @@ export interface ProcessedSnapshot {
     url: string,
     name: string,
     dom: string,
+    resources: Record<string, any>,
     options: {
         ignoreBoxes?: Record<string, Array<Record<string, number>>>,
         selectBoxes?: Record<string, Array<Record<string, number>>>
