@@ -1,7 +1,6 @@
 import { Snapshot, WebStaticConfig } from '../types.js'
 import Ajv, { JSONSchemaType } from 'ajv'
 import addErrors from 'ajv-errors'
-import constants from './constants.js'
 
 const ajv = new Ajv({ allErrors: true });
 ajv.addFormat('web-url', {
@@ -25,10 +24,10 @@ const ConfigSchema = {
     		properties: {
 				browsers: {
 					type: "array",
-					items: { type: "string", enum: [constants.CHROME, constants.FIREFOX, constants.SAFARI, constants.EDGE] },
+					items: { type: "string", enum: ["chrome", "firefox", "edge", "safari"] },
 					uniqueItems: true,
 					maxItems: 4,
-                    errorMessage: `Invalid config; allowed browsers - ${constants.CHROME}, ${constants.FIREFOX}, ${constants.SAFARI}, ${constants.EDGE}`
+                    errorMessage: "Invalid config; allowed browsers - chrome, firefox, edge, safari"
 				},
 				viewports: {
 					type: "array",
@@ -70,47 +69,9 @@ const ConfigSchema = {
     		},
 			required: ["browsers", "viewports"],
 			additionalProperties: false
-		},
-        mobile: {
-            type: "object",
-            properties: {
-                devices: {
-                    type: "array",
-                    items: { type: "string", enum: Object.keys(constants.SUPPORTED_MOBILE_DEVICES) },
-                    uniqueItems: true,
-					maxItems: 20,
-                    errorMessage: "Invalid config; unsupported mobile devices"
-                },
-                fullPage: {
-                    type: "boolean",
-                    errorMessage: "Invalid config; fullPage must be true/false"
-                },
-                orientation: {
-                    type: "string",
-                    enum: [constants.MOBILE_ORIENTATION_PORTRAIT, constants.MOBILE_ORIENTATION_LANDSCAPE],
-                    errorMessage: `Invalid config; orientation must be ${constants.MOBILE_ORIENTATION_PORTRAIT}/${constants.MOBILE_ORIENTATION_LANDSCAPE}`
-                }
-            },
-            required: ["devices"],
-            additionalProperties: false
-        },
-        waitForPageRender: {
-            type: "number",
-            minimum: 0,
-            maximum: 300000,
-            errorMessage: "Invalid config; waitForPageRender must be > 0 and <= 300000"
-        },
-        waitForTimeout: {
-            type: "number",
-            minimum: 0,
-            maximum: 30000,
-            errorMessage: "Invalid config; waitForTimeout must be > 0 and <= 30000"
-        },
+		}
     },
-    anyOf: [
-        { required: ["web"] },
-        { required: ["mobile"] }
-    ],
+    required: ["web"],
     additionalProperties: false
 }
 

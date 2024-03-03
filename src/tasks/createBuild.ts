@@ -10,12 +10,13 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
             updateLogContext({task: 'createBuild'});
 
             try {
-                let resp = await ctx.client.createBuild(ctx.git, ctx.config, ctx.log);
+                let resp = await ctx.client.createBuild(ctx.git, ctx.webConfig, ctx.log);
                 ctx.build = {
                     id: resp.data.buildId,
                     name: resp.data.buildName,
-                    url: resp.data.buildURL,
+                    url: resp.buildURL,
                     baseline: resp.data.baseline || false,
+                    projectId: resp.data.projectId
                 }
                 task.output = chalk.gray(`build id: ${resp.data.buildId}`);
                 task.title = 'SmartUI build created'

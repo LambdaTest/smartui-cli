@@ -12,9 +12,9 @@ export interface Context {
     server?: FastifyInstance<Server, IncomingMessage, ServerResponse>;
     client: httpClient;
     browser?: Browser;
-    config: {
-        web?: WebConfig;
-        mobile?: MobileConfig,
+    webConfig: {
+        browsers: Array<string>;
+        viewports: Array<{width: number, height: number}>;
         waitForPageRender: number;
         waitForTimeout: number;
     };
@@ -85,17 +85,19 @@ export interface Build {
     name: string;
     url: string;
     baseline: boolean;
+    projectId: string;
+}
+
+export interface Config {
+    web: WebConfig
 }
 
 export interface WebConfig {
     browsers: Array<string>;
-    viewports: Array<{width: number, height: number}>;
-}
-
-export interface MobileConfig {
-    devices: Array<string>;
-    fullPage?: boolean;
-    orientation?: string;
+    viewports?: Array<Array<number>>;
+    resolutions?: Array<Array<number>>; // for backward compatibility
+    waitForPageRender?: number;
+    waitForTimeout?: number;
 }
 
 export type WebStaticConfig = Array<{

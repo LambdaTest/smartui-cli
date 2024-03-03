@@ -35,7 +35,7 @@ export default async (snapshot: Snapshot, ctx: Context): Promise<Record<string, 
 
         if (processedOptions.element) {
             if (!ctx.browser) ctx.browser = await chromium.launch({ headless: true });
-            for (const viewport of ctx.config.web.viewports) {
+            for (const viewport of ctx.webConfig.viewports) {
                 const page = await ctx.browser.newPage({ viewport: { width: viewport.width, height: viewport.height || MIN_VIEWPORT_HEIGHT}});
                 await page.setContent(snapshot.dom.html);
                 let l = await page.locator(processedOptions.element).all();
@@ -65,7 +65,7 @@ export default async (snapshot: Snapshot, ctx: Context): Promise<Record<string, 
                 }
             }
     
-            for (const vp of ctx.config.web.viewports) {
+            for (const vp of ctx.webConfig.viewports) {
                 const page = await ctx.browser.newPage({ viewport: { width: vp.width, height: vp.height || MIN_VIEWPORT_HEIGHT}});
                 await page.setContent(snapshot.dom.html);
 
