@@ -67,6 +67,10 @@ const ConfigSchema = {
                     maximum: 30000,
                     errorMessage: "Invalid config; waitForTimeout must be > 0 and <= 30000"
                 },
+                enableJavaScript: {
+                    type: "boolean",
+                    errorMessage: "Invalid config; enableJavaScript must be true/false"
+                }
     		},
 			required: ["browsers", "viewports"],
 			additionalProperties: false
