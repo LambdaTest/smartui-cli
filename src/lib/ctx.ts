@@ -38,7 +38,8 @@ export default (options: Record<string, string>): Context => {
             browsers: config.web.browsers,
             viewports: viewports,
             waitForPageRender: config.web.waitForPageRender || 0,
-            waitForTimeout: config.web.waitForTimeout || 0
+            waitForTimeout: config.web.waitForTimeout || 0,
+            enableJavaScript: config.web.enableJavaScript || false
         },
         webStaticConfig: [],
         git: {

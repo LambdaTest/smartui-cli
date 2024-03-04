@@ -28,6 +28,7 @@ export const DEFAULT_CONFIG: Config = {
             [360],
         ],
         waitForTimeout: 1000,
+        enableJavaScript: false,
     }
 };
 
