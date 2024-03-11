@@ -42,6 +42,7 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 	// store server's address for SDK
 	let { port } = server.addresses()[0];
 	process.env.SMARTUI_SERVER_ADDRESS = `http://localhost:${port}`;
+	process.env.CYPRESS_SMARTUI_SERVER_ADDRESS = `http://localhost:${port}`;
 
 	return server;
 }
