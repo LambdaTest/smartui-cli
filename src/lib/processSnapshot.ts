@@ -40,7 +40,7 @@ export default async (snapshot: Snapshot, ctx: Context): Promise<Record<string, 
                 ctx.log.debug(`Handling request ${requestUrl}\n - skipping resource larger than 5MB`);
             } else if (!ALLOWED_STATUSES.includes(response.status())) {
                 ctx.log.debug(`Handling request ${requestUrl}\n - skipping disallowed status [${response.status()}]`);
-            } else if (!ctx.webConfig.enableJavaScript && !ALLOWED_RESOURCES.includes(request.resourceType())) {
+            } else if (!ctx.config.enableJavaScript && !ALLOWED_RESOURCES.includes(request.resourceType())) {
                 ctx.log.debug(`Handling request ${requestUrl}\n - skipping disallowed resource type [${request.resourceType()}]`);
             } else {
                 ctx.log.debug(`Handling request ${requestUrl}\n - content-type ${response.headers()['content-type']}`);
@@ -112,7 +112,7 @@ export default async (snapshot: Snapshot, ctx: Context): Promise<Record<string, 
 
     // process for every viewport
     let navigated: boolean = false;
-    for (const viewport of ctx.webConfig.viewports) {
+    for (const viewport of ctx.config.web?.viewports) {
         await page.setViewportSize({ width: viewport.width, height: viewport.height ||  MIN_VIEWPORT_HEIGHT });
         ctx.log.debug(`Page resized to ${viewport.width}x${viewport.height ||  MIN_VIEWPORT_HEIGHT}`);
         if (!navigated) {
