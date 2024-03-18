@@ -98,6 +98,7 @@ export interface MobileConfig {
     devices: Array<string>;
     fullPage?: boolean;
     orientation?: string;
+    enableJavaScript?: boolean;
 }
 
 export type WebStaticConfig = Array<{
