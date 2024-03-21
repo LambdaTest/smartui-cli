@@ -23,6 +23,7 @@ export default {
             orientation: 'portrait'
         },
         waitForTimeout: 1000,
+        enableJavaScript: false
     },
     DEFAULT_WEB_STATIC_CONFIG: [
         {

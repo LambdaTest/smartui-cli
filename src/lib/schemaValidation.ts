@@ -54,23 +54,7 @@ const ConfigSchema = {
 					uniqueItems: true,
 					maxItems: 5,
                     errorMessage: "Invalid config; max unique viewports allowed - 5"
-				},
-				waitForPageRender: {
-                    type: "number",
-                    minimum: 0,
-                    maximum: 300000,
-                    errorMessage: "Invalid config; waitForPageRender must be > 0 and <= 300000"
-                },
-				waitForTimeout: {
-                    type: "number",
-                    minimum: 0,
-                    maximum: 30000,
-                    errorMessage: "Invalid config; waitForTimeout must be > 0 and <= 30000"
-                },
-                enableJavaScript: {
-                    type: "boolean",
-                    errorMessage: "Invalid config; enableJavaScript must be true/false"
-                }
+				}
     		},
 			required: ["browsers", "viewports"],
 			additionalProperties: false
@@ -80,10 +64,21 @@ const ConfigSchema = {
             properties: {
                 devices: {
                     type: "array",
-                    items: { type: "string", enum: Object.keys(constants.SUPPORTED_MOBILE_DEVICES) },
+                    items: {
+                        type: "string",
+                        enum: Object.keys(constants.SUPPORTED_MOBILE_DEVICES),
+                        minLength: 1,
+                        errorMessage: {
+                            enum: "Invalid config; unsupported mobile devices",
+                            minLength: "Invalid config; mobile device cannot be empty"
+                        }
+                    },
                     uniqueItems: true,
 					maxItems: 20,
-                    errorMessage: "Invalid config; unsupported mobile devices"
+                    errorMessage: {
+                        uniqueItems: "Invalid config; duplicate mobile devices",
+                        maxItems: "Invalid config; max mobile devices allowed - 20"
+                    }
                 },
                 fullPage: {
                     type: "boolean",
@@ -110,6 +105,10 @@ const ConfigSchema = {
             maximum: 30000,
             errorMessage: "Invalid config; waitForTimeout must be > 0 and <= 30000"
         },
+        enableJavaScript: {
+            type: "boolean",
+            errorMessage: "Invalid config; enableJavaScript must be true/false"
+        }
     },
     anyOf: [
         { required: ["web"] },

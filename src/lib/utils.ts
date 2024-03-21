@@ -62,10 +62,10 @@ export async function launchBrowsers(ctx: Context): Promise<Record<string, Brows
             }
         }
     }
-    if (ctx.config.mobile && !browsers.CHROME && !browsers.SAFARI) {
+    if (ctx.config.mobile) {
         for (const device of ctx.config.mobile.devices) {
-            if (constants.SUPPORTED_MOBILE_DEVICES[device].os === 'android' && !browsers.CHROME) browsers[constants.CHROME] = await chromium.launch(launchOptions);
-            else if (constants.SUPPORTED_MOBILE_DEVICES[device].os === 'ios' && !browsers.SAFARI) browsers[constants.SAFARI] = await webkit.launch(launchOptions);
+            if (constants.SUPPORTED_MOBILE_DEVICES[device].os === 'android' && !browsers[constants.CHROME]) browsers[constants.CHROME] = await chromium.launch(launchOptions);
+            else if (constants.SUPPORTED_MOBILE_DEVICES[device].os === 'ios' && !browsers[constants.SAFARI]) browsers[constants.SAFARI] = await webkit.launch(launchOptions);
         }
     }
 
@@ -73,5 +73,30 @@ export async function launchBrowsers(ctx: Context): Promise<Record<string, Brows
 }
 
 export async function closeBrowsers(browsers: Record<string, Browser>): Promise<void> {
-    for (const browser of Object.values(browsers)) await browser.close();
+    for (const browserName of Object.keys(browsers)) await browsers[browserName]?.close();
+}
+
+export function getRenderViewports(ctx: Context): Array<Record<string,any>> {
+    let renderViewports: Array<Record<string,any>> = [];
+
+    if (ctx.config.web) {
+        for (const viewport of ctx.config.web.viewports) {
+            renderViewports.push({
+                viewport,
+                viewportString: `${viewport.width}${viewport.height ? 'x'+viewport.height : ''}`,
+                fullPage: viewport.height ? false : true,
+            })
+        }
+    }
+    if (ctx.config.mobile) {
+        for (const device of ctx.config.mobile.devices) {
+            renderViewports.push({
+                viewport: constants.SUPPORTED_MOBILE_DEVICES[device].viewport,
+                viewportString: `${device} (${ctx.config.mobile.orientation})`,
+                fullPage: ctx.config.mobile.fullPage,
+            })
+        }
+    }
+
+    return renderViewports;
 }

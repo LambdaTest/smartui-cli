@@ -15,7 +15,7 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
                     id: resp.data.buildId,
                     name: resp.data.buildName,
                     url: resp.data.buildURL,
-                    baseline: resp.data.baseline || false,
+                    baseline: resp.data.baseline,
                 }
                 task.output = chalk.gray(`build id: ${resp.data.buildId}`);
                 task.title = 'SmartUI build created'
