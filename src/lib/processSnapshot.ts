@@ -1,6 +1,6 @@
 import { Snapshot, Context, ProcessedSnapshot } from "../types.js";
-import { scrollToBottomAndBackToTop } from "./utils.js"
-import { chromium, Locator, selectors } from "@playwright/test"
+import { scrollToBottomAndBackToTop, getRenderViewports } from "./utils.js"
+import { chromium, Locator } from "@playwright/test"
 
 const MAX_RESOURCE_SIZE = 5 * (1024 ** 2); // 5MB
 var ALLOWED_RESOURCES = ['document', 'stylesheet', 'image', 'media', 'font', 'other'];
@@ -40,7 +40,7 @@ export default async (snapshot: Snapshot, ctx: Context): Promise<Record<string, 
                 ctx.log.debug(`Handling request ${requestUrl}\n - skipping resource larger than 5MB`);
             } else if (!ALLOWED_STATUSES.includes(response.status())) {
                 ctx.log.debug(`Handling request ${requestUrl}\n - skipping disallowed status [${response.status()}]`);
-            } else if (!ctx.config.enableJavaScript && !ALLOWED_RESOURCES.includes(request.resourceType())) {
+            } else if (!ALLOWED_RESOURCES.includes(request.resourceType())) {
                 ctx.log.debug(`Handling request ${requestUrl}\n - skipping disallowed resource type [${request.resourceType()}]`);
             } else {
                 ctx.log.debug(`Handling request ${requestUrl}\n - content-type ${response.headers()['content-type']}`);
@@ -112,7 +112,8 @@ export default async (snapshot: Snapshot, ctx: Context): Promise<Record<string, 
 
     // process for every viewport
     let navigated: boolean = false;
-    for (const viewport of ctx.config.web?.viewports) {
+    let renderViewports = getRenderViewports(ctx);
+    for (const { viewport, viewportString, fullPage } of renderViewports) {
         await page.setViewportSize({ width: viewport.width, height: viewport.height ||  MIN_VIEWPORT_HEIGHT });
         ctx.log.debug(`Page resized to ${viewport.width}x${viewport.height ||  MIN_VIEWPORT_HEIGHT}`);
         if (!navigated) {
@@ -120,12 +121,11 @@ export default async (snapshot: Snapshot, ctx: Context): Promise<Record<string, 
             navigated = true;
             ctx.log.debug(`Navigated to ${snapshot.url}`);
         }
-        if (!viewport.height) await page.evaluate(scrollToBottomAndBackToTop);
+        if (fullPage) await page.evaluate(scrollToBottomAndBackToTop);
         await page.waitForLoadState('networkidle');
         ctx.log.debug('Network idle 500ms');
 
         // snapshot options
-        let viewportString: string = `${viewport.width}${viewport.height ? 'x'+viewport.height : ''}`;
         if (processedOptions.element) {
             let l = await page.locator(processedOptions.element).all()
             if (l.length === 0) {

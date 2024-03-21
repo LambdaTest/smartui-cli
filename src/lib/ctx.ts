@@ -52,9 +52,9 @@ export default (options: Record<string, string>): Context => {
         config: {
             web: webConfig,
             mobile: mobileConfig,
-            waitForPageRender: config.waitForPageRender || config.web?.waitForPageRender || 0, // config.web for backward compatibility
-            waitForTimeout: config.waitForTimeout || config.web?.waitForTimeout || 0, // config.web for backward compatibility,
-            enableJavaScript: config.web.enableJavaScript || false
+            waitForPageRender: config.waitForPageRender || 0,
+            waitForTimeout: config.waitForTimeout || 0,
+            enableJavaScript: config.enableJavaScript || false
         },
         webStaticConfig: [],
         git: {

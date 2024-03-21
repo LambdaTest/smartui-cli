@@ -63,14 +63,16 @@ export async function  captureScreenshots(ctx: Context): Promise<number> {
                     let portrait = (ctx.config.mobile.orientation === constants.MOBILE_ORIENTATION_PORTRAIT) ? true : false;
 
                     if (constants.SUPPORTED_MOBILE_DEVICES[device].os === constants.MOBILE_OS_ANDROID) {
-                        await pageChrome.setViewportSize({ width: portrait ? width : height, height: portrait ? height : width });
-                        await pageChrome.waitForTimeout(staticConfig.waitForTimeout || 0);
-                        await pageChrome.screenshot({ path: ssPath, fullPage: ctx.config.mobile.fullPage });
+                        await pageChrome?.setViewportSize({ width: portrait ? width : height, height: portrait ? height : width });
+                        if (ctx.config.mobile.fullPage) await pageChrome?.evaluate(scrollToBottomAndBackToTop);
+                        await pageChrome?.waitForTimeout(staticConfig.waitForTimeout || 0);
+                        await pageChrome?.screenshot({ path: ssPath, fullPage: ctx.config.mobile.fullPage });
                         await ctx.client.uploadScreenshot(ctx.build, ssPath, staticConfig.name, constants.CHROME, `${device} (${ctx.config.mobile.orientation})`, ctx.log);
                     } else {
-                        await pageSafari.setViewportSize({ width: portrait ? width : height, height: portrait ? height : width });
-                        await pageSafari.waitForTimeout(staticConfig.waitForTimeout || 0);
-                        await pageSafari.screenshot({ path: ssPath, fullPage: ctx.config.mobile.fullPage });
+                        await pageSafari?.setViewportSize({ width: portrait ? width : height, height: portrait ? height : width });
+                        if (ctx.config.mobile.fullPage) await pageChrome?.evaluate(scrollToBottomAndBackToTop);
+                        await pageSafari?.waitForTimeout(staticConfig.waitForTimeout || 0);
+                        await pageSafari?.screenshot({ path: ssPath, fullPage: ctx.config.mobile.fullPage });
                         await ctx.client.uploadScreenshot(ctx.build, ssPath, staticConfig.name, constants.PW_WEBKIT, `${device} (${ctx.config.mobile.orientation})`, ctx.log);
                     }
 
@@ -78,16 +80,18 @@ export async function  captureScreenshots(ctx: Context): Promise<number> {
                     ctx.task.output = chalk.gray(`screenshots captured: ${capturedScreenshots}/${totalScreenshots}`);
                 }
 
-                await contextChrome?.close();
-                await contextSafari?.close();
                 await pageChrome?.close();
                 await pageSafari?.close();
+                await contextChrome?.close();
+                await contextSafari?.close();
             }
         }
 
         await closeBrowsers(browsers);
+        delDir('screenshots');
     } catch (error) {
         await closeBrowsers(browsers);
+        delDir('screenshots');
         throw error;
     }
 
