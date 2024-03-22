@@ -23,7 +23,8 @@ export default {
             orientation: 'portrait'
         },
         waitForTimeout: 1000,
-        enableJavaScript: false
+        enableJavaScript: false,
+        allowedHostnames: []
     },
     DEFAULT_WEB_STATIC_CONFIG: [
         {

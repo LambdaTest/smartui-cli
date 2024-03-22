@@ -18,6 +18,7 @@ export interface Context {
         waitForPageRender: number;
         waitForTimeout: number;
         enableJavaScript: boolean;
+        allowedHostnames: Array<string>;
     };
     webStaticConfig: WebStaticConfig;
     build: Build;

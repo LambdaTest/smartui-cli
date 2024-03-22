@@ -54,7 +54,8 @@ export default (options: Record<string, string>): Context => {
             mobile: mobileConfig,
             waitForPageRender: config.waitForPageRender || 0,
             waitForTimeout: config.waitForTimeout || 0,
-            enableJavaScript: config.enableJavaScript || false
+            enableJavaScript: config.enableJavaScript || false,
+            allowedHostnames: config.allowedHostnames || []
         },
         webStaticConfig: [],
         git: {
