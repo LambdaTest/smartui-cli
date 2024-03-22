@@ -18,21 +18,21 @@ export default async (snapshot: Snapshot, ctx: Context): Promise<Record<string, 
     // Use route to intercept network requests and discover resources
     await page.route('**/*', async (route, request) => {
         const requestUrl = request.url()
-        const snapshotHostname = new URL(snapshot.url).hostname;
         const requestHostname = new URL(requestUrl).hostname;
 
         try {
+            ctx.config.allowedHostnames.push(new URL(snapshot.url).hostname);
+            if (ctx.config.enableJavaScript) ALLOWED_RESOURCES.push('script');
+
             const response = await page.request.fetch(request);
             const body = await response.body();
-
-            if (ctx.config.enableJavaScript) ALLOWED_RESOURCES.push('script');
             if (!body) {
                 ctx.log.debug(`Handling request ${requestUrl}\n - skipping no response`);
             } else if (!body.length) {
                 ctx.log.debug(`Handling request ${requestUrl}\n - skipping empty response`);
             } else if (requestUrl === snapshot.url) {
                 ctx.log.debug(`Handling request ${requestUrl}\n - skipping root resource`);
-            } else if (requestHostname !== snapshotHostname) {
+            } else if (!ctx.config.allowedHostnames.includes(requestHostname)) {
                 ctx.log.debug(`Handling request ${requestUrl}\n - skipping remote resource`);
             } else if (cache[requestUrl]) {
                 ctx.log.debug(`Handling request ${requestUrl}\n - skipping already cached resource`);
@@ -56,8 +56,8 @@ export default async (snapshot: Snapshot, ctx: Context): Promise<Record<string, 
                 headers: response.headers(),
                 body: body,
             });
-        } catch (error) {
-            ctx.log.debug(`Handling request ${requestUrl} - aborted`);
+        } catch (error: any) {
+            ctx.log.debug(`Handling request ${requestUrl}\n - aborted due to ${error.message}`);
             route.abort();
         }
     });

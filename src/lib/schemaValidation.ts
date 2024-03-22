@@ -108,6 +108,21 @@ const ConfigSchema = {
         enableJavaScript: {
             type: "boolean",
             errorMessage: "Invalid config; enableJavaScript must be true/false"
+        },
+        allowedHostnames: {
+            type: "array",
+            items: {
+                type: "string",
+                minLength: 1,
+                errorMessage: {
+                    minLength: "Invalid config; allowed hostname cannot be empty"
+                }
+            },
+            uniqueItems: true,
+            errorMessage: {
+                uniqueItems: "Invalid config; duplicates in allowedHostnames"
+            }
+
         }
     },
     anyOf: [
