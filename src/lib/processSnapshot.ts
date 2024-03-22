@@ -130,6 +130,8 @@ export default async (snapshot: Snapshot, ctx: Context): Promise<Record<string, 
             let l = await page.locator(processedOptions.element).all()
             if (l.length === 0) {
                 throw new Error(`for snapshot ${snapshot.name} viewport ${viewportString}, no element found for selector ${processedOptions.element}`);
+            } else if (l.length > 1) {
+                throw new Error(`for snapshot ${snapshot.name} viewport ${viewportString}, multiple elements found for selector ${processedOptions.element}`);
             }
         } else if (selectors.length) {
             let locators: Array<Locator> = [];
