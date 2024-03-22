@@ -35,7 +35,7 @@ export default class httpClient {
                         headers: error.response.headers,
                         body: error.response.data
                     })}`);
-                    throw new Error(JSON.stringify(error.response.data));
+                    throw new Error(error.response.data.error.message);
                 }
                 if (error.request) {
                     log.debug(`http request failed: ${error.toJSON()}`);
@@ -53,24 +53,13 @@ export default class httpClient {
         }, log)
     }
 
-    createBuild({ branch, commitId, commitAuthor, commitMessage, githubURL}: Git, config: any, log: Logger) {
+    createBuild(git: Git, config: any, log: Logger) {
         return this.request({
             url: '/build',
             method: 'POST',
             data: {
-                git: {
-                    branch,
-                    commitId,
-                    commitAuthor,
-                    commitMessage,
-                    githubURL
-                },
-                config: {
-                    browsers: config.browsers,
-                    resolutions: config.viewports,
-                    waitForPageRender: config.waitForPageRender,
-                    waitForTimeout: config.waitForTimeout
-                }
+                git,
+                config
             }
         }, log)
     }
@@ -103,19 +92,17 @@ export default class httpClient {
 
     uploadScreenshot(
         { id: buildId, name: buildName, baseline }: Build, 
-        ssPath: string, ssName: string, browserName :string, viewport: string,
-        completed: boolean,
+        ssPath: string, ssName: string, browserName :string, viewport: string, log: Logger
     ) {
         const file = fs.readFileSync(ssPath);
         const form = new FormData();
-        form.append('screenshots', file, { filename: `${ssName}.png`, contentType: 'image/png'});
+        form.append('screenshot', file, { filename: `${ssName}.png`, contentType: 'image/png'});
         form.append('browser', browserName);
-        form.append('resolution', viewport);
+        form.append('viewport', viewport);
         form.append('buildId', buildId);
         form.append('buildName', buildName);
         form.append('screenshotName', ssName);
         form.append('baseline', baseline.toString());
-        form.append('completed', completed.toString());
 
         return this.axiosInstance.request({
             url: `/screenshot`,
@@ -124,11 +111,11 @@ export default class httpClient {
             data: form,
         })
         .then(() => {
-            if (completed) delDir('screenshots')
+            log.debug(`${ssName} for ${browserName} ${viewport} uploaded successfully`);
         })
         .catch(error => {
             if (error.response) {
-                throw new Error(JSON.stringify(error.response.data));
+                throw new Error(error.response.data.error.message);
             }
             if (error.request) {
                 throw new Error(error.toJSON().message);

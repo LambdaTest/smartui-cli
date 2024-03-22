@@ -1,6 +1,6 @@
 import { Snapshot, Context, ProcessedSnapshot } from "../types.js";
-import { scrollToBottomAndBackToTop } from "./utils.js"
-import { chromium, Locator, selectors } from "@playwright/test"
+import { scrollToBottomAndBackToTop, getRenderViewports } from "./utils.js"
+import { chromium, Locator } from "@playwright/test"
 
 const MAX_RESOURCE_SIZE = 5 * (1024 ** 2); // 5MB
 var ALLOWED_RESOURCES = ['document', 'stylesheet', 'image', 'media', 'font', 'other'];
@@ -18,21 +18,21 @@ export default async (snapshot: Snapshot, ctx: Context): Promise<Record<string, 
     // Use route to intercept network requests and discover resources
     await page.route('**/*', async (route, request) => {
         const requestUrl = request.url()
-        const snapshotHostname = new URL(snapshot.url).hostname;
         const requestHostname = new URL(requestUrl).hostname;
 
         try {
+            ctx.config.allowedHostnames.push(new URL(snapshot.url).hostname);
+            if (ctx.config.enableJavaScript) ALLOWED_RESOURCES.push('script');
+
             const response = await page.request.fetch(request);
             const body = await response.body();
-
-            if (ctx.webConfig.enableJavaScript) ALLOWED_RESOURCES.push('script');
             if (!body) {
                 ctx.log.debug(`Handling request ${requestUrl}\n - skipping no response`);
             } else if (!body.length) {
                 ctx.log.debug(`Handling request ${requestUrl}\n - skipping empty response`);
             } else if (requestUrl === snapshot.url) {
                 ctx.log.debug(`Handling request ${requestUrl}\n - skipping root resource`);
-            } else if (requestHostname !== snapshotHostname) {
+            } else if (!ctx.config.allowedHostnames.includes(requestHostname)) {
                 ctx.log.debug(`Handling request ${requestUrl}\n - skipping remote resource`);
             } else if (cache[requestUrl]) {
                 ctx.log.debug(`Handling request ${requestUrl}\n - skipping already cached resource`);
@@ -40,7 +40,7 @@ export default async (snapshot: Snapshot, ctx: Context): Promise<Record<string, 
                 ctx.log.debug(`Handling request ${requestUrl}\n - skipping resource larger than 5MB`);
             } else if (!ALLOWED_STATUSES.includes(response.status())) {
                 ctx.log.debug(`Handling request ${requestUrl}\n - skipping disallowed status [${response.status()}]`);
-            } else if (!ctx.webConfig.enableJavaScript && !ALLOWED_RESOURCES.includes(request.resourceType())) {
+            } else if (!ALLOWED_RESOURCES.includes(request.resourceType())) {
                 ctx.log.debug(`Handling request ${requestUrl}\n - skipping disallowed resource type [${request.resourceType()}]`);
             } else {
                 ctx.log.debug(`Handling request ${requestUrl}\n - content-type ${response.headers()['content-type']}`);
@@ -56,8 +56,8 @@ export default async (snapshot: Snapshot, ctx: Context): Promise<Record<string, 
                 headers: response.headers(),
                 body: body,
             });
-        } catch (error) {
-            ctx.log.debug(`Handling request ${requestUrl} - aborted`);
+        } catch (error: any) {
+            ctx.log.debug(`Handling request ${requestUrl}\n - aborted due to ${error.message}`);
             route.abort();
         }
     });
@@ -71,17 +71,26 @@ export default async (snapshot: Snapshot, ctx: Context): Promise<Record<string, 
     if (options && Object.keys(options).length) {
         ctx.log.debug(`Snapshot options: ${JSON.stringify(options)}`);
         
-        if ((options.ignoreDOM && Object.keys(options.ignoreDOM).length) || (options.selectDOM && Object.keys(options.selectDOM).length)) {
-            if (options.ignoreDOM && Object.keys(options.ignoreDOM).length) {
-                processedOptions.ignoreBoxes = {};
-                ignoreOrSelectDOM = 'ignoreDOM';
-                ignoreOrSelectBoxes = 'ignoreBoxes';
-            } else {
-                processedOptions.selectBoxes = {};
-                ignoreOrSelectDOM = 'selectDOM';
-                ignoreOrSelectBoxes = 'selectBoxes';
-            }
+        const isNotAllEmpty = (obj: Record<string, Array<string>>): boolean => {
+            for (let key in obj) if (obj[key]?.length) return true;
+            return false;
+        }
 
+        if (options.element && Object.keys(options.element).length) {
+            if (options.element.id) processedOptions.element = '#' + options.element.id;
+            else if (options.element.class) processedOptions.element = '.' + options.element.class;
+            else if (options.element.cssSelector) processedOptions.element = options.element.cssSelector;
+            else if (options.element.xpath) processedOptions.element = 'xpath=' + options.element.xpath;
+        } else if (options.ignoreDOM && Object.keys(options.ignoreDOM).length && isNotAllEmpty(options.ignoreDOM)) {
+            processedOptions.ignoreBoxes = {};
+            ignoreOrSelectDOM = 'ignoreDOM';
+            ignoreOrSelectBoxes = 'ignoreBoxes';
+        } else if (options.selectDOM && Object.keys(options.selectDOM).length && isNotAllEmpty(options.selectDOM)) {
+            processedOptions.selectBoxes = {};
+            ignoreOrSelectDOM = 'selectDOM';
+            ignoreOrSelectBoxes = 'selectBoxes';
+        }
+        if (ignoreOrSelectDOM) {
             for (const [key, value] of Object.entries(options[ignoreOrSelectDOM])) {
                 switch (key) {
                     case 'id':
@@ -103,7 +112,8 @@ export default async (snapshot: Snapshot, ctx: Context): Promise<Record<string, 
 
     // process for every viewport
     let navigated: boolean = false;
-    for (const viewport of ctx.webConfig.viewports) {
+    let renderViewports = getRenderViewports(ctx);
+    for (const { viewport, viewportString, fullPage } of renderViewports) {
         await page.setViewportSize({ width: viewport.width, height: viewport.height ||  MIN_VIEWPORT_HEIGHT });
         ctx.log.debug(`Page resized to ${viewport.width}x${viewport.height ||  MIN_VIEWPORT_HEIGHT}`);
         if (!navigated) {
@@ -111,36 +121,39 @@ export default async (snapshot: Snapshot, ctx: Context): Promise<Record<string, 
             navigated = true;
             ctx.log.debug(`Navigated to ${snapshot.url}`);
         }
-        if (!viewport.height) await page.evaluate(scrollToBottomAndBackToTop);
+        if (fullPage) await page.evaluate(scrollToBottomAndBackToTop);
         await page.waitForLoadState('networkidle');
         ctx.log.debug('Network idle 500ms');
 
-        // find bounding boxes for elements
-        if (selectors.length) {
-            let viewportString: string = `${viewport.width}${viewport.height ? 'x'+viewport.height : ''}`;
-            if (!Array.isArray(processedOptions[ignoreOrSelectBoxes][viewportString])) processedOptions[ignoreOrSelectBoxes][viewportString] = []
-    
+        // snapshot options
+        if (processedOptions.element) {
+            let l = await page.locator(processedOptions.element).all()
+            if (l.length === 0) {
+                throw new Error(`for snapshot ${snapshot.name} viewport ${viewportString}, no element found for selector ${processedOptions.element}`);
+            } else if (l.length > 1) {
+                throw new Error(`for snapshot ${snapshot.name} viewport ${viewportString}, multiple elements found for selector ${processedOptions.element}`);
+            }
+        } else if (selectors.length) {
             let locators: Array<Locator> = [];
-            let boxes: Array<Record<string, number>> = [];
+            if (!Array.isArray(processedOptions[ignoreOrSelectBoxes][viewportString])) processedOptions[ignoreOrSelectBoxes][viewportString] = []
+
             for (const selector of selectors) {
                 let l = await page.locator(selector).all()
                 if (l.length === 0) {
-                    optionWarnings.add(`For snapshot ${snapshot.name}, no element found for selector ${selector}`);
+                    optionWarnings.add(`for snapshot ${snapshot.name} viewport ${viewportString}, no element found for selector ${selector}`);
                     continue;
                 }
                 locators.push(...l);
             }
             for (const locator of locators) {
                 let bb = await locator.boundingBox();
-                if (bb) boxes.push({
+                if (bb) processedOptions[ignoreOrSelectBoxes][viewportString].push({
                     left: bb.x,
                     top: bb.y,
                     right: bb.x + bb.width,
                     bottom: bb.y + bb.height
                 });
             }
-    
-            processedOptions[ignoreOrSelectBoxes][viewportString].push(...boxes);
         }
     }
 

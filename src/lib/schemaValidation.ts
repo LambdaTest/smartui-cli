@@ -1,6 +1,7 @@
 import { Snapshot, WebStaticConfig } from '../types.js'
 import Ajv, { JSONSchemaType } from 'ajv'
 import addErrors from 'ajv-errors'
+import constants from './constants.js'
 
 const ajv = new Ajv({ allErrors: true });
 ajv.addFormat('web-url', {
@@ -24,10 +25,10 @@ const ConfigSchema = {
     		properties: {
 				browsers: {
 					type: "array",
-					items: { type: "string", enum: ["chrome", "firefox", "edge", "safari"] },
+					items: { type: "string", enum: [constants.CHROME, constants.FIREFOX, constants.SAFARI, constants.EDGE] },
 					uniqueItems: true,
 					maxItems: 4,
-                    errorMessage: "Invalid config; allowed browsers - chrome, firefox, edge, safari"
+                    errorMessage: `Invalid config; allowed browsers - ${constants.CHROME}, ${constants.FIREFOX}, ${constants.SAFARI}, ${constants.EDGE}`
 				},
 				viewports: {
 					type: "array",
@@ -53,29 +54,81 @@ const ConfigSchema = {
 					uniqueItems: true,
 					maxItems: 5,
                     errorMessage: "Invalid config; max unique viewports allowed - 5"
-				},
-				waitForPageRender: {
-                    type: "number",
-                    minimum: 0,
-                    maximum: 300000,
-                    errorMessage: "Invalid config; waitForPageRender must be > 0 and <= 300000"
-                },
-				waitForTimeout: {
-                    type: "number",
-                    minimum: 0,
-                    maximum: 30000,
-                    errorMessage: "Invalid config; waitForTimeout must be > 0 and <= 30000"
-                },
-                enableJavaScript: {
-                    type: "boolean",
-                    errorMessage: "Invalid config; enableJavaScript must be true/false"
-                }
+				}
     		},
 			required: ["browsers", "viewports"],
 			additionalProperties: false
-		}
+		},
+        mobile: {
+            type: "object",
+            properties: {
+                devices: {
+                    type: "array",
+                    items: {
+                        type: "string",
+                        enum: Object.keys(constants.SUPPORTED_MOBILE_DEVICES),
+                        minLength: 1,
+                        errorMessage: {
+                            enum: "Invalid config; unsupported mobile devices",
+                            minLength: "Invalid config; mobile device cannot be empty"
+                        }
+                    },
+                    uniqueItems: true,
+					maxItems: 20,
+                    errorMessage: {
+                        uniqueItems: "Invalid config; duplicate mobile devices",
+                        maxItems: "Invalid config; max mobile devices allowed - 20"
+                    }
+                },
+                fullPage: {
+                    type: "boolean",
+                    errorMessage: "Invalid config; fullPage must be true/false"
+                },
+                orientation: {
+                    type: "string",
+                    enum: [constants.MOBILE_ORIENTATION_PORTRAIT, constants.MOBILE_ORIENTATION_LANDSCAPE],
+                    errorMessage: `Invalid config; orientation must be ${constants.MOBILE_ORIENTATION_PORTRAIT}/${constants.MOBILE_ORIENTATION_LANDSCAPE}`
+                }
+            },
+            required: ["devices"],
+            additionalProperties: false
+        },
+        waitForPageRender: {
+            type: "number",
+            minimum: 0,
+            maximum: 300000,
+            errorMessage: "Invalid config; waitForPageRender must be > 0 and <= 300000"
+        },
+        waitForTimeout: {
+            type: "number",
+            minimum: 0,
+            maximum: 30000,
+            errorMessage: "Invalid config; waitForTimeout must be > 0 and <= 30000"
+        },
+        enableJavaScript: {
+            type: "boolean",
+            errorMessage: "Invalid config; enableJavaScript must be true/false"
+        },
+        allowedHostnames: {
+            type: "array",
+            items: {
+                type: "string",
+                minLength: 1,
+                errorMessage: {
+                    minLength: "Invalid config; allowed hostname cannot be empty"
+                }
+            },
+            uniqueItems: true,
+            errorMessage: {
+                uniqueItems: "Invalid config; duplicates in allowedHostnames"
+            }
+
+        }
     },
-    required: ["web"],
+    anyOf: [
+        { required: ["web"] },
+        { required: ["mobile"] }
+    ],
     additionalProperties: false
 }
 
@@ -127,32 +180,57 @@ const SnapshotSchema: JSONSchemaType<Snapshot> = {
         options: {
             type: "object",
             properties: {
+                element: {
+                    type: "object",
+                    properties: {
+                        id: {
+                            type: "string",
+                            pattern: "^[^;]*$",
+                            errorMessage: "Invalid snapshot options; element id cannot be empty or have semicolon"
+                        },
+                        class: {
+                            type: "string",
+                            pattern: "^[^;]*$",
+                            errorMessage: "Invalid snapshot options; element class cannot be empty or have semicolon"
+                        },
+                        cssSelector: {
+                            type: "string",
+                            pattern: "^[^;]*$",
+                            errorMessage: "Invalid snapshot options; element cssSelector cannot be empty or have semicolon"
+                        },
+                        xpath: {
+                            type: "string",
+                            errorMessage: "Invalid snapshot options; element xpath cannot be empty"
+                        },
+
+                    }
+                },
                 ignoreDOM: {
                     type: "object",
                     properties: {
                         id: {
                             type: "array",
-                            items: { type: "string", minLength: 1, pattern: "^[^;]*$", errorMessage: "Invalid snapshot options; id cannot be empty or have semicolon" },
+                            items: { type: "string", minLength: 1, pattern: "^[^;]*$", errorMessage: "Invalid snapshot options; ignoreDOM id cannot be empty or have semicolon" },
                             uniqueItems: true,
-                            errorMessage: "Invalid snapshot options; id array must have unique items"
+                            errorMessage: "Invalid snapshot options; ignoreDOM id array must have unique items"
                         },
                         class: {
                             type: "array",
-                            items: { type: "string", minLength: 1, pattern: "^[^;]*$", errorMessage: "Invalid snapshot options; class cannot be empty or have semicolon" },
+                            items: { type: "string", minLength: 1, pattern: "^[^;]*$", errorMessage: "Invalid snapshot options; ignoreDOM class cannot be empty or have semicolon" },
                             uniqueItems: true,
-                            errorMessage: "Invalid snapshot options; class array must have unique items"
+                            errorMessage: "Invalid snapshot options; ignoreDOM class array must have unique items"
                         },
                         cssSelector: {
                             type: "array",
-                            items: { type: "string", minLength: 1, pattern: "^[^;]*$", errorMessage: "Invalid snapshot options; cssSelector cannot be empty or have semicolon" },
+                            items: { type: "string", minLength: 1, pattern: "^[^;]*$", errorMessage: "Invalid snapshot options; ignoreDOM cssSelector cannot be empty or have semicolon" },
                             uniqueItems: true,
-                            errorMessage: "Invalid snapshot options; cssSelector array must have unique items"
+                            errorMessage: "Invalid snapshot options; ignoreDOM cssSelector array must have unique items"
                         },
                         xpath: {
                             type: "array",
                             items: { type: "string", minLength: 1 },
                             uniqueItems: true,
-                            errorMessage: "Invalid snapshot options; xpath array must have unique and non-empty items"
+                            errorMessage: "Invalid snapshot options; ignoreDOM xpath array must have unique and non-empty items"
                         },   
                     }
                 },
@@ -161,27 +239,27 @@ const SnapshotSchema: JSONSchemaType<Snapshot> = {
                     properties: {
                         id: {
                             type: "array",
-                            items: { type: "string", minLength: 1, pattern: "^[^;]*$", errorMessage: "Invalid snapshot options; id cannot be empty or have semicolon" },
+                            items: { type: "string", minLength: 1, pattern: "^[^;]*$", errorMessage: "Invalid snapshot options; selectDOM id cannot be empty or have semicolon" },
                             uniqueItems: true,
-                            errorMessage: "Invalid snapshot options; id array must have unique items"
+                            errorMessage: "Invalid snapshot options; selectDOM id array must have unique items"
                         },
                         class: {
                             type: "array",
-                            items: { type: "string", minLength: 1, pattern: "^[^;]*$", errorMessage: "Invalid snapshot options; class cannot be empty or have semicolon" },
+                            items: { type: "string", minLength: 1, pattern: "^[^;]*$", errorMessage: "Invalid snapshot options; selectDOM class cannot be empty or have semicolon" },
                             uniqueItems: true,
-                            errorMessage: "Invalid snapshot options; class array must have unique items"
+                            errorMessage: "Invalid snapshot options; selectDOM class array must have unique items"
                         },
                         cssSelector: {
                             type: "array",
-                            items: { type: "string", minLength: 1, pattern: "^[^;]*$", errorMessage: "Invalid snapshot options; cssSelector cannot be empty or have semicolon" },
+                            items: { type: "string", minLength: 1, pattern: "^[^;]*$", errorMessage: "Invalid snapshot options; selectDOM cssSelector cannot be empty or have semicolon" },
                             uniqueItems: true,
-                            errorMessage: "Invalid snapshot options; cssSelector array must have unique items"
+                            errorMessage: "Invalid snapshot options; selectDOM cssSelector array must have unique items"
                         },
                         xpath: {
                             type: "array",
                             items: { type: "string", minLength: 1 },
                             uniqueItems: true,
-                            errorMessage: "Invalid snapshot options; xpath array must have unique and non-empty items"
+                            errorMessage: "Invalid snapshot options; selectDOM xpath array must have unique and non-empty items"
                         }, 
                     }
                 }
