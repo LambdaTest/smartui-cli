@@ -26,6 +26,9 @@ export interface Context {
     args: {
         execCommand?: Array<string>
     }
+    options: {
+        parallel?: boolean
+    }
     cliVersion: string;
     totalSnapshots: number;
 }
