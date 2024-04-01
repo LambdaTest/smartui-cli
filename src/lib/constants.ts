@@ -44,7 +44,7 @@ export default {
     FIREFOX: 'firefox',
     EDGE: 'edge',
     EDGE_CHANNEL: 'msedge',
-    PW_WEBKIT: 'webkit',
+    WEBKIT: 'webkit',
 
     // viewports
     MIN_VIEWPORT_HEIGHT: 1080,

@@ -2,7 +2,7 @@ import fs from 'fs';
 import FormData from 'form-data';
 import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
 import { Env, ProcessedSnapshot, Git, Build } from '../types.js';
-import { delDir } from './utils.js';
+import constants from './constants.js';
 import type { Logger } from 'winston'
 import pkgJSON from './../../package.json'
 
@@ -94,6 +94,7 @@ export default class httpClient {
         { id: buildId, name: buildName, baseline }: Build, 
         ssPath: string, ssName: string, browserName :string, viewport: string, log: Logger
     ) {
+        browserName = browserName === constants.SAFARI ? constants.WEBKIT : browserName;
         const file = fs.readFileSync(ssPath);
         const form = new FormData();
         form.append('screenshot', file, { filename: `${ssName}.png`, contentType: 'image/png'});

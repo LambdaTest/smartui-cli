@@ -2,6 +2,7 @@ import { ListrTask, ListrRendererFactory } from 'listr2';
 import { Context } from '../types.js'
 import { captureScreenshots } from '../lib/screenshot.js'
 import chalk from 'chalk';
+import { updateLogContext } from '../lib/logger.js'
 
 export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRendererFactory>  =>  {
     return {
@@ -9,11 +10,15 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
         task: async (ctx, task): Promise<void> => {
             try {
                 ctx.task = task;
+                updateLogContext({task: 'capture'});
 
-                let totalScreenshots = await captureScreenshots(ctx);
+                let { capturedScreenshots, output } = await captureScreenshots(ctx);
+                if (capturedScreenshots != ctx.webStaticConfig.length) {
+                    throw new Error(output)
+                }
                 task.title = 'Screenshots captured successfully'
-                task.output = chalk.gray(`total screenshots: ${totalScreenshots}`)
             } catch (error: any) {
+                ctx.log.debug(error);
                 task.output = chalk.gray(`${error.message}`);
                 throw new Error('Capturing screenshots failed');
             }
