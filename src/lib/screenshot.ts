@@ -113,6 +113,7 @@ export async function  captureScreenshots(ctx: Context): Promise<Record<string,a
             if (ctx.options.parallel) await captureScreenshotsAsync(ctx, staticConfig, browsers);
             else await captureScreenshotsSync(ctx, staticConfig, browsers);
 
+            utils.delDir(`screenshots/${staticConfig.name.toLowerCase().replace(/\s/g, '_')}`);
             output += (`${chalk.gray(staticConfig.name)} ${chalk.green('\u{2713}')}\n`);
             ctx.task.output = output;
             capturedScreenshots++;
