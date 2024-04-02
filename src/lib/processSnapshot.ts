@@ -5,6 +5,7 @@ import { chromium, Locator } from "@playwright/test"
 const MAX_RESOURCE_SIZE = 5 * (1024 ** 2); // 5MB
 var ALLOWED_RESOURCES = ['document', 'stylesheet', 'image', 'media', 'font', 'other'];
 const ALLOWED_STATUSES = [200, 201];
+const REQUEST_TIMEOUT = 10000;
 const MIN_VIEWPORT_HEIGHT = 1080;
 
 export default async (snapshot: Snapshot, ctx: Context): Promise<Record<string, any>> => {
@@ -24,7 +25,7 @@ export default async (snapshot: Snapshot, ctx: Context): Promise<Record<string, 
             ctx.config.allowedHostnames.push(new URL(snapshot.url).hostname);
             if (ctx.config.enableJavaScript) ALLOWED_RESOURCES.push('script');
 
-            const response = await page.request.fetch(request);
+            const response = await page.request.fetch(request, { timeout: REQUEST_TIMEOUT });
             const body = await response.body();
             if (!body) {
                 ctx.log.debug(`Handling request ${requestUrl}\n - skipping no response`);
