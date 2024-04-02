@@ -69,10 +69,12 @@ export default (options: Record<string, string>): Context => {
             id: '',
             name: '',
             baseline: false,
-            url: '',
-            projectId: '',
+            url: ''
         },
         args: {},
+        options: {
+            parallel: options.parallel ? true : false
+        },
         cliVersion: version,
         totalSnapshots: -1
     }
