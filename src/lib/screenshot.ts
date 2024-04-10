@@ -14,11 +14,16 @@ async function captureScreenshotsForConfig(
     let pageOptions = { waitUntil: process.env.SMARTUI_PAGE_WAIT_UNTIL_EVENT || 'load' };
     let ssId = name.toLowerCase().replace(/\s/g, '_');
     let context: BrowserContext;
+    let contextOptions: Record<string, any> = {};
     let page: Page;
+    if (browserName == constants.CHROME) contextOptions.userAgent = constants.CHROME_USER_AGENT;
+    else if (browserName == constants.FIREFOX) contextOptions.userAgent = constants.FIREFOX_USER_AGENT;
+    else if (browserName == constants.SAFARI) contextOptions.userAgent = constants.SAFARI_USER_AGENT;
+    else if (browserName == constants.EDGE) contextOptions.userAgent = constants.EDGE_USER_AGENT;
 
     try {
         const browser = browsers[browserName];
-        context = await browser?.newContext();
+        context = await browser?.newContext(contextOptions);
         page = await context?.newPage();
 
         await page?.goto(url.trim(), pageOptions);
