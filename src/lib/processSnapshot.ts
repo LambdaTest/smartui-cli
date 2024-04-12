@@ -1,6 +1,7 @@
 import { Snapshot, Context, ProcessedSnapshot } from "../types.js";
 import { scrollToBottomAndBackToTop, getRenderViewports } from "./utils.js"
 import { chromium, Locator } from "@playwright/test"
+import constants from "./constants.js";
 
 const MAX_RESOURCE_SIZE = 5 * (1024 ** 2); // 5MB
 var ALLOWED_RESOURCES = ['document', 'stylesheet', 'image', 'media', 'font', 'other'];
@@ -12,7 +13,7 @@ export default async (snapshot: Snapshot, ctx: Context): Promise<Record<string, 
     ctx.log.debug(`Processing snapshot ${snapshot.name}`);
 
     if (!ctx.browser) ctx.browser = await chromium.launch({ headless: true });
-    const context = await ctx.browser.newContext()
+    const context = await ctx.browser.newContext({userAgent: constants.CHROME_USER_AGENT})
     const page = await context.newPage();
     let cache: Record<string, any> = {};
 
