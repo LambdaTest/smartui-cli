@@ -24,7 +24,7 @@ export default async (snapshot: Snapshot, ctx: Context): Promise<Record<string, 
 
         try {
             // abort audio/video media requests
-            if (request.resourceType() === 'media' && /\.(mp3|mp4|wav|ogg|webm)$/i.test(request.url())) {
+            if (/\.(mp3|mp4|wav|ogg|webm)$/i.test(request.url())) {
                 throw new Error('resource type mp3/mp4/wav/ogg/webm');
             }
 
