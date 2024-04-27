@@ -23,6 +23,12 @@ export default async (snapshot: Snapshot, ctx: Context): Promise<Record<string, 
         const requestHostname = new URL(requestUrl).hostname;
 
         try {
+            // abort audio/video media requests
+            if (/\.(mp3|mp4|wav|ogg|webm)$/i.test(request.url())) {
+                throw new Error('resource type mp3/mp4/wav/ogg/webm');
+            }
+
+            // handle discovery config
             ctx.config.allowedHostnames.push(new URL(snapshot.url).hostname);
             if (ctx.config.enableJavaScript) ALLOWED_RESOURCES.push('script');
 
@@ -118,15 +124,26 @@ export default async (snapshot: Snapshot, ctx: Context): Promise<Record<string, 
     for (const { viewport, viewportString, fullPage } of renderViewports) {
         await page.setViewportSize({ width: viewport.width, height: viewport.height ||  MIN_VIEWPORT_HEIGHT });
         ctx.log.debug(`Page resized to ${viewport.width}x${viewport.height ||  MIN_VIEWPORT_HEIGHT}`);
+        
+        // navigate to snapshot url once
         if (!navigated) {
-            await page.goto(snapshot.url);
+            // domcontentloaded event is more reliable than load event
+            await page.goto(snapshot.url, { waitUntil: "domcontentloaded"});
+            // adding extra timeout since domcontentloaded event is fired pretty quickly
+            await new Promise(r => setTimeout(r, 1250));
+            if (ctx.config.waitForTimeout) await page.waitForTimeout(ctx.config.waitForTimeout);
             navigated = true;
             ctx.log.debug(`Navigated to ${snapshot.url}`);
         }
         if (fullPage) await page.evaluate(scrollToBottomAndBackToTop);
-        await page.waitForLoadState('networkidle');
-        ctx.log.debug('Network idle 500ms');
 
+        try {
+            await page.waitForLoadState('networkidle', { timeout: 5000 });
+            ctx.log.debug('Network idle 500ms');
+        } catch (error) {
+            ctx.log.debug(`Network idle failed due to ${error}`);
+        }
+        
         // snapshot options
         if (processedOptions.element) {
             let l = await page.locator(processedOptions.element).all()
@@ -161,6 +178,16 @@ export default async (snapshot: Snapshot, ctx: Context): Promise<Record<string, 
 
     await page.close();
     await context.close();
+
+    // add dom resources to cache
+    if (snapshot.dom.resources.length) {
+        for (let resource of snapshot.dom.resources) {
+            cache[resource.url] = {
+                body: resource.content,
+                type: resource.mimetype
+            }
+        }	
+    }
 
     return {
         processedSnapshot: {

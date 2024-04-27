@@ -332,32 +332,35 @@
       for (let video of dom.querySelectorAll('video')) {
         let videoId = video.getAttribute('data-smartui-element-id');
         let cloneEl = clone.querySelector(`[data-smartui-element-id="${videoId}"]`);
-        // if the video already has a poster image, no work for us to do
-        if (video.getAttribute('poster')) {
-          cloneEl.removeAttribute('src');
-          continue;
-        }
-        let canvas = document.createElement('canvas');
-        let width = canvas.width = video.videoWidth;
-        let height = canvas.height = video.videoHeight;
-        let dataUrl;
-        canvas.getContext('2d').drawImage(video, 0, 0, width, height);
-        try {
-          dataUrl = canvas.toDataURL();
-        } catch (e) {
-          warnings.add(`data-smartui-element-id="${videoId}" : ${e.toString()}`);
-        }
 
-        // if the canvas produces a blank image, skip
-        if (!dataUrl || dataUrl === 'data:,') continue;
-
-        // create a resource from the serialized data url
-        // let resource = resourceFromDataURL(videoId, dataUrl);
-        // resources.add(resource);
-
-        // use a data attribute to avoid making a real request
+        // remove video sources
         cloneEl.removeAttribute('src');
-        cloneEl.setAttribute('poster', dataUrl);
+        const sourceEls = cloneEl.querySelectorAll('source');
+        if (sourceEls.length) sourceEls.forEach((sourceEl) => sourceEl.remove());
+        
+        // if the video doesn't have a poster image
+        if (!video.getAttribute('poster')) {
+          let canvas = document.createElement('canvas');
+          let width = canvas.width = video.videoWidth;
+          let height = canvas.height = video.videoHeight;
+          let dataUrl;
+          canvas.getContext('2d').drawImage(video, 0, 0, width, height);
+          try {
+            dataUrl = canvas.toDataURL();
+          } catch (e) {
+            warnings.add(`data-smartui-element-id="${videoId}" : ${e.toString()}`);
+          }
+
+          // if the canvas produces a blank image, skip
+          if (!dataUrl || dataUrl === 'data:,') continue;
+
+          // create a resource from the serialized data url
+          let resource = resourceFromDataURL(videoId, dataUrl);
+          resources.add(resource);
+
+          // set poster attribute to resource url to avoid making a real request
+          cloneEl.setAttribute('poster', resource.url);
+        }
       }
     }
 
