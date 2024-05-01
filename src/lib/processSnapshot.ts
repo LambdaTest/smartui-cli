@@ -12,7 +12,12 @@ const MIN_VIEWPORT_HEIGHT = 1080;
 export default async (snapshot: Snapshot, ctx: Context): Promise<Record<string, any>> => {
     ctx.log.debug(`Processing snapshot ${snapshot.name}`);
 
-    if (!ctx.browser) ctx.browser = await chromium.launch({ headless: true });
+    if (!ctx.browser) {
+        let launchOptions: Record<string, any> = { headless: true }
+        if (ctx.env.HTTP_PROXY || ctx.env.HTTPS_PROXY) launchOptions.proxy = { server: ctx.env.HTTP_PROXY || ctx.env.HTTPS_PROXY };
+        ctx.browser = await chromium.launch(launchOptions);
+        ctx.log.debug(`Chromium launched with options ${JSON.stringify(launchOptions)}`);
+    }
     const context = await ctx.browser.newContext({userAgent: constants.CHROME_USER_AGENT})
     const page = await context.newPage();
     let cache: Record<string, any> = {};

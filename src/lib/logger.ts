@@ -42,7 +42,7 @@ const logger = createLogger({
         	return (info.level === 'info') ? message : `[${contextString}:${info.level}] ` + message;
       	})
     ),
-    transports: [new transports.Console()]
+    transports: [new transports.File({ filename: '.smartui.log' })]
 });
 
 export default logger

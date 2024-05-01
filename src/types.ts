@@ -38,6 +38,9 @@ export interface Env {
     SMARTUI_CLIENT_API_URL: string;
     LT_SDK_LOG_LEVEL: string | undefined;
     LT_SDK_DEBUG: string | undefined;
+    SMARTUI_GIT_INFO_FILEPATH: string | undefined;
+    HTTP_PROXY: string | undefined;
+    HTTPS_PROXY: string | undefined;
     GITHUB_ACTIONS: string | undefined;
 }
 
