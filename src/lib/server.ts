@@ -5,6 +5,7 @@ import { readFileSync } from 'fs'
 import { Context } from '../types.js'
 import processSnapshot from './processSnapshot.js'
 import { validateSnapshot } from './schemaValidation.js'
+import constants from './constants.js';
 
 export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMessage, ServerResponse>> => {
 	
@@ -38,7 +39,7 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 	});
 
 
-	await server.listen();
+	await server.listen({ port: 49152 });
 	// store server's address for SDK
 	let { port } = server.addresses()[0];
 	process.env.SMARTUI_SERVER_ADDRESS = `http://localhost:${port}`;
