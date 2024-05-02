@@ -35,7 +35,7 @@ export default class httpClient {
                         headers: error.response.headers,
                         body: error.response.data
                     })}`);
-                    throw new Error(error.response.data.error?.message);
+                    throw new Error(error.response.data.error?.message || error.response.data.message);
                 }
                 if (error.request) {
                     log.debug(`http request failed: ${error.toJSON()}`);
