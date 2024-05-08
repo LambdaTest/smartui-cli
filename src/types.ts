@@ -31,6 +31,7 @@ export interface Context {
     }
     cliVersion: string;
     totalSnapshots: number;
+    figmaDesignConfig: FigmaDesignConfig;
 }
 
 export interface Env {
@@ -112,3 +113,13 @@ export type WebStaticConfig = Array<{
     url: string;
     waitForTimeout?: number
 }>;
+
+export type FigmaConfigItem = {
+    figma_file_token: string;
+    figma_ids: string[];
+    figma_names: string[];
+};
+
+export type FigmaDesignConfig = {
+    figma_config: FigmaConfigItem[];
+};

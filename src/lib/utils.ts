@@ -125,3 +125,22 @@ export function getRenderViewports(ctx: Context): Array<Record<string,any>> {
         ...mobileRenderViewports[constants.MOBILE_OS_ANDROID]
     ];
 }
+
+export function mapIdToName(children: any) {
+    const idNameMap: Record<string | number, any> = {}; // Add index signature to idNameMap
+    function traverse(children: any[]) {
+        if (!children) return;
+        children.forEach(child => {
+            if (child.children && child.children.length > 0) {
+                child.children.forEach((grandchild: { id: string | number; name: any; children: string | any[]; }) => {
+                    idNameMap[grandchild.id] = grandchild.name; // Only map grandchild IDs and names
+                    if (Array.isArray(grandchild.children) && grandchild.children.length > 0) {
+                        traverse(grandchild.children); // Continue recursively with deeper levels
+                    }
+                });
+            }
+        });
+    }
+    traverse(children);
+    return idNameMap;
+}

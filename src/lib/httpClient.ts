@@ -136,4 +136,33 @@ export default class httpClient {
             }
         }, log)
     }
+
+    getFigmaFilesAndImages(url : string, figmaToken: string ,log: Logger) {
+        return this.request({
+            url: url,
+            method: "GET",
+            headers: {
+                "X-FIGMA-TOKEN": figmaToken
+            },
+        }, log)
+    }
+
+    getImageFromFigmaURLs(url : string ,log: Logger) {
+        return this.request( {
+            url: url,
+            method: "GET",
+            responseType: "arraybuffer",
+          }, log)
+    }
+
+    uploadImagesToSmartUI(data: FormData, log: Logger) {
+        return this.request({
+            url: constants.SMARTUI_API_URL,
+            method: "POST",
+            headers: {
+                Authorization: `Basic ${Buffer.from(`${process.env.LT_USERNAME}:${process.env.LT_ACCESS_KEY}`).toString("base64")}`,
+            },
+            data: data
+        }, log)
+    }
 }
