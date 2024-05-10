@@ -14,8 +14,8 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
                 updateLogContext({task: 'upload-figma'});
 
                 let results = await uploadFigmaDesigns(ctx);
-                if (results.status != 'success') {
-                    throw new Error('Uploading Figma designs failed 1');
+                if (results != 'success') {
+                    throw new Error('Uploading Figma designs failed');
                   }
                 task.title = 'Figma designs images uploaded successfully to SmartUI';
                 ctx.log.debug(`Figma designs processed: ${results}`);

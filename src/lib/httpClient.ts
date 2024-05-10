@@ -137,32 +137,14 @@ export default class httpClient {
         }, log)
     }
 
-    getFigmaFilesAndImages(url : string, figmaToken: string ,log: Logger) {
+    getFigmaFilesAndImages(requestBody: any, log: Logger) {
         return this.request({
-            url: url,
-            method: "GET",
-            headers: {
-                "X-FIGMA-TOKEN": figmaToken
-            },
-        }, log)
-    }
-
-    getImageFromFigmaURLs(url : string ,log: Logger) {
-        return this.request( {
-            url: url,
-            method: "GET",
-            responseType: "arraybuffer",
-          }, log)
-    }
-
-    uploadImagesToSmartUI(data: FormData, log: Logger) {
-        return this.request({
-            url: constants.SMARTUI_API_URL,
+            url: "http://localhost:3000/visualui/1.0/uploadfigma",
             method: "POST",
             headers: {
-                Authorization: `Basic ${Buffer.from(`${process.env.LT_USERNAME}:${process.env.LT_ACCESS_KEY}`).toString("base64")}`,
+                "Content-Type": "application/json",
             },
-            data: data
-        }, log)
-    }
+            data: JSON.stringify(requestBody) // Sending requestBody in the request body
+        }, log);
+      }
 }
