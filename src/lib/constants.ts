@@ -237,8 +237,8 @@ export default {
         'iPhone XS Max': { os: 'ios', viewport: {width: 414, height: 896}},
     },
 
-    FIGMA_API : `https://api.figma.com/v1/`,
-    SMARTUI_API_URL : 'https://api.lambdatest.com/automation/smart-ui/v2/upload',
+    FIGMA_API : 'https://api.figma.com/v1/',
+    LSRS_API: 'https://stage-api.lambdatestinternal.com/visualui/1.0/screenshot/save',
     DEFAULT_FIGMA_CONFIG: {
         "figma_config": [
             {
