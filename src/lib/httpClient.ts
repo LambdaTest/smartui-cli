@@ -139,7 +139,7 @@ export default class httpClient {
 
     getFigmaFilesAndImages(requestBody: any, log: Logger) {
         return this.request({
-            url: "http://localhost:3000/visualui/1.0/uploadfigma",
+            url: "https://stage-api.lambdatestinternal.com/visualui/1.0/uploadfigma",
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
