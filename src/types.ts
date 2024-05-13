@@ -43,6 +43,7 @@ export interface Env {
     HTTP_PROXY: string | undefined;
     HTTPS_PROXY: string | undefined;
     GITHUB_ACTIONS: string | undefined;
+    FIGMA_TOKEN: string | undefined;
 }
 
 export interface Snapshot {

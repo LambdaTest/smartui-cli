@@ -238,7 +238,6 @@ export default {
     },
 
     FIGMA_API : 'https://api.figma.com/v1/',
-    LSRS_API: 'https://stage-api.lambdatestinternal.com/visualui/1.0/screenshot/save',
     DEFAULT_FIGMA_CONFIG: {
         "figma_config": [
             {

@@ -3,13 +3,14 @@ import chalk from "chalk";
 import { mapIdToName } from "./utils.js";
 import constants from "./constants.js";
 
-export default async (ctx: Context): Promise<string> => { // Return type changed to string[]
+export default async (ctx: Context): Promise<string> => {
   const figmaConfigs = ctx.figmaDesignConfig.figma_config;
   let results = "";
+  let figmaFileToken = '';
 
   for (const config of figmaConfigs) {
-    const figmaToken = process.env.FIGMA_TOKEN;
 
+    figmaFileToken = config.figma_file_token;
     let queryParams = "";
     if (config.figma_ids && config.figma_ids.length > 0) {
       const fileIds = config.figma_ids.join(",");
@@ -21,20 +22,11 @@ export default async (ctx: Context): Promise<string> => { // Return type changed
       authToken = `Basic ${Buffer.from(`${process.env.LT_USERNAME}:${process.env.LT_ACCESS_KEY}`).toString("base64")}`
     }
 
-    // Construct the request body
-    const requestBody = {
-      figma_file_token: config.figma_file_token,
-      figma_token: figmaToken,
-      query_params: queryParams,
-      auth: authToken,
-      project_token: ctx.env.PROJECT_TOKEN
-    };
+    const responseData = await ctx.client.getFigmaFilesAndImages(figmaFileToken, ctx.env.FIGMA_TOKEN, queryParams, authToken, ctx.log)
 
-      const responseData = await ctx.client.getFigmaFilesAndImages(requestBody, ctx.log)
-
-      if (responseData.data.message == "success") {
-        results = responseData.data.message; 
-      }
+    if (responseData.data.message == "success") {
+      results = responseData.data.message; 
+    }
   }
 
   return results;

@@ -22,11 +22,11 @@ configStatic
     })
 
 configFigma
-.name('config:create-figma')
-.description('Create figma designs config file')
-.argument('[filepath]', 'Optional config filepath')
-.action(async function(filepath, options) {
-    createFigmaConfig(filepath);
-})
+    .name('config:create-figma')
+    .description('Create figma designs config file')
+    .argument('[filepath]', 'Optional config filepath')
+    .action(async function(filepath, options) {
+        createFigmaConfig(filepath);
+    })
 
 

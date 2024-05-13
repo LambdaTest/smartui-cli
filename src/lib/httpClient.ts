@@ -1,7 +1,7 @@
 import fs from 'fs';
 import FormData from 'form-data';
 import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
-import { Env, ProcessedSnapshot, Git, Build } from '../types.js';
+import { Env, ProcessedSnapshot, Git, Build, Context } from '../types.js';
 import constants from './constants.js';
 import type { Logger } from 'winston'
 import pkgJSON from './../../package.json'
@@ -137,14 +137,20 @@ export default class httpClient {
         }, log)
     }
 
-    getFigmaFilesAndImages(requestBody: any, log: Logger) {
+    getFigmaFilesAndImages(figmaFileToken: string, figmaToken: String | undefined, queryParams: string, authToken: string, log: Logger) {
+    const requestBody = {
+        figma_file_token: figmaFileToken,
+        figma_token: figmaToken,
+        query_params: queryParams,
+        auth: authToken
+    };
         return this.request({
-            url: "https://stage-api.lambdatestinternal.com/visualui/1.0/uploadfigma",
+            url: "/uploadfigma",
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
             },
-            data: JSON.stringify(requestBody) // Sending requestBody in the request body
+            data: JSON.stringify(requestBody)
         }, log);
-      }
+    }
 }
