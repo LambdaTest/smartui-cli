@@ -44,6 +44,8 @@ export interface Env {
     HTTPS_PROXY: string | undefined;
     GITHUB_ACTIONS: string | undefined;
     FIGMA_TOKEN: string | undefined;
+    LT_USERNAME : string | undefined;
+    LT_ACCESS_KEY : string | undefined;
 }
 
 export interface Snapshot {

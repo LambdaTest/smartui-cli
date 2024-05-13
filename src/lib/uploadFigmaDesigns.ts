@@ -18,8 +18,8 @@ export default async (ctx: Context): Promise<string> => {
     }
 
     let authToken = "";
-    if (process.env.LT_USERNAME != null && process.env.LT_ACCESS_KEY != null) {
-      authToken = `Basic ${Buffer.from(`${process.env.LT_USERNAME}:${process.env.LT_ACCESS_KEY}`).toString("base64")}`
+    if (ctx.env.LT_USERNAME != null && ctx.env.LT_ACCESS_KEY != null) {
+      authToken = `Basic ${Buffer.from(`${ctx.env.LT_USERNAME}:${ctx.env.LT_ACCESS_KEY}`).toString("base64")}`
     }
 
     const responseData = await ctx.client.getFigmaFilesAndImages(figmaFileToken, ctx.env.FIGMA_TOKEN, queryParams, authToken, ctx.log)

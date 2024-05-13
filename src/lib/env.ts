@@ -10,7 +10,9 @@ export default (): Env => {
         HTTP_PROXY,
         HTTPS_PROXY,
         GITHUB_ACTIONS,
-        FIGMA_TOKEN
+        FIGMA_TOKEN,
+        LT_USERNAME,
+        LT_ACCESS_KEY
     } = process.env
         
     return {
@@ -22,6 +24,8 @@ export default (): Env => {
         HTTP_PROXY,
         HTTPS_PROXY,
         GITHUB_ACTIONS,
-        FIGMA_TOKEN
+        FIGMA_TOKEN,
+        LT_USERNAME,
+        LT_ACCESS_KEY
     }
 }
