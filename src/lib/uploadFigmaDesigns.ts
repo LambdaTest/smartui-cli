@@ -1,7 +1,4 @@
 import { Context } from "../types.js";
-import chalk from "chalk";
-import { mapIdToName } from "./utils.js";
-import constants from "./constants.js";
 
 export default async (ctx: Context): Promise<string> => {
   const figmaConfigs = ctx.figmaDesignConfig.figma_config;
