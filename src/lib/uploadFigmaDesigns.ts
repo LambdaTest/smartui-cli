@@ -16,11 +16,8 @@ export default async (ctx: Context): Promise<string> => {
       const fileIds = config.figma_ids.join(",");
       queryParams += `&ids=${fileIds}`;
     }
-
-    let authToken = "";
-    if (ctx.env.LT_USERNAME != null && ctx.env.LT_ACCESS_KEY != null) {
-      authToken = `Basic ${Buffer.from(`${ctx.env.LT_USERNAME}:${ctx.env.LT_ACCESS_KEY}`).toString("base64")}`
-    }
+    
+    const authToken = `Basic ${Buffer.from(`${ctx.env.LT_USERNAME}:${ctx.env.LT_ACCESS_KEY}`).toString("base64")}`
 
     const responseData = await ctx.client.getFigmaFilesAndImages(figmaFileToken, ctx.env.FIGMA_TOKEN, queryParams, authToken, ctx.log)
 
