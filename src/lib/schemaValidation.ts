@@ -1,4 +1,4 @@
-import { Snapshot, WebStaticConfig } from '../types.js'
+import { Snapshot, WebStaticConfig, FigmaDesignConfig } from '../types.js'
 import Ajv, { JSONSchemaType } from 'ajv'
 import addErrors from 'ajv-errors'
 import constants from './constants.js'
@@ -272,6 +272,64 @@ const SnapshotSchema: JSONSchemaType<Snapshot> = {
     errorMessage: "Invalid snapshot"
 }
 
+const FigmaDesignConfigSchema: JSONSchemaType<FigmaDesignConfig> = {
+    type: "object",
+    properties: {
+        figma_config: {
+            type: "array",
+            items: {
+                type: "object",
+                properties: {
+                    figma_file_token: {
+                        type: "string",
+                        minLength: 1,
+                        errorMessage: "figma_file_token is mandatory and cannot be empty"
+                    },
+                    figma_ids: {
+                        type: "array",
+                        items: {
+                            type: "string",
+                            minLength: 1,
+                            errorMessage: "Each ID in figma_ids must be a non-empty string"
+                        },
+                        minItems: 1,
+                        uniqueItems: true,
+                        errorMessage: {
+                            type: "figma_ids must be an array of strings",
+                            minItems: "figma_ids cannot be empty",
+                            uniqueItems: "figma_ids must contain unique values"
+                        }
+                    },
+                    figma_names: {
+                        type: "array",
+                        items: {
+                            type: "string",
+                            minLength: 1,
+                            errorMessage: "Each name in figma_names must be a non-empty string"
+                        },
+                        minItems: 1,
+                        uniqueItems: true,
+                        errorMessage: {
+                            type: "figma_names must be an array of strings",
+                            minItems: "figma_names cannot be empty",
+                            uniqueItems: "figma_names must contain unique values"
+                        }
+                    }
+                },
+                required: ["figma_file_token"],
+                additionalProperties: false
+            },
+            uniqueItems: true,
+            errorMessage: {
+                uniqueItems: "Each entry in the Figma design configuration must be unique"
+            }
+        }
+    },
+    required: ["figma_config"],
+    additionalProperties: false
+};
+
 export const validateConfig = ajv.compile(ConfigSchema);
 export const validateWebStaticConfig = ajv.compile(WebStaticConfigSchema);
 export const validateSnapshot = ajv.compile(SnapshotSchema);
+export const validateFigmaDesignConfig = ajv.compile(FigmaDesignConfigSchema);
