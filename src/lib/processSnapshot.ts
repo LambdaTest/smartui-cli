@@ -3,7 +3,7 @@ import { scrollToBottomAndBackToTop, getRenderViewports } from "./utils.js"
 import { chromium, Locator } from "@playwright/test"
 import constants from "./constants.js";
 
-const MAX_RESOURCE_SIZE = 5 * (1024 ** 2); // 5MB
+const MAX_RESOURCE_SIZE = 10 * (1024 ** 2); // 10MB
 var ALLOWED_RESOURCES = ['document', 'stylesheet', 'image', 'media', 'font', 'other'];
 const ALLOWED_STATUSES = [200, 201];
 const REQUEST_TIMEOUT = 10000;
