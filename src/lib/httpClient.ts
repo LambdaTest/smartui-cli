@@ -137,12 +137,14 @@ export default class httpClient {
         }, log)
     }
 
-    getFigmaFilesAndImages(figmaFileToken: string, figmaToken: String | undefined, queryParams: string, authToken: string, log: Logger) {
+    getFigmaFilesAndImages(figmaFileToken: string, figmaToken: String | undefined, queryParams: string, authToken: string, depth: number, git : any,log: Logger) {
     const requestBody = {
         figma_file_token: figmaFileToken,
         figma_token: figmaToken,
         query_params: queryParams,
-        auth: authToken
+        auth: authToken,
+        depth: depth,
+        git: git
     };
         return this.request({
             url: "/uploadfigma",

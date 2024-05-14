@@ -1,6 +1,7 @@
 import { Context } from "../types.js";
 
 export default async (ctx: Context): Promise<string> => {
+  const depth = ctx.figmaDesignConfig.depth;
   const figmaConfigs = ctx.figmaDesignConfig.figma_config;
   let results = "";
   let figmaFileToken = '';
@@ -16,7 +17,7 @@ export default async (ctx: Context): Promise<string> => {
     
     const authToken = `Basic ${Buffer.from(`${ctx.env.LT_USERNAME}:${ctx.env.LT_ACCESS_KEY}`).toString("base64")}`
 
-    const responseData = await ctx.client.getFigmaFilesAndImages(figmaFileToken, ctx.env.FIGMA_TOKEN, queryParams, authToken, ctx.log)
+    const responseData = await ctx.client.getFigmaFilesAndImages(figmaFileToken, ctx.env.FIGMA_TOKEN, queryParams, authToken, depth, ctx.git,ctx.log)
 
     if (responseData.data.message == "success") {
       results = responseData.data.message; 

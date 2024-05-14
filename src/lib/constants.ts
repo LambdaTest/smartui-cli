@@ -239,16 +239,13 @@ export default {
 
     FIGMA_API : 'https://api.figma.com/v1/',
     DEFAULT_FIGMA_CONFIG: {
+        "depth": 2,
         "figma_config": [
             {
             "figma_file_token": "token_for_first_figma_file",
             "figma_ids": [
                 "id1",
                 "id2"
-            ],
-            "figma_names": [
-                "Name1",
-                "Name2"
             ]
             },
             {
@@ -256,10 +253,6 @@ export default {
             "figma_ids": [
                 "id3",
                 "id4"
-            ],
-            "figma_names": [
-                "name3",
-                "name4"
             ]
             }
         ]

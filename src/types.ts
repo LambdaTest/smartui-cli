@@ -120,9 +120,9 @@ export type WebStaticConfig = Array<{
 export type FigmaConfigItem = {
     figma_file_token: string;
     figma_ids: string[];
-    figma_names: string[];
 };
 
 export type FigmaDesignConfig = {
+    depth: number;
     figma_config: FigmaConfigItem[];
 };
