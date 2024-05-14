@@ -38,6 +38,7 @@ command
         let tasks = new Listr<Context>(
             [
                 auth(ctx),
+                getGitInfo(ctx),
                 uploadFigmaDesigns(ctx)
             ],
             {

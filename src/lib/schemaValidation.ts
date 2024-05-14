@@ -275,6 +275,11 @@ const SnapshotSchema: JSONSchemaType<Snapshot> = {
 const FigmaDesignConfigSchema: JSONSchemaType<FigmaDesignConfig> = {
     type: "object",
     properties: {
+        depth: {
+            type: "integer",
+            minimum: 1,
+            errorMessage: "Depth must be an integer and greater than 1"
+        },
         figma_config: {
             type: "array",
             items: {
@@ -298,21 +303,6 @@ const FigmaDesignConfigSchema: JSONSchemaType<FigmaDesignConfig> = {
                             type: "figma_ids must be an array of strings",
                             minItems: "figma_ids cannot be empty",
                             uniqueItems: "figma_ids must contain unique values"
-                        }
-                    },
-                    figma_names: {
-                        type: "array",
-                        items: {
-                            type: "string",
-                            minLength: 1,
-                            errorMessage: "Each name in figma_names must be a non-empty string"
-                        },
-                        minItems: 1,
-                        uniqueItems: true,
-                        errorMessage: {
-                            type: "figma_names must be an array of strings",
-                            minItems: "figma_names cannot be empty",
-                            uniqueItems: "figma_names must contain unique values"
                         }
                     }
                 },
