@@ -9,7 +9,7 @@ import constants from './constants.js';
 
 export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMessage, ServerResponse>> => {
 	
-	const server: FastifyInstance<Server, IncomingMessage, ServerResponse> = fastify({ logger: false, bodyLimit: 10000000 });
+	const server: FastifyInstance<Server, IncomingMessage, ServerResponse> = fastify({ logger: ctx.env.LT_SDK_DEBUG ? true : false, bodyLimit: 10000000 });
 	const opts: RouteShorthandOptions = {};
 	const SMARTUI_DOM = readFileSync(path.resolve(__dirname, 'dom-serializer.js'), 'utf-8');
 
