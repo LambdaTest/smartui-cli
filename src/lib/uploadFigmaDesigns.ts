@@ -12,7 +12,7 @@ export default async (ctx: Context): Promise<string> => {
     let queryParams = "";
     if (config.figma_ids && config.figma_ids.length > 0) {
       const fileIds = config.figma_ids.join(",");
-      queryParams += `&ids=${fileIds}`;
+      queryParams += `?ids=${fileIds}`;
     }
     
     const authToken = `Basic ${Buffer.from(`${ctx.env.LT_USERNAME}:${ctx.env.LT_ACCESS_KEY}`).toString("base64")}`
