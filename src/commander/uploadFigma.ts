@@ -17,6 +17,7 @@ command
     .name('upload-figma')
     .description('Capture screenshots of static sites')
     .argument('<file>', 'figma design config file')
+    .option('--markBaseline', 'Mark the uploaded images as baseline')
     .action(async function(file, _, command) {
         let ctx: Context = ctxInit(command.optsWithGlobals());
 

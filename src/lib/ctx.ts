@@ -73,7 +73,8 @@ export default (options: Record<string, string>): Context => {
         },
         args: {},
         options: {
-            parallel: options.parallel ? true : false
+            parallel: options.parallel ? true : false,
+            markBaseline: options.markBaseline ? true : false
         },
         cliVersion: version,
         totalSnapshots: -1

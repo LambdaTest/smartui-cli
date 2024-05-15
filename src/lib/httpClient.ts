@@ -137,13 +137,14 @@ export default class httpClient {
         }, log)
     }
 
-    getFigmaFilesAndImages(figmaFileToken: string, figmaToken: String | undefined, queryParams: string, authToken: string, depth: number, git : any,log: Logger) {
+    getFigmaFilesAndImages(figmaFileToken: string, figmaToken: String | undefined, queryParams: string, authToken: string, depth: number, git : any, markBaseline: boolean,log: Logger) {
     const requestBody = {
         figma_file_token: figmaFileToken,
         figma_token: figmaToken,
         query_params: queryParams,
         auth: authToken,
         depth: depth,
+        markBaseline: markBaseline,
         git: git
     };
         return this.request({

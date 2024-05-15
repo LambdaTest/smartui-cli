@@ -27,7 +27,8 @@ export interface Context {
         execCommand?: Array<string>
     }
     options: {
-        parallel?: boolean
+        parallel?: boolean,
+        markBaseline?: boolean,
     }
     cliVersion: string;
     totalSnapshots: number;
