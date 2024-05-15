@@ -29,6 +29,7 @@ export interface Context {
     options: {
         parallel?: boolean,
         markBaseline?: boolean,
+        buildName?: string,
     }
     cliVersion: string;
     totalSnapshots: number;

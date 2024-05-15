@@ -6,7 +6,7 @@ export default async (ctx: Context): Promise<string> => {
   let results = "";
   let figmaFileToken = '';
   const markBaseline = ctx.options.markBaseline;
-
+  const buildName = ctx.options.buildName;
 
   for (const config of figmaConfigs) {
 
@@ -19,7 +19,7 @@ export default async (ctx: Context): Promise<string> => {
     
     const authToken = `Basic ${Buffer.from(`${ctx.env.LT_USERNAME}:${ctx.env.LT_ACCESS_KEY}`).toString("base64")}`
 
-    const responseData = await ctx.client.getFigmaFilesAndImages(figmaFileToken, ctx.env.FIGMA_TOKEN, queryParams, authToken, depth, ctx.git, markBaseline, ctx.log)
+    const responseData = await ctx.client.getFigmaFilesAndImages(figmaFileToken, ctx.env.FIGMA_TOKEN, queryParams, authToken, depth, markBaseline, buildName ,ctx.log);
 
     if (responseData.data.message == "success") {
       results = responseData.data.message; 

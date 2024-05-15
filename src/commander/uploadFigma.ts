@@ -18,6 +18,7 @@ command
     .description('Capture screenshots of static sites')
     .argument('<file>', 'figma design config file')
     .option('--markBaseline', 'Mark the uploaded images as baseline')
+    .option('--buildName <buildName>' , 'Name of the build')
     .action(async function(file, _, command) {
         let ctx: Context = ctxInit(command.optsWithGlobals());
 
@@ -39,7 +40,6 @@ command
         let tasks = new Listr<Context>(
             [
                 auth(ctx),
-                getGitInfo(ctx),
                 uploadFigmaDesigns(ctx)
             ],
             {
