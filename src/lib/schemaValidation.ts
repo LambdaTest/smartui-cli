@@ -277,7 +277,7 @@ const FigmaDesignConfigSchema: JSONSchemaType<FigmaDesignConfig> = {
     properties: {
         depth: {
             type: "integer",
-            minimum: 1,
+            minimum: 2,
             errorMessage: "Depth must be an integer and greater than 1"
         },
         figma_config: {
