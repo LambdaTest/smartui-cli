@@ -247,13 +247,6 @@ export default {
                 "id1",
                 "id2"
             ]
-            },
-            {
-            "figma_file_token": "token_for_second_figma_file",
-            "figma_ids": [
-                "id3",
-                "id4"
-            ]
             }
         ]
     }
