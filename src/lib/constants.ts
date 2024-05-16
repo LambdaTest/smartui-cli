@@ -235,5 +235,19 @@ export default {
         'iPhone XR': { os: 'ios', viewport: {width: 414, height: 896}},
         'iPhone XS': { os: 'ios', viewport: {width: 375, height: 812}},
         'iPhone XS Max': { os: 'ios', viewport: {width: 414, height: 896}},
+    },
+
+    FIGMA_API : 'https://api.figma.com/v1/',
+    DEFAULT_FIGMA_CONFIG: {
+        "depth": 2,
+        "figma_config": [
+            {
+            "figma_file_token": "token_for_first_figma_file",
+            "figma_ids": [
+                "id1",
+                "id2"
+            ]
+            }
+        ]
     }
 }
