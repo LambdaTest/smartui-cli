@@ -12,7 +12,9 @@ export default (): Env => {
         GITHUB_ACTIONS,
         FIGMA_TOKEN,
         LT_USERNAME,
-        LT_ACCESS_KEY
+        LT_ACCESS_KEY,
+        BASELINE_BRANCH,
+        CURRENT_BRANCH
     } = process.env
         
     return {
@@ -26,6 +28,8 @@ export default (): Env => {
         GITHUB_ACTIONS,
         FIGMA_TOKEN,
         LT_USERNAME,
-        LT_ACCESS_KEY
+        LT_ACCESS_KEY,
+        BASELINE_BRANCH,
+        CURRENT_BRANCH,
     }
 }

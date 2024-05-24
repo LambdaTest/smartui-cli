@@ -4,10 +4,22 @@ import getGitInfo, { isGitRepo } from '../lib/git.js'
 import chalk from 'chalk';
 
 export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRendererFactory>  =>  {
-    return {
+     return {
         title: `Fetching git repo details`,
         skip: (ctx): string => {
-            return (!isGitRepo() && !ctx.env.SMARTUI_GIT_INFO_FILEPATH) ? '[SKIPPED] Fetching git repo details; not a git repo' : '';
+            if (!isGitRepo() && !ctx.env.SMARTUI_GIT_INFO_FILEPATH) {
+                return '[SKIPPED] Fetching git repo details; not a git repo';
+            }
+
+            if (ctx.env.BASELINE_BRANCH && ctx.env.BASELINE_BRANCH.trim() === '') {
+                return 'Error: The environment variable BASELINE_BRANCH cannot be empty.';
+            }
+
+             if (ctx.env.CURRENT_BRANCH && ctx.env.CURRENT_BRANCH.trim() === '') {
+                return 'Error: The environment variable CURRENT_BRANCH cannot be empty.';
+            }
+
+            return '';
         },
         task: async (ctx, task): Promise<void> => {
             try {

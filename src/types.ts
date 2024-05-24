@@ -48,6 +48,8 @@ export interface Env {
     FIGMA_TOKEN: string | undefined;
     LT_USERNAME : string | undefined;
     LT_ACCESS_KEY : string | undefined;
+    BASELINE_BRANCH: string | undefined;
+    CURRENT_BRANCH: string | undefined;
 }
 
 export interface Snapshot {
@@ -93,6 +95,7 @@ export interface Git {
     commitAuthor: string;
     commitMessage: string;
     githubURL?: string;
+    baselineBranch?: string;
 }
 
 export interface Build {
