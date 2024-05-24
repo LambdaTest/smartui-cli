@@ -9,7 +9,10 @@ export default (): Env => {
         SMARTUI_GIT_INFO_FILEPATH,
         HTTP_PROXY,
         HTTPS_PROXY,
-        GITHUB_ACTIONS
+        GITHUB_ACTIONS,
+        FIGMA_TOKEN,
+        LT_USERNAME,
+        LT_ACCESS_KEY
     } = process.env
         
     return {
@@ -20,6 +23,9 @@ export default (): Env => {
         SMARTUI_GIT_INFO_FILEPATH,
         HTTP_PROXY,
         HTTPS_PROXY,
-        GITHUB_ACTIONS
+        GITHUB_ACTIONS,
+        FIGMA_TOKEN,
+        LT_USERNAME,
+        LT_ACCESS_KEY
     }
 }

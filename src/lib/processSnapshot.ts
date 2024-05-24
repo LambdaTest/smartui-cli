@@ -3,7 +3,7 @@ import { scrollToBottomAndBackToTop, getRenderViewports } from "./utils.js"
 import { chromium, Locator } from "@playwright/test"
 import constants from "./constants.js";
 
-const MAX_RESOURCE_SIZE = 10 * (1024 ** 2); // 10MB
+const MAX_RESOURCE_SIZE = 15 * (1024 ** 2); // 15MB
 var ALLOWED_RESOURCES = ['document', 'stylesheet', 'image', 'media', 'font', 'other'];
 const ALLOWED_STATUSES = [200, 201];
 const REQUEST_TIMEOUT = 10000;
@@ -50,7 +50,7 @@ export default async (snapshot: Snapshot, ctx: Context): Promise<Record<string, 
             } else if (cache[requestUrl]) {
                 ctx.log.debug(`Handling request ${requestUrl}\n - skipping already cached resource`);
             } else if (body.length > MAX_RESOURCE_SIZE) {
-                ctx.log.debug(`Handling request ${requestUrl}\n - skipping resource larger than 5MB`);
+                ctx.log.debug(`Handling request ${requestUrl}\n - skipping resource larger than 15MB`);
             } else if (!ALLOWED_STATUSES.includes(response.status())) {
                 ctx.log.debug(`Handling request ${requestUrl}\n - skipping disallowed status [${response.status()}]`);
             } else if (!ALLOWED_RESOURCES.includes(request.resourceType())) {

@@ -27,10 +27,13 @@ export interface Context {
         execCommand?: Array<string>
     }
     options: {
-        parallel?: boolean
+        parallel?: boolean,
+        markBaseline?: boolean,
+        buildName?: string,
     }
     cliVersion: string;
     totalSnapshots: number;
+    figmaDesignConfig: FigmaDesignConfig;
 }
 
 export interface Env {
@@ -42,6 +45,9 @@ export interface Env {
     HTTP_PROXY: string | undefined;
     HTTPS_PROXY: string | undefined;
     GITHUB_ACTIONS: string | undefined;
+    FIGMA_TOKEN: string | undefined;
+    LT_USERNAME : string | undefined;
+    LT_ACCESS_KEY : string | undefined;
 }
 
 export interface Snapshot {
@@ -112,3 +118,13 @@ export type WebStaticConfig = Array<{
     url: string;
     waitForTimeout?: number
 }>;
+
+export type FigmaConfigItem = {
+    figma_file_token: string;
+    figma_ids: string[];
+};
+
+export type FigmaDesignConfig = {
+    depth: number;
+    figma_config: FigmaConfigItem[];
+};
