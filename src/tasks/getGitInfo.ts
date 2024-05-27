@@ -7,21 +7,12 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
      return {
         title: `Fetching git repo details`,
         skip: (ctx): string => {
-            if (!isGitRepo() && !ctx.env.SMARTUI_GIT_INFO_FILEPATH) {
-                return '[SKIPPED] Fetching git repo details; not a git repo';
-            }
-
-            if (ctx.env.BASELINE_BRANCH && ctx.env.BASELINE_BRANCH.trim() === '') {
-                return 'Error: The environment variable BASELINE_BRANCH cannot be empty.';
-            }
-
-             if (ctx.env.CURRENT_BRANCH && ctx.env.CURRENT_BRANCH.trim() === '') {
-                return 'Error: The environment variable CURRENT_BRANCH cannot be empty.';
-            }
-
-            return '';
+            return (!isGitRepo() && !ctx.env.SMARTUI_GIT_INFO_FILEPATH) ? '[SKIPPED] Fetching git repo details; not a git repo' : '';
         },
         task: async (ctx, task): Promise<void> => {
+            if (ctx.env.CURRENT_BRANCH && ctx.env.CURRENT_BRANCH.trim() === '') {
+                throw new Error('Error: The environment variable CURRENT_BRANCH cannot be empty.');
+            }
             try {
                 ctx.git = getGitInfo(ctx);
                 task.output = chalk.gray(`branch: ${ctx.git.branch}, commit: ${ctx.git.commitId}, author: ${ctx.git.commitAuthor}`);
