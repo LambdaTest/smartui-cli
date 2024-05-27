@@ -4,7 +4,7 @@ import getGitInfo, { isGitRepo } from '../lib/git.js'
 import chalk from 'chalk';
 
 export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRendererFactory>  =>  {
-     return {
+    return {
         title: `Fetching git repo details`,
         skip: (ctx): string => {
             return (!isGitRepo() && !ctx.env.SMARTUI_GIT_INFO_FILEPATH) ? '[SKIPPED] Fetching git repo details; not a git repo' : '';
