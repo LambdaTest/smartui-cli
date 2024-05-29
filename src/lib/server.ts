@@ -25,17 +25,36 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 
 	// upload snpashot
 	server.post('/snapshot', opts, async (request, reply) => {
+		let replyCode: number;
+		let replyBody: Record<string, any>;
+
 		try {
 			let { snapshot, testType } = request.body;
 			if (!validateSnapshot(snapshot)) throw new Error(validateSnapshot.errors[0].message);
 			let { processedSnapshot, warnings } = await processSnapshot(snapshot, ctx);
 			await ctx.client.uploadSnapshot(ctx.build.id, processedSnapshot, testType, ctx.log);
-
-			ctx.totalSnapshots++
-			reply.code(200).send({data: { message: "success", warnings }});
+			ctx.totalSnapshots++;
+			replyCode = 200;
+			replyBody = { data: { message: "success", warnings }};
 		} catch (error: any) {
-			return reply.code(500).send({ error: { message: error.message}});
+			ctx.log.debug(`snapshot failed; ${error}`)
+			replyCode = 500;
+			replyBody = { error: { message: error.message }}
 		}
+
+		// Close open browser contexts and pages
+		if (ctx.browser) {
+			for (let context of ctx.browser.contexts()) {
+				for (let page of context.pages()) {
+					await page.close();
+					ctx.log.debug(`Closed browser page`);
+				}
+				await context.close();
+				ctx.log.debug(`Closed browser context`);
+			}
+		}
+		
+		return reply.code(replyCode).send(replyBody);
 	});
 
 

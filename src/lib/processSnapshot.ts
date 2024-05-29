@@ -12,13 +12,18 @@ const MIN_VIEWPORT_HEIGHT = 1080;
 export default async (snapshot: Snapshot, ctx: Context): Promise<Record<string, any>> => {
     ctx.log.debug(`Processing snapshot ${snapshot.name}`);
 
+    let launchOptions: Record<string, any> = { headless: true }
+    let contextOptions: Record<string, any> = {
+        javaScriptEnabled: ctx.config.enableJavaScript,
+        userAgent: constants.CHROME_USER_AGENT,
+    }
     if (!ctx.browser) {
-        let launchOptions: Record<string, any> = { headless: true }
         if (ctx.env.HTTP_PROXY || ctx.env.HTTPS_PROXY) launchOptions.proxy = { server: ctx.env.HTTP_PROXY || ctx.env.HTTPS_PROXY };
         ctx.browser = await chromium.launch(launchOptions);
         ctx.log.debug(`Chromium launched with options ${JSON.stringify(launchOptions)}`);
     }
-    const context = await ctx.browser.newContext({userAgent: constants.CHROME_USER_AGENT})
+    const context = await ctx.browser.newContext(contextOptions);
+    ctx.log.debug(`Browser context created with options ${JSON.stringify(contextOptions)}`);
     const page = await context.newPage();
     let cache: Record<string, any> = {};
 
@@ -132,15 +137,21 @@ export default async (snapshot: Snapshot, ctx: Context): Promise<Record<string, 
         
         // navigate to snapshot url once
         if (!navigated) {
-            // domcontentloaded event is more reliable than load event
-            await page.goto(snapshot.url, { waitUntil: "domcontentloaded"});
-            // adding extra timeout since domcontentloaded event is fired pretty quickly
-            await new Promise(r => setTimeout(r, 1250));
-            if (ctx.config.waitForTimeout) await page.waitForTimeout(ctx.config.waitForTimeout);
-            navigated = true;
-            ctx.log.debug(`Navigated to ${snapshot.url}`);
+            try {
+                // domcontentloaded event is more reliable than load event
+                await page.goto(snapshot.url, { waitUntil: "domcontentloaded"});
+                // adding extra timeout since domcontentloaded event is fired pretty quickly
+                await new Promise(r => setTimeout(r, 1250));
+                if (ctx.config.waitForTimeout) await page.waitForTimeout(ctx.config.waitForTimeout);
+                navigated = true;
+                ctx.log.debug(`Navigated to ${snapshot.url}`);
+            } catch (error: any) {
+                ctx.log.debug(`Navigation to discovery page failed; ${error}`)
+                throw new Error(error.message)
+            }
+            
         }
-        if (fullPage) await page.evaluate(scrollToBottomAndBackToTop);
+        if (ctx.config.enableJavaScript && fullPage) await page.evaluate(scrollToBottomAndBackToTop);
 
         try {
             await page.waitForLoadState('networkidle', { timeout: 5000 });
@@ -180,9 +191,6 @@ export default async (snapshot: Snapshot, ctx: Context): Promise<Record<string, 
             }
         }
     }
-
-    await page.close();
-    await context.close();
 
     // add dom resources to cache
     if (snapshot.dom.resources.length) {
