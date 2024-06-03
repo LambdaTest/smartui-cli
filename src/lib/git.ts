@@ -31,11 +31,12 @@ export default (ctx: Context): Git => {
 		let gitInfo = JSON.parse(fs.readFileSync(ctx.env.SMARTUI_GIT_INFO_FILEPATH, 'utf-8'));
 
 		return {
-			branch: gitInfo.branch || '',
+			branch: ctx.env.CURRENT_BRANCH || gitInfo.branch || '',
 			commitId: gitInfo.commit_id.slice(0,6) || '',
 			commitMessage: gitInfo.commit_body || '',
 			commitAuthor: gitInfo.commit_author || '',
-			githubURL: (ctx.env.GITHUB_ACTIONS) ? `${constants.GITHUB_API_HOST}/repos/${process.env.GITHUB_REPOSITORY}/statuses/${gitInfo.commit_id}` : ''
+			githubURL: (ctx.env.GITHUB_ACTIONS) ? `${constants.GITHUB_API_HOST}/repos/${process.env.GITHUB_REPOSITORY}/statuses/${gitInfo.commit_id}` : '',
+			baselineBranch: ctx.env.BASELINE_BRANCH || ''
 		}
 	} else {
 		const splitCharacter = '<##>';
@@ -48,7 +49,7 @@ export default (ctx: Context): Git => {
 
 		// e.g. master\n or master\nv1.1\n or master\nv1.1\nv1.2\n
 		var branchAndTags = res[res.length-1].split('\n').filter(n => n);
-		var branch = branchAndTags[0];
+		var branch = ctx.env.CURRENT_BRANCH || branchAndTags[0];
 		var tags = branchAndTags.slice(1);
 
 		return {
@@ -56,7 +57,8 @@ export default (ctx: Context): Git => {
 			commitId: res[0] || '',
 			commitMessage: res[2] || '',
 			commitAuthor: res[7] || '',
-			githubURL: (ctx.env.GITHUB_ACTIONS) ? `${constants.GITHUB_API_HOST}/repos/${process.env.GITHUB_REPOSITORY}/statuses/${res[1]}` : ''
+			githubURL: (ctx.env.GITHUB_ACTIONS) ? `${constants.GITHUB_API_HOST}/repos/${process.env.GITHUB_REPOSITORY}/statuses/${res[1]}` : '',
+			baselineBranch: ctx.env.BASELINE_BRANCH || ''
 		};
 	}
 }
