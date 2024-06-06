@@ -16,8 +16,10 @@ command
     .name('exec')
     .description('Run test commands around SmartUI')
     .argument('<command...>', 'Command supplied for running tests')
+    .option('-P, --port <number>', 'Port number for the server')
     .action(async function(execCommand, _, command) {
         let ctx: Context = ctxInit(command.optsWithGlobals());
+        ctx.log.debug(ctx.options.port)
 
         if (!which.sync(execCommand[0], { nothrow: true })) {
             ctx.log.error(`Error: Command not found "${execCommand[0]}"`);
