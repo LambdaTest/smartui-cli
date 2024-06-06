@@ -16,6 +16,7 @@ command
     .name('exec')
     .description('Run test commands around SmartUI')
     .argument('<command...>', 'Command supplied for running tests')
+    .option('-P, --port <number>', 'Port number for the server')
     .action(async function(execCommand, _, command) {
         let ctx: Context = ctxInit(command.optsWithGlobals());
 

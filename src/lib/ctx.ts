@@ -12,6 +12,7 @@ export default (options: Record<string, string>): Context => {
     let webConfig: WebConfig;
     let mobileConfig: MobileConfig;
     let config = constants.DEFAULT_CONFIG;
+    let port: number;
 
     try {
         if (options.config) {
@@ -27,6 +28,10 @@ export default (options: Record<string, string>): Context => {
             if (!validateConfig(config)) {
                 throw new Error(validateConfig.errors[0].message);
             }
+        }
+        port = parseInt(options.port || '49152', 10);
+        if (isNaN(port) || port < 1 || port > 65535) {
+            throw new Error('Invalid port number. Port number must be an integer between 1 and 65535.');
         }
     } catch (error: any) {
         console.log(`[smartui] Error: ${error.message}`);
@@ -75,7 +80,8 @@ export default (options: Record<string, string>): Context => {
         options: {
             parallel: options.parallel ? true : false,
             markBaseline: options.markBaseline ? true : false,
-            buildName: options.buildName || ''
+            buildName: options.buildName || '',
+            port: port
         },
         cliVersion: version,
         totalSnapshots: -1
