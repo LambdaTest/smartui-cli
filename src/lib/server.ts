@@ -57,8 +57,7 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 		return reply.code(replyCode).send(replyBody);
 	});
 
-	let portNumber = ctx.options.port
-	await server.listen({ port: portNumber });
+	await server.listen({ port: ctx.options.port });
 	// store server's address for SDK
 	let { port } = server.addresses()[0];
 	process.env.SMARTUI_SERVER_ADDRESS = `http://localhost:${port}`;
