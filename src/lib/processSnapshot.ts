@@ -17,7 +17,7 @@ export default async (snapshot: Snapshot, ctx: Context): Promise<Record<string, 
         javaScriptEnabled: ctx.config.enableJavaScript,
         userAgent: constants.CHROME_USER_AGENT,
     }
-    if (!ctx.browser) {
+    if (!ctx.browser?.isConnected()) {
         if (ctx.env.HTTP_PROXY || ctx.env.HTTPS_PROXY) launchOptions.proxy = { server: ctx.env.HTTP_PROXY || ctx.env.HTTPS_PROXY };
         ctx.browser = await chromium.launch(launchOptions);
         ctx.log.debug(`Chromium launched with options ${JSON.stringify(launchOptions)}`);
