@@ -1,3 +1,6 @@
+import fs from 'fs';
+import path from 'path';
+import sizeOf from 'image-size';
 import { Browser, BrowserContext, Page } from "@playwright/test"
 import { Context } from "../types.js"
 import * as utils from "./utils.js"
@@ -133,4 +136,61 @@ export async function  captureScreenshots(ctx: Context): Promise<Record<string,a
     utils.delDir('screenshots');
 
     return { capturedScreenshots, output };
+}
+
+function getImageDimensions(filePath: string): { width: number, height: number } | null {
+    const buffer = fs.readFileSync(filePath);
+    let width, height;
+
+    if (buffer.toString('hex', 0, 2) === 'ffd8') {
+        // JPEG
+        let offset = 2;
+        while (offset < buffer.length) {
+            const marker = buffer.toString('hex', offset, offset + 2);
+            offset += 2;
+            const length = buffer.readUInt16BE(offset);
+            if (marker === 'ffc0' || marker === 'ffc2') {
+                height = buffer.readUInt16BE(offset + 3);
+                width = buffer.readUInt16BE(offset + 5);
+                return { width, height };
+            }
+            offset += length;
+        }
+    } else if (buffer.toString('hex', 1, 4) === '504e47') {
+        // PNG
+        width = buffer.readUInt32BE(16);
+        height = buffer.readUInt32BE(20);
+        return { width, height };
+    }
+
+    return null;
+}
+
+export async function uploadScreenshots(ctx: Context): Promise<void> {
+    let screenshotsDir = ctx.uploadFilePath;
+
+    // Read all files in the screenshots directory
+    const files = fs.readdirSync(screenshotsDir);
+
+    for (let file of files) {
+        let fileExtension = path.extname(file).toLowerCase();
+        if (fileExtension === '.png' || fileExtension === '.jpeg' || fileExtension === '.jpg') {
+            let filePath = `${screenshotsDir}/${file}`;
+            let ssId = path.basename(file, fileExtension);
+
+            let viewport = 'default'
+
+            if(!ctx.options.ignoreResolutions){
+                const dimensions = getImageDimensions(filePath);
+                if (!dimensions) {
+                    throw new Error(`Unable to determine dimensions for image: ${filePath}`);
+                }
+                const width = dimensions.width;
+                const height = dimensions.height;
+                viewport = `${width}x${height}`;
+            }
+
+            await ctx.client.uploadScreenshot(ctx.build, filePath, ssId, 'default', viewport, ctx.log);
+        }
+    }
 }
