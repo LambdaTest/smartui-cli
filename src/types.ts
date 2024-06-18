@@ -33,6 +33,9 @@ export interface Context {
         buildName?: string,
         port?: number,
         ignoreResolutions?: boolean,
+        fileExtension?: Array<string>,
+        stripExtension?: boolean,
+        ignorePattern?: Array<string>,
     }
     cliVersion: string;
     totalSnapshots: number;

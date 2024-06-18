@@ -14,7 +14,9 @@ export default (options: Record<string, string>): Context => {
     let config = constants.DEFAULT_CONFIG;
     let port: number;
     let resolutionOff: boolean;
-
+    let extensionFiles: string;
+    let ignoreStripExtension: Array<string>;
+    let ignoreFilePattern: Array<string>;
     try {
         if (options.config) {
             config = JSON.parse(fs.readFileSync(options.config, 'utf-8'));
@@ -35,6 +37,9 @@ export default (options: Record<string, string>): Context => {
             throw new Error('Invalid port number. Port number must be an integer between 1 and 65535.');
         }
         resolutionOff = options.ignoreResolutions || false;
+        extensionFiles = options.files || ['png', 'jpeg', 'jpg'];
+        ignoreStripExtension = options.ignoreStripExtensions || false
+        ignoreFilePattern = options.ignorePattern || []
     } catch (error: any) {
         console.log(`[smartui] Error: ${error.message}`);
         process.exit();
@@ -85,7 +90,10 @@ export default (options: Record<string, string>): Context => {
             markBaseline: options.markBaseline ? true : false,
             buildName: options.buildName || '',
             port: port,
-            ignoreResolutions: resolutionOff
+            ignoreResolutions: resolutionOff,
+            fileExtension: extensionFiles,
+            stripExtension: ignoreStripExtension,
+            ignorePattern: ignoreFilePattern,
         },
         cliVersion: version,
         totalSnapshots: -1

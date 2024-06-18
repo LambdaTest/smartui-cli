@@ -1,6 +1,5 @@
 import fs from 'fs';
 import path from 'path';
-import sizeOf from 'image-size';
 import { Browser, BrowserContext, Page } from "@playwright/test"
 import { Context } from "../types.js"
 import * as utils from "./utils.js"
@@ -167,30 +166,47 @@ function getImageDimensions(filePath: string): { width: number, height: number }
 }
 
 export async function uploadScreenshots(ctx: Context): Promise<void> {
-    let screenshotsDir = ctx.uploadFilePath;
+    const allowedExtensions = ctx.options.fileExtension.map(ext => `.${ext.trim().toLowerCase()}`);
 
-    // Read all files in the screenshots directory
-    const files = fs.readdirSync(screenshotsDir);
+    async function processDirectory(directory: string, relativePath: string = ''): Promise<void> {
+        const files = fs.readdirSync(directory);
 
-    for (let file of files) {
-        let fileExtension = path.extname(file).toLowerCase();
-        if (fileExtension === '.png' || fileExtension === '.jpeg' || fileExtension === '.jpg') {
-            let filePath = `${screenshotsDir}/${file}`;
-            let ssId = path.basename(file, fileExtension);
+        for (let file of files) {
+            const filePath = path.join(directory, file);
+            const stat = fs.statSync(filePath);
+            const relativeFilePath = path.join(relativePath, file);
 
-            let viewport = 'default'
-
-            if(!ctx.options.ignoreResolutions){
-                const dimensions = getImageDimensions(filePath);
-                if (!dimensions) {
-                    throw new Error(`Unable to determine dimensions for image: ${filePath}`);
-                }
-                const width = dimensions.width;
-                const height = dimensions.height;
-                viewport = `${width}x${height}`;
+            if (stat.isDirectory() && ctx.options.ignorePattern.includes(relativeFilePath)) {
+                continue; // Skip this path
             }
 
-            await ctx.client.uploadScreenshot(ctx.build, filePath, ssId, 'default', viewport, ctx.log);
+            if (stat.isDirectory()) {
+                await processDirectory(filePath, relativeFilePath); // Recursively process subdirectory
+            } else {
+                let fileExtension = path.extname(file).toLowerCase();
+                if (allowedExtensions.includes(fileExtension)) {
+                    let ssId = relativeFilePath;
+                    if (ctx.options.stripExtension) {
+                        ssId = path.join(relativePath, path.basename(file, fileExtension));
+                    }
+
+                    let viewport = 'default';
+
+                    if (!ctx.options.ignoreResolutions) {
+                        const dimensions = getImageDimensions(filePath);
+                        if (!dimensions) {
+                            throw new Error(`Unable to determine dimensions for image: ${filePath}`);
+                        }
+                        const width = dimensions.width;
+                        const height = dimensions.height;
+                        viewport = `${width}x${height}`;
+                    }
+
+                    await ctx.client.uploadScreenshot(ctx.build, filePath, ssId, 'default', viewport, ctx.log);
+                }
+            }
         }
     }
+
+    await processDirectory(ctx.uploadFilePath);
 }

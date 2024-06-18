@@ -16,6 +16,13 @@ command
     .description('Upload screenshots from given directory')
     .argument('<directory>', 'Path of the directory')
     .option('-R, --ignoreResolutions', 'Ignore resolution')
+    .option('-F, --files <extensions>', 'Comma-separated list of allowed file extensions', val => {
+        return val.split(',').map(ext => ext.trim().toLowerCase());
+    })
+    .option('-E, --ignoreStripExtensions', 'Strips file extensions from snapshot names')
+    .option('-i, --ignorePattern <patterns>', 'Comma-separated list of directories to ignore', val => {
+        return val.split(',').map(pattern => pattern.trim());
+    })
     .action(async function(directory, _, command) {
         let ctx: Context = ctxInit(command.optsWithGlobals());
 
