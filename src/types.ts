@@ -4,6 +4,7 @@ import httpClient from './lib/httpClient.js'
 import type { Logger } from 'winston'
 import { ListrTaskWrapper, ListrRenderer } from "listr2";
 import { Browser } from '@playwright/test';
+import snapshotQueue from './lib/processSnapshot.js';
 
 export interface Context {
     env: Env;
@@ -12,6 +13,7 @@ export interface Context {
     server?: FastifyInstance<Server, IncomingMessage, ServerResponse>;
     client: httpClient;
     browser?: Browser;
+    snapshotQueue?: snapshotQueue;
     config: {
         web?: WebConfig;
         mobile?: MobileConfig,
@@ -34,7 +36,8 @@ export interface Context {
     }
     cliVersion: string;
     totalSnapshots: number;
-    figmaDesignConfig: FigmaDesignConfig;
+    figmaDesignConfig?: FigmaDesignConfig;
+    testType?: string;
 }
 
 export interface Env {

@@ -75,19 +75,19 @@ export default class httpClient {
         }, log)
     }
 
-    uploadSnapshot(buildId: string, snapshot: ProcessedSnapshot, testType: string, log: Logger) {
+    uploadSnapshot(ctx: Context, snapshot: ProcessedSnapshot) {
         return this.request({
-            url: `/builds/${buildId}/snapshot`,
+            url: `/builds/${ctx.build.id}/snapshot`,
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             data: { 
                 snapshot,
                 test: {
-                    type: testType,
+                    type: ctx.testType,
                     source: 'cli'
                 }
             }
-        }, log)
+        }, ctx.log)
     }
 
     uploadScreenshot(

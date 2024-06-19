@@ -5,10 +5,12 @@ import { color, Listr, ListrDefaultRendererLogLevels } from 'listr2'
 import startServer from '../tasks/startServer.js'
 import auth from '../tasks/auth.js'
 import ctxInit from '../lib/ctx.js'
-import getGitInfo from '../tasks/getGitInfo.js';
+import getGitInfo from '../tasks/getGitInfo.js'
 import createBuild from '../tasks/createBuild.js'
 import exec from '../tasks/exec.js'
+import processSnapshots from '../tasks/processSnapshot.js'
 import finalizeBuild from '../tasks/finalizeBuild.js'
+import snapshotQueue from '../lib/processSnapshot.js'
 
 const command = new Command();
 
@@ -25,6 +27,7 @@ command
             return
         }
         ctx.args.execCommand = execCommand
+        ctx.snapshotQueue = new snapshotQueue(ctx)
         ctx.totalSnapshots = 0
 
         let tasks = new Listr<Context>(
@@ -34,6 +37,7 @@ command
                 getGitInfo(ctx),
                 createBuild(ctx),
                 exec(ctx),
+                processSnapshots(ctx),
                 finalizeBuild(ctx)
             ],
             {
@@ -53,8 +57,10 @@ command
         } catch (error) {
             ctx.log.info('\nRefer docs: https://www.lambdatest.com/support/docs/smart-visual-regression-testing/');
         } finally {
-            await ctx.server?.close();
             await ctx.browser?.close();
+            ctx.log.debug(`Closed browser`);
+            await ctx.server?.close();
+            ctx.log.debug(`Closed server`);
         }
     })
 
