@@ -9,7 +9,73 @@ const ALLOWED_STATUSES = [200, 201];
 const REQUEST_TIMEOUT = 10000;
 const MIN_VIEWPORT_HEIGHT = 1080;
 
-export default async (snapshot: Snapshot, ctx: Context): Promise<Record<string, any>> => {
+export default class Queue {
+    private snapshots: Array<Snapshot> = [];
+    private processedSnapshots: Array<Record<string, any>> = [];
+    private processing: boolean = false;
+    private processingSnapshot: string = '';
+    private ctx: Context;
+  
+    constructor(ctx: Context) {
+        this.ctx = ctx;
+    }
+
+    enqueue(item: Snapshot): void {
+        this.snapshots.push(item);
+        if (!this.processing) {
+            this.processing = true;
+            this.processNext();
+        }
+    }
+  
+    private async processNext(): Promise<void> {
+        if (!this.isEmpty()) {
+            const snapshot = this.snapshots.shift();
+            try {
+                this.processingSnapshot = snapshot?.name;
+                let { processedSnapshot, warnings } = await processSnapshot(snapshot, this.ctx);
+                await this.ctx.client.uploadSnapshot(this.ctx, processedSnapshot);
+                this.ctx.totalSnapshots++;
+                this.processedSnapshots.push({name: snapshot.name, warnings});
+            } catch (error: any) {
+                this.ctx.log.debug(`snapshot failed; ${error}`);
+                this.processedSnapshots.push({name: snapshot.name, error: error.message});
+            }
+            // Close open browser contexts and pages
+            if (this.ctx.browser) {
+                for (let context of this.ctx.browser.contexts()) {
+                    for (let page of context.pages()) {
+                        await page.close();
+                        this.ctx.log.debug(`Closed browser page for snapshot ${snapshot.name}`);
+                    }
+                    await context.close();
+                    this.ctx.log.debug(`Closed browser context for snapshot ${snapshot.name}`);
+                }
+            }
+            this.processNext();
+        } else {
+            this.processing = false;
+        }
+    }
+
+    isProcessing(): boolean {
+        return this.processing;
+    }
+
+    getProcessingSnapshot(): string {
+        return this.processingSnapshot;
+    }
+
+    getProcessedSnapshots(): Array<Record<string, any>> {
+        return this.processedSnapshots;
+    }
+
+    isEmpty(): boolean {
+        return this.snapshots.length ? false : true;
+    }
+}
+
+async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record<string, any>> {
     ctx.log.debug(`Processing snapshot ${snapshot.name}`);
 
     let launchOptions: Record<string, any> = { headless: true }
