@@ -13,7 +13,10 @@ export default (options: Record<string, string>): Context => {
     let mobileConfig: MobileConfig;
     let config = constants.DEFAULT_CONFIG;
     let port: number;
-
+    let resolutionOff: boolean;
+    let extensionFiles: string;
+    let ignoreStripExtension: Array<string>;
+    let ignoreFilePattern: Array<string>;
     try {
         if (options.config) {
             config = JSON.parse(fs.readFileSync(options.config, 'utf-8'));
@@ -33,6 +36,10 @@ export default (options: Record<string, string>): Context => {
         if (isNaN(port) || port < 1 || port > 65535) {
             throw new Error('Invalid port number. Port number must be an integer between 1 and 65535.');
         }
+        resolutionOff = options.ignoreResolutions || false;
+        extensionFiles = options.files || ['png', 'jpeg', 'jpg'];
+        ignoreStripExtension = options.ignoreStripExtensions || false
+        ignoreFilePattern = options.ignorePattern || []
     } catch (error: any) {
         console.log(`[smartui] Error: ${error.message}`);
         process.exit();
@@ -62,6 +69,7 @@ export default (options: Record<string, string>): Context => {
             enableJavaScript: config.enableJavaScript || false,
             allowedHostnames: config.allowedHostnames || []
         },
+        uploadFilePath: '',
         webStaticConfig: [],
         git: {
             branch: '',
@@ -81,7 +89,11 @@ export default (options: Record<string, string>): Context => {
             parallel: options.parallel ? true : false,
             markBaseline: options.markBaseline ? true : false,
             buildName: options.buildName || '',
-            port: port
+            port: port,
+            ignoreResolutions: resolutionOff,
+            fileExtension: extensionFiles,
+            stripExtension: ignoreStripExtension,
+            ignorePattern: ignoreFilePattern,
         },
         cliVersion: version,
         totalSnapshots: -1
