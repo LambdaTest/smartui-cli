@@ -19,8 +19,8 @@ command
     .option('-F, --files <extensions>', 'Comma-separated list of allowed file extensions', val => {
         return val.split(',').map(ext => ext.trim().toLowerCase());
     })
-    .option('-E, --ignoreStripExtensions', 'Strips file extensions from snapshot names')
-    .option('-i, --ignorePattern <patterns>', 'Comma-separated list of directories to ignore', val => {
+    .option('-E, --removeExtensions', 'Strips file extensions from snapshot names')
+    .option('-i, --ignoreDir <patterns>', 'Comma-separated list of directories to ignore', val => {
         return val.split(',').map(pattern => pattern.trim());
     })
     .action(async function(directory, _, command) {
