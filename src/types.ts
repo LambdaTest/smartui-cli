@@ -22,6 +22,7 @@ export interface Context {
         enableJavaScript: boolean;
         allowedHostnames: Array<string>;
     };
+    uploadFilePath: string;
     webStaticConfig: WebStaticConfig;
     build: Build;
     git: Git;
@@ -33,6 +34,10 @@ export interface Context {
         markBaseline?: boolean,
         buildName?: string,
         port?: number,
+        ignoreResolutions?: boolean,
+        fileExtension?: Array<string>,
+        stripExtension?: boolean,
+        ignorePattern?: Array<string>,
     }
     cliVersion: string;
     totalSnapshots: number;

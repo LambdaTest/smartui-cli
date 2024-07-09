@@ -1,3 +1,5 @@
+import fs from 'fs';
+import path from 'path';
 import { Browser, BrowserContext, Page } from "@playwright/test"
 import { Context } from "../types.js"
 import * as utils from "./utils.js"
@@ -133,4 +135,78 @@ export async function  captureScreenshots(ctx: Context): Promise<Record<string,a
     utils.delDir('screenshots');
 
     return { capturedScreenshots, output };
+}
+
+function getImageDimensions(filePath: string): { width: number, height: number } | null {
+    const buffer = fs.readFileSync(filePath);
+    let width, height;
+
+    if (buffer.toString('hex', 0, 2) === 'ffd8') {
+        // JPEG
+        let offset = 2;
+        while (offset < buffer.length) {
+            const marker = buffer.toString('hex', offset, offset + 2);
+            offset += 2;
+            const length = buffer.readUInt16BE(offset);
+            if (marker === 'ffc0' || marker === 'ffc2') {
+                height = buffer.readUInt16BE(offset + 3);
+                width = buffer.readUInt16BE(offset + 5);
+                return { width, height };
+            }
+            offset += length;
+        }
+    } else if (buffer.toString('hex', 1, 4) === '504e47') {
+        // PNG
+        width = buffer.readUInt32BE(16);
+        height = buffer.readUInt32BE(20);
+        return { width, height };
+    }
+
+    return null;
+}
+
+export async function uploadScreenshots(ctx: Context): Promise<void> {
+    const allowedExtensions = ctx.options.fileExtension.map(ext => `.${ext.trim().toLowerCase()}`);
+
+    async function processDirectory(directory: string, relativePath: string = ''): Promise<void> {
+        const files = fs.readdirSync(directory);
+
+        for (let file of files) {
+            const filePath = path.join(directory, file);
+            const stat = fs.statSync(filePath);
+            const relativeFilePath = path.join(relativePath, file);
+
+            if (stat.isDirectory() && ctx.options.ignorePattern.includes(relativeFilePath)) {
+                continue; // Skip this path
+            }
+
+            if (stat.isDirectory()) {
+                await processDirectory(filePath, relativeFilePath); // Recursively process subdirectory
+            } else {
+                let fileExtension = path.extname(file).toLowerCase();
+                if (allowedExtensions.includes(fileExtension)) {
+                    let ssId = relativeFilePath;
+                    if (ctx.options.stripExtension) {
+                        ssId = path.join(relativePath, path.basename(file, fileExtension));
+                    }
+
+                    let viewport = 'default';
+
+                    if (!ctx.options.ignoreResolutions) {
+                        const dimensions = getImageDimensions(filePath);
+                        if (!dimensions) {
+                            throw new Error(`Unable to determine dimensions for image: ${filePath}`);
+                        }
+                        const width = dimensions.width;
+                        const height = dimensions.height;
+                        viewport = `${width}x${height}`;
+                    }
+
+                    await ctx.client.uploadScreenshot(ctx.build, filePath, ssId, 'default', viewport, ctx.log);
+                }
+            }
+        }
+    }
+
+    await processDirectory(ctx.uploadFilePath);
 }
