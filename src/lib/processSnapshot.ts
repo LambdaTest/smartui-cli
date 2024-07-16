@@ -2,6 +2,7 @@ import { Snapshot, Context, ProcessedSnapshot } from "../types.js";
 import { scrollToBottomAndBackToTop, getRenderViewports } from "./utils.js"
 import { firefox, Locator } from "@playwright/test"
 import constants from "./constants.js";
+import { updateLogContext } from '../lib/logger.js'
 
 const MAX_RESOURCE_SIZE = 15 * (1024 ** 2); // 15MB
 var ALLOWED_RESOURCES = ['document', 'stylesheet', 'image', 'media', 'font', 'other'];
@@ -76,6 +77,7 @@ export default class Queue {
 }
 
 async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record<string, any>> {
+    updateLogContext({task: 'discovery'});
     ctx.log.debug(`Processing snapshot ${snapshot.name}`);
 
     let launchOptions: Record<string, any> = { headless: true }

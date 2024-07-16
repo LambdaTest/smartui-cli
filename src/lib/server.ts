@@ -3,13 +3,17 @@ import path from 'path';
 import fastify, { FastifyInstance, RouteShorthandOptions } from 'fastify';
 import { readFileSync } from 'fs'
 import { Context } from '../types.js'
-import processSnapshot from './processSnapshot.js'
 import { validateSnapshot } from './schemaValidation.js'
-import constants from './constants.js';
 
 export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMessage, ServerResponse>> => {
 	
-	const server: FastifyInstance<Server, IncomingMessage, ServerResponse> = fastify({ logger: ctx.env.LT_SDK_DEBUG ? true : false, bodyLimit: 30000000 });
+	const server: FastifyInstance<Server, IncomingMessage, ServerResponse> = fastify({
+		logger: {
+			level: 'debug',
+			stream: { write: (message) => { ctx.log.debug(message) }}
+		},
+		bodyLimit: 30000000
+	});
 	const opts: RouteShorthandOptions = {};
 	const SMARTUI_DOM = readFileSync(path.resolve(__dirname, 'dom-serializer.js'), 'utf-8');
 

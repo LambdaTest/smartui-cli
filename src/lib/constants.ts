@@ -64,6 +64,9 @@ export default {
     // CI
     GITHUB_API_HOST: 'https://api.github.com',
 
+    // log file path
+    LOG_FILE_PATH: '.smartui.log',
+
     SUPPORTED_MOBILE_DEVICES: {
         'Blackberry KEY2 LE': { os: 'android', viewport: {width: 412, height: 618}},
         'Galaxy A12': { os: 'android', viewport: {width: 360, height: 800}},
