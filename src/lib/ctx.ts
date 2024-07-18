@@ -38,8 +38,8 @@ export default (options: Record<string, string>): Context => {
         }
         resolutionOff = options.ignoreResolutions || false;
         extensionFiles = options.files || ['png', 'jpeg', 'jpg'];
-        ignoreStripExtension = options.ignoreStripExtensions || false
-        ignoreFilePattern = options.ignorePattern || []
+        ignoreStripExtension = options.removeExtensions || false
+        ignoreFilePattern = options.ignoreDir || []
     } catch (error: any) {
         console.log(`[smartui] Error: ${error.message}`);
         process.exit();
