@@ -165,29 +165,49 @@ function getImageDimensions(filePath: string): { width: number, height: number }
     return null;
 }
 
+function isImage(buffer: Buffer): boolean {
+    const magicNumbers = [
+        { ext: 'jpg', magic: Buffer.from([0xFF, 0xD8, 0xFF]) },
+        { ext: 'jpeg', magic: Buffer.from([0xFF, 0xD8, 0xFF]) },
+        { ext: 'png', magic: Buffer.from([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]) },
+    ];
+
+    return magicNumbers.some(magic => buffer.slice(0, magic.magic.length).equals(magic.magic));
+}
+
 export async function uploadScreenshots(ctx: Context): Promise<void> {
-    const allowedExtensions = ctx.options.fileExtension.map(ext => `.${ext.trim().toLowerCase()}`);
+    const allowedExtensions = ctx.options.fileExtension.map(ext => ext.trim().toLowerCase());
+    const ignorePatterns = ctx.options.ignorePattern.map(pattern => pattern.trim().toLowerCase());
+    let noOfScreenshots = 0;
 
     async function processDirectory(directory: string, relativePath: string = ''): Promise<void> {
-        const files = fs.readdirSync(directory);
+        let files = fs.readdirSync(directory);
 
         for (let file of files) {
             const filePath = path.join(directory, file);
             const stat = fs.statSync(filePath);
             const relativeFilePath = path.join(relativePath, file);
 
-            if (stat.isDirectory() && ctx.options.ignorePattern.includes(relativeFilePath)) {
+            if (stat.isDirectory() && ignorePatterns.some(pattern => relativeFilePath.includes(pattern))) {
+                ctx.log.debug(`Ignoring Directory ${relativeFilePath}`)
                 continue; // Skip this path
             }
 
             if (stat.isDirectory()) {
                 await processDirectory(filePath, relativeFilePath); // Recursively process subdirectory
             } else {
-                let fileExtension = path.extname(file).toLowerCase();
+                let fileExtension = path.extname(file).toLowerCase().slice(1);
                 if (allowedExtensions.includes(fileExtension)) {
+                    const fileBuffer = fs.readFileSync(filePath);
+
+                    if (!isImage(fileBuffer)) {
+                        ctx.log.debug(`File ${filePath} is not a valid ${fileExtension} image. Skipping.`);
+                        continue;
+                    }
+
                     let ssId = relativeFilePath;
                     if (ctx.options.stripExtension) {
-                        ssId = path.join(relativePath, path.basename(file, fileExtension));
+                        ssId = path.join(relativePath, path.basename(file, path.extname(file)));
                     }
 
                     let viewport = 'default';
@@ -195,18 +215,26 @@ export async function uploadScreenshots(ctx: Context): Promise<void> {
                     if (!ctx.options.ignoreResolutions) {
                         const dimensions = getImageDimensions(filePath);
                         if (!dimensions) {
-                            throw new Error(`Unable to determine dimensions for image: ${filePath}`);
+                            ctx.log.debug(`Unable to determine dimensions for image: ${filePath}`)
+                        } else {
+                            const width = dimensions.width;
+                            const height = dimensions.height;
+                            viewport = `${width}x${height}`;
                         }
-                        const width = dimensions.width;
-                        const height = dimensions.height;
-                        viewport = `${width}x${height}`;
                     }
 
                     await ctx.client.uploadScreenshot(ctx.build, filePath, ssId, 'default', viewport, ctx.log);
+                    ctx.log.debug(`${filePath} : uploaded successfully`)
+                    noOfScreenshots++;
                 }
             }
         }
     }
 
     await processDirectory(ctx.uploadFilePath);
+    if(noOfScreenshots == 0){
+        console.log(`No screenshots uploaded.`);
+    } else {
+    console.log(`${noOfScreenshots} screenshots uploaded successfully.`);
+    }
 }
