@@ -176,12 +176,12 @@ function isImage(buffer: Buffer): boolean {
 }
 
 export async function uploadScreenshots(ctx: Context): Promise<void> {
-    const allowedExtensions = ctx.options.fileExtension.map(ext => ext.trim().toLowerCase());
+    const allowedExtensions = ctx.options.fileExtension.map(ext => `.${ext.trim().toLowerCase()}`);
     const ignorePatterns = ctx.options.ignorePattern.map(pattern => pattern.trim().toLowerCase());
     let noOfScreenshots = 0;
 
     async function processDirectory(directory: string, relativePath: string = ''): Promise<void> {
-        let files = fs.readdirSync(directory);
+        const files = fs.readdirSync(directory);
 
         for (let file of files) {
             const filePath = path.join(directory, file);
@@ -196,7 +196,7 @@ export async function uploadScreenshots(ctx: Context): Promise<void> {
             if (stat.isDirectory()) {
                 await processDirectory(filePath, relativeFilePath); // Recursively process subdirectory
             } else {
-                let fileExtension = path.extname(file).toLowerCase().slice(1);
+                let fileExtension = path.extname(file).toLowerCase();
                 if (allowedExtensions.includes(fileExtension)) {
                     const fileBuffer = fs.readFileSync(filePath);
 
@@ -207,7 +207,7 @@ export async function uploadScreenshots(ctx: Context): Promise<void> {
 
                     let ssId = relativeFilePath;
                     if (ctx.options.stripExtension) {
-                        ssId = path.join(relativePath, path.basename(file, path.extname(file)));
+                        ssId = path.join(relativePath, path.basename(file, fileExtension));
                     }
 
                     let viewport = 'default';
