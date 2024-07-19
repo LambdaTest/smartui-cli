@@ -177,7 +177,6 @@ function isImage(buffer: Buffer): boolean {
 
 export async function uploadScreenshots(ctx: Context): Promise<void> {
     const allowedExtensions = ctx.options.fileExtension.map(ext => `.${ext.trim().toLowerCase()}`);
-    const ignorePatterns = ctx.options.ignorePattern.map(pattern => pattern.trim().toLowerCase());
     let noOfScreenshots = 0;
 
     async function processDirectory(directory: string, relativePath: string = ''): Promise<void> {
@@ -188,7 +187,7 @@ export async function uploadScreenshots(ctx: Context): Promise<void> {
             const stat = fs.statSync(filePath);
             const relativeFilePath = path.join(relativePath, file);
 
-            if (stat.isDirectory() && ignorePatterns.some(pattern => relativeFilePath.includes(pattern))) {
+            if (if (stat.isDirectory() && ctx.options.ignorePattern.includes(relativeFilePath))) {
                 ctx.log.debug(`Ignoring Directory ${relativeFilePath}`)
                 continue; // Skip this path
             }
