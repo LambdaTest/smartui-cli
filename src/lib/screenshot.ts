@@ -187,7 +187,7 @@ export async function uploadScreenshots(ctx: Context): Promise<void> {
             const stat = fs.statSync(filePath);
             const relativeFilePath = path.join(relativePath, file);
 
-            if (if (stat.isDirectory() && ctx.options.ignorePattern.includes(relativeFilePath))) {
+            if (stat.isDirectory() && ctx.options.ignorePattern.includes(relativeFilePath)) {
                 ctx.log.debug(`Ignoring Directory ${relativeFilePath}`)
                 continue; // Skip this path
             }
