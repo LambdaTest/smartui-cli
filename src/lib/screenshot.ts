@@ -6,6 +6,12 @@ import * as utils from "./utils.js"
 import constants from './constants.js'
 import chalk from 'chalk';
 
+const magicNumbers = [
+    { ext: 'jpg', magic: Buffer.from([0xFF, 0xD8, 0xFF]) },
+    { ext: 'jpeg', magic: Buffer.from([0xFF, 0xD8, 0xFF]) },
+    { ext: 'png', magic: Buffer.from([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]) },
+];
+
 async function captureScreenshotsForConfig(
     ctx: Context,
     browsers: Record<string, Browser>,
@@ -166,11 +172,6 @@ function getImageDimensions(filePath: string): { width: number, height: number }
 }
 
 function isImage(buffer: Buffer): boolean {
-    const magicNumbers = [
-        { ext: 'jpg', magic: Buffer.from([0xFF, 0xD8, 0xFF]) },
-        { ext: 'jpeg', magic: Buffer.from([0xFF, 0xD8, 0xFF]) },
-        { ext: 'png', magic: Buffer.from([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]) },
-    ];
 
     return magicNumbers.some(magic => buffer.slice(0, magic.magic.length).equals(magic.magic));
 }

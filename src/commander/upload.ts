@@ -10,6 +10,7 @@ import createBuild from '../tasks/createBuild.js';
 import uploadScreenshots from '../tasks/uploadScreenshots.js';
 import finalizeBuild from '../tasks/finalizeBuild.js';
 
+const ZIP_EXTENSION = '.zip';
 const command = new Command();
 
 command
@@ -32,7 +33,7 @@ command
             return;
         }
 
-        if (path.extname(directory).toLowerCase() === '.zip') {
+        if (path.extname(directory).toLowerCase() === ZIP_EXTENSION) {
             ctx.log.debug(`Zips are not accepted.  ${directory}`)
             console.log(`Error: The provided directory ${directory} is a zip file. Zips are not accepted.`);
             return;
