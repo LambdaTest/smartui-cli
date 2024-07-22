@@ -1,5 +1,7 @@
 import { createLogger, format, transports, log } from 'winston'
 import constants from './constants.js'
+import { Env } from '../types.js'
+import getEnv from './env.js'
 import chalk from 'chalk'
 
 interface LogContext {
@@ -11,6 +13,11 @@ let logContext: LogContext = {};
 // Function to update context
 export function updateLogContext(newContext: LogContext) {
 	logContext = { ...logContext, ...newContext };
+}
+
+const logLevel = (): string => {
+    let env: Env = getEnv();
+    return (env.LT_SDK_DEBUG === 'true') ? 'debug' : 'info';
 }
 
 // Create a Winston logger
@@ -30,7 +37,7 @@ const logger = createLogger({
     ),
     transports: [
 		new transports.Console({
-			level: 'info'
+			level: logLevel()
 		}),
 		new transports.File({
 			level: 'debug',
