@@ -71,7 +71,7 @@ export default {
     ZIP_EXTENSION: '.zip',
 
     //Disallowed Gifs
-    GIFS: 'gif'
+    GIFS: 'gif',
 
     // Magic Numbers 
     MAGIC_NUMBERS: [
