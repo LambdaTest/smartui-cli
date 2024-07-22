@@ -227,8 +227,8 @@ export async function uploadScreenshots(ctx: Context): Promise<void> {
 
     await processDirectory(ctx.uploadFilePath);
     if(noOfScreenshots == 0){
-        console.log(`No screenshots uploaded.`);
+        ctx.log.info(`No screenshots uploaded.`);
     } else {
-        console.log(`${noOfScreenshots} screenshots uploaded successfully.`);
+        ctx.log.info(`${noOfScreenshots} screenshots uploaded successfully.`);
     }
 }
