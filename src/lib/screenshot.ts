@@ -5,6 +5,7 @@ import { Context } from "../types.js"
 import * as utils from "./utils.js"
 import constants from './constants.js'
 import chalk from 'chalk';
+import sharp from 'sharp';
 
 async function captureScreenshotsForConfig(
     ctx: Context,
@@ -165,9 +166,24 @@ function getImageDimensions(filePath: string): { width: number, height: number }
     return null;
 }
 
-function isImage(buffer: Buffer): boolean {
-
-    return constants.MAGIC_NUMBERS.some(magic => buffer.slice(0, magic.magic.length).equals(magic.magic));
+async function isAllowedImage(filePath: string): Promise<boolean> {
+    try {
+        const fileBuffer = fs.readFileSync(filePath);
+        const isMagicValid = constants.MAGIC_NUMBERS.some(magic => fileBuffer.slice(0, magic.magic.length).equals(magic.magic));
+        const metadata = await sharp(filePath).metadata();
+        if (metadata.format === constants.FILE_EXTENSION_GIFS) {
+            return false;
+        }
+        if (metadata.width > 0 && metadata.height > 0) {
+            return true;
+        }
+        if (isMagicValid && metadata.format !== constants.FILE_EXTENSION_GIFS) {
+            return true;
+        }
+        return false;
+    } catch (error) {
+        return false;
+    }
 }
 
 export async function uploadScreenshots(ctx: Context): Promise<void> {
@@ -192,10 +208,10 @@ export async function uploadScreenshots(ctx: Context): Promise<void> {
             } else {
                 let fileExtension = path.extname(file).toLowerCase();
                 if (allowedExtensions.includes(fileExtension)) {
-                    const fileBuffer = fs.readFileSync(filePath);
+                    const isValid = await isAllowedImage(filePath);
 
-                    if (!isImage(fileBuffer)) {
-                        ctx.log.info(`File ${filePath} is not a valid ${fileExtension} image. Skipping.`);
+                    if (!isValid) {
+                        ctx.log.info(`File ${filePath} is not a valid ${fileExtension} image or is corrupted. Skipping.`);
                         continue;
                     }
 
@@ -220,6 +236,8 @@ export async function uploadScreenshots(ctx: Context): Promise<void> {
                     await ctx.client.uploadScreenshot(ctx.build, filePath, ssId, 'default', viewport, ctx.log);
                     ctx.log.info(`${filePath} : uploaded successfully`)
                     noOfScreenshots++;
+                } else {
+                    ctx.log.info(`File ${filePath} has invalid file extension: ${fileExtension}. Skipping`)
                 }
             }
         }
