@@ -67,6 +67,16 @@ export default {
     // log file path
     LOG_FILE_PATH: '.smartui.log',
 
+    // Disallowed Zip Extension
+    ZIP_EXTENSION: '.zip',
+
+    // Magic Numbers 
+    MAGIC_NUMBERS: [
+        { ext: 'jpg', magic: Buffer.from([0xFF, 0xD8, 0xFF]) },
+        { ext: 'jpeg', magic: Buffer.from([0xFF, 0xD8, 0xFF]) },
+        { ext: 'png', magic: Buffer.from([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]) },
+    ],
+
     SUPPORTED_MOBILE_DEVICES: {
         'Blackberry KEY2 LE': { os: 'android', viewport: {width: 412, height: 618}},
         'Galaxy A12': { os: 'android', viewport: {width: 360, height: 800}},
