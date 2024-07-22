@@ -67,10 +67,8 @@ export default {
     // log file path
     LOG_FILE_PATH: '.smartui.log',
 
-    // Disallowed Zip Extension
+    // Disallowed file extension
     FILE_EXTENSION_ZIP: '.zip',
-
-    //Disallowed Gifs
     FILE_EXTENSION_GIFS: 'gif',
 
     // Magic Numbers 
