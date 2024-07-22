@@ -236,6 +236,8 @@ export async function uploadScreenshots(ctx: Context): Promise<void> {
                     await ctx.client.uploadScreenshot(ctx.build, filePath, ssId, 'default', viewport, ctx.log);
                     ctx.log.info(`${filePath} : uploaded successfully`)
                     noOfScreenshots++;
+                } else {
+                    ctx.log.info(`File ${filePath} has invalid file extension: ${fileExtension}. Skipping`)
                 }
             }
         }
