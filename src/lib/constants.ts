@@ -70,6 +70,9 @@ export default {
     // Disallowed Zip Extension
     ZIP_EXTENSION: '.zip',
 
+    //Disallowed Gifs
+    GIFS: 'gif'
+
     // Magic Numbers 
     MAGIC_NUMBERS: [
         { ext: 'jpg', magic: Buffer.from([0xFF, 0xD8, 0xFF]) },

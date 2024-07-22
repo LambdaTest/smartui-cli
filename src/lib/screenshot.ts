@@ -171,13 +171,13 @@ async function isAllowedImage(filePath: string): Promise<boolean> {
         const fileBuffer = fs.readFileSync(filePath);
         const isMagicValid = constants.MAGIC_NUMBERS.some(magic => fileBuffer.slice(0, magic.magic.length).equals(magic.magic));
         const metadata = await sharp(filePath).metadata();
-        if (metadata.format === 'gif') {
+        if (metadata.format === constants.GIFS) {
             return false;
         }
         if (metadata.width > 0 && metadata.height > 0) {
             return true;
         }
-        if (isMagicValid && metadata.format !== 'gif') {
+        if (isMagicValid && metadata.format !== constants.GIFS) {
             return true;
         }
         return false;
