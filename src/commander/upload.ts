@@ -33,7 +33,7 @@ command
             return;
         }
 
-        if (path.extname(directory).toLowerCase() === constants.ZIP_EXTENSION) {
+        if (path.extname(directory).toLowerCase() === constants.FILE_EXTENSION_ZIP) {
             ctx.log.debug(`Error: The provided directory ${directory} is a zip file. Zips are not accepted.`);
             return;
         }

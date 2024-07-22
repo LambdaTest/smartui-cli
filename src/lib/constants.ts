@@ -68,10 +68,10 @@ export default {
     LOG_FILE_PATH: '.smartui.log',
 
     // Disallowed Zip Extension
-    ZIP_EXTENSION: '.zip',
+    FILE_EXTENSION_ZIP: '.zip',
 
     //Disallowed Gifs
-    GIFS: 'gif',
+    FILE_EXTENSION_GIFS: 'gif',
 
     // Magic Numbers 
     MAGIC_NUMBERS: [
