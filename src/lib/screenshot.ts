@@ -229,6 +229,6 @@ export async function uploadScreenshots(ctx: Context): Promise<void> {
     if(noOfScreenshots == 0){
         console.log(`No screenshots uploaded.`);
     } else {
-    console.log(`${noOfScreenshots} screenshots uploaded successfully.`);
+        console.log(`${noOfScreenshots} screenshots uploaded successfully.`);
     }
 }
