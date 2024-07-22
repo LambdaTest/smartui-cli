@@ -34,8 +34,7 @@ command
         }
 
         if (path.extname(directory).toLowerCase() === constants.ZIP_EXTENSION) {
-            ctx.log.debug(`Zips are not accepted.  ${directory}`)
-            console.log(`Error: The provided directory ${directory} is a zip file. Zips are not accepted.`);
+            ctx.log.debug(`Error: The provided directory ${directory} is a zip file. Zips are not accepted.`);
             return;
         }
         ctx.uploadFilePath = directory;
