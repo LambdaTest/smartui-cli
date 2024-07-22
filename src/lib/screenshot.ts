@@ -183,7 +183,7 @@ export async function uploadScreenshots(ctx: Context): Promise<void> {
             const relativeFilePath = path.join(relativePath, file);
 
             if (stat.isDirectory() && ctx.options.ignorePattern.includes(relativeFilePath)) {
-                ctx.log.debug(`Ignoring Directory ${relativeFilePath}`)
+                ctx.log.info(`Ignoring Directory ${relativeFilePath}`)
                 continue; // Skip this path
             }
 
@@ -195,7 +195,7 @@ export async function uploadScreenshots(ctx: Context): Promise<void> {
                     const fileBuffer = fs.readFileSync(filePath);
 
                     if (!isImage(fileBuffer)) {
-                        ctx.log.debug(`File ${filePath} is not a valid ${fileExtension} image. Skipping.`);
+                        ctx.log.info(`File ${filePath} is not a valid ${fileExtension} image. Skipping.`);
                         continue;
                     }
 
@@ -209,7 +209,7 @@ export async function uploadScreenshots(ctx: Context): Promise<void> {
                     if (!ctx.options.ignoreResolutions) {
                         const dimensions = getImageDimensions(filePath);
                         if (!dimensions) {
-                            ctx.log.debug(`Unable to determine dimensions for image: ${filePath}`)
+                            ctx.log.info(`Unable to determine dimensions for image: ${filePath}`)
                         } else {
                             const width = dimensions.width;
                             const height = dimensions.height;
@@ -218,7 +218,7 @@ export async function uploadScreenshots(ctx: Context): Promise<void> {
                     }
 
                     await ctx.client.uploadScreenshot(ctx.build, filePath, ssId, 'default', viewport, ctx.log);
-                    ctx.log.debug(`${filePath} : uploaded successfully`)
+                    ctx.log.info(`${filePath} : uploaded successfully`)
                     noOfScreenshots++;
                 }
             }
