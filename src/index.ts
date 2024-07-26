@@ -17,11 +17,11 @@ import pkgJSON from './../package.json'
         log.info(`${additionalDescription}`);
         if (deprecated){ 
             log.warn(`This version is deprecated. A new version ${latestVersion} is available!`);
-            log.warn(`More Information regarding version v${latestVersion}: ${additionalDescriptionLatest}\n`);
+            log.warn(`${additionalDescriptionLatest}\n`);
         }
         else if (pkgJSON.version !== latestVersion){ 
             log.info(chalk.gray(`A new version ${latestVersion} is available!`));
-            log.info(`More Information regarding version v${latestVersion}: ${additionalDescriptionLatest}\n`);
+            log.info(`${additionalDescriptionLatest}\n`);
         }
         else log.info(chalk.gray('https://www.npmjs.com/package/@lambdatest/smartui-cli\n'));
     } catch (error) {
