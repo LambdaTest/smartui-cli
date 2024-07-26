@@ -12,10 +12,13 @@ import pkgJSON from './../package.json'
     let log = logger;
 
     try {
-        log.info(`\nLambdaTest SmartUI CLI v${pkgJSON.version}`);
-        let { data: { latestVersion, deprecated } } = await client.checkUpdate(log);
-        if (deprecated) log.warn(`This version is deprecated. A new version ${latestVersion} is available!\n`);
-        else if (pkgJSON.version !== latestVersion) log.info(chalk.gray(`A new version ${latestVersion} is available!\n`));
+        let { data: { latestVersion, deprecated, additionalDescription } } = await client.checkUpdate(log);
+        log.info(`\nLambdaTest SmartUI CLI v${pkgJSON.version}
+        Additional Information: ${additionalDescription}`);
+        if (deprecated) log.warn(`This version is deprecated. A new version ${latestVersion} is available!
+        Additional Information: ${additionalDescription}\n`);
+        else if (pkgJSON.version !== latestVersion) log.info(chalk.gray(`A new version ${latestVersion} is available!
+        Additional Information: ${additionalDescription}\n`));
         else log.info(chalk.gray('https://www.npmjs.com/package/@lambdatest/smartui-cli\n'));
     } catch (error) {
         log.debug(error);
