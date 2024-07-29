@@ -22,6 +22,7 @@ export interface Context {
         enableJavaScript: boolean;
         allowedHostnames: Array<string>;
     };
+    uploadFilePath: string;
     webStaticConfig: WebStaticConfig;
     build: Build;
     git: Git;
@@ -33,6 +34,10 @@ export interface Context {
         markBaseline?: boolean,
         buildName?: string,
         port?: number,
+        ignoreResolutions?: boolean,
+        fileExtension?: Array<string>,
+        stripExtension?: boolean,
+        ignorePattern?: Array<string>,
     }
     cliVersion: string;
     totalSnapshots: number;
@@ -43,7 +48,6 @@ export interface Context {
 export interface Env {
     PROJECT_TOKEN: string;
     SMARTUI_CLIENT_API_URL: string;
-    LT_SDK_LOG_LEVEL: string | undefined;
     LT_SDK_DEBUG: string | undefined;
     SMARTUI_GIT_INFO_FILEPATH: string | undefined;
     HTTP_PROXY: string | undefined;

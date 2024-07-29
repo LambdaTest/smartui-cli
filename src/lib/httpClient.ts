@@ -157,4 +157,32 @@ export default class httpClient {
             data: JSON.stringify(requestBody)
         }, log);
     }
+
+    getS3PreSignedURL(ctx: Context) {
+        return this.request({
+            url: `/loguploadurl`,
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            data: {
+                buildId: ctx.build.id
+            }
+        }, ctx.log)
+    }
+
+    uploadLogs(ctx: Context, uploadURL: string) {
+        const fileStream = fs.createReadStream(constants.LOG_FILE_PATH);
+        const { size } = fs.statSync(constants.LOG_FILE_PATH);
+
+        return this.request({
+            url: uploadURL,
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'text/plain',
+                'Content-Length': size,
+            },
+            data: fileStream,
+            maxBodyLength: Infinity, // prevent axios from limiting the body size
+            maxContentLength: Infinity, // prevent axios from limiting the content size
+        }, ctx.log)
+    }
 }

@@ -1,7 +1,8 @@
 import { Snapshot, Context, ProcessedSnapshot } from "../types.js";
 import { scrollToBottomAndBackToTop, getRenderViewports } from "./utils.js"
-import { chromium, Locator } from "@playwright/test"
+import { firefox, Locator } from "@playwright/test"
 import constants from "./constants.js";
+import { updateLogContext } from '../lib/logger.js'
 
 const MAX_RESOURCE_SIZE = 15 * (1024 ** 2); // 15MB
 var ALLOWED_RESOURCES = ['document', 'stylesheet', 'image', 'media', 'font', 'other'];
@@ -76,6 +77,7 @@ export default class Queue {
 }
 
 async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record<string, any>> {
+    updateLogContext({task: 'discovery'});
     ctx.log.debug(`Processing snapshot ${snapshot.name}`);
 
     let launchOptions: Record<string, any> = { headless: true }
@@ -85,8 +87,8 @@ async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record
     }
     if (!ctx.browser?.isConnected()) {
         if (ctx.env.HTTP_PROXY || ctx.env.HTTPS_PROXY) launchOptions.proxy = { server: ctx.env.HTTP_PROXY || ctx.env.HTTPS_PROXY };
-        ctx.browser = await chromium.launch(launchOptions);
-        ctx.log.debug(`Chromium launched with options ${JSON.stringify(launchOptions)}`);
+        ctx.browser = await firefox.launch(launchOptions);
+        ctx.log.debug(`Firefox launched with options ${JSON.stringify(launchOptions)}`);
     }
     const context = await ctx.browser.newContext(contextOptions);
     ctx.log.debug(`Browser context created with options ${JSON.stringify(contextOptions)}`);

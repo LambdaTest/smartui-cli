@@ -64,6 +64,21 @@ export default {
     // CI
     GITHUB_API_HOST: 'https://api.github.com',
 
+    // log file path
+    LOG_FILE_PATH: '.smartui.log',
+
+    // Disallowed file extension
+    FILE_EXTENSION_ZIP: '.zip',
+    FILE_EXTENSION_GIFS: 'gif',
+
+    // Magic Numbers 
+    MAGIC_NUMBERS: [
+        { ext: 'jpg', magic: Buffer.from([0xFF, 0xD8, 0xFF]) },
+        { ext: 'jpeg', magic: Buffer.from([0xFF, 0xD8, 0xFF]) },
+        { ext: 'png', magic: Buffer.from([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]) },
+        { ext: 'gif', magic: Buffer.from([0x47, 0x49, 0x46, 0x38]) },
+    ],
+
     SUPPORTED_MOBILE_DEVICES: {
         'Blackberry KEY2 LE': { os: 'android', viewport: {width: 412, height: 618}},
         'Galaxy A12': { os: 'android', viewport: {width: 360, height: 800}},

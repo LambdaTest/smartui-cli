@@ -1,8 +1,11 @@
+import fs from 'fs';
+import path from 'path';
 import { Browser, BrowserContext, Page } from "@playwright/test"
 import { Context } from "../types.js"
 import * as utils from "./utils.js"
 import constants from './constants.js'
 import chalk from 'chalk';
+import sharp from 'sharp';
 
 async function captureScreenshotsForConfig(
     ctx: Context,
@@ -133,4 +136,117 @@ export async function  captureScreenshots(ctx: Context): Promise<Record<string,a
     utils.delDir('screenshots');
 
     return { capturedScreenshots, output };
+}
+
+function getImageDimensions(filePath: string): { width: number, height: number } | null {
+    const buffer = fs.readFileSync(filePath);
+    let width, height;
+
+    if (buffer.toString('hex', 0, 2) === 'ffd8') {
+        // JPEG
+        let offset = 2;
+        while (offset < buffer.length) {
+            const marker = buffer.toString('hex', offset, offset + 2);
+            offset += 2;
+            const length = buffer.readUInt16BE(offset);
+            if (marker === 'ffc0' || marker === 'ffc2') {
+                height = buffer.readUInt16BE(offset + 3);
+                width = buffer.readUInt16BE(offset + 5);
+                return { width, height };
+            }
+            offset += length;
+        }
+    } else if (buffer.toString('hex', 1, 4) === '504e47') {
+        // PNG
+        width = buffer.readUInt32BE(16);
+        height = buffer.readUInt32BE(20);
+        return { width, height };
+    }
+
+    return null;
+}
+
+async function isAllowedImage(filePath: string): Promise<boolean> {
+    try {
+        const fileBuffer = fs.readFileSync(filePath);
+        const isMagicValid = constants.MAGIC_NUMBERS.some(magic => fileBuffer.slice(0, magic.magic.length).equals(magic.magic));
+        const metadata = await sharp(filePath).metadata();
+        if (metadata.format === constants.FILE_EXTENSION_GIFS) {
+            return false;
+        }
+        if (metadata.width > 0 && metadata.height > 0) {
+            return true;
+        }
+        if (isMagicValid && metadata.format !== constants.FILE_EXTENSION_GIFS) {
+            return true;
+        }
+        return false;
+    } catch (error) {
+        return false;
+    }
+}
+
+export async function uploadScreenshots(ctx: Context): Promise<void> {
+    const allowedExtensions = ctx.options.fileExtension.map(ext => `.${ext.trim().toLowerCase()}`);
+    let noOfScreenshots = 0;
+
+    async function processDirectory(directory: string, relativePath: string = ''): Promise<void> {
+        const files = fs.readdirSync(directory);
+
+        for (let file of files) {
+            const filePath = path.join(directory, file);
+            const stat = fs.statSync(filePath);
+            const relativeFilePath = path.join(relativePath, file);
+
+            if (stat.isDirectory() && ctx.options.ignorePattern.includes(relativeFilePath)) {
+                ctx.log.info(`Ignoring Directory ${relativeFilePath}`)
+                continue; // Skip this path
+            }
+
+            if (stat.isDirectory()) {
+                await processDirectory(filePath, relativeFilePath); // Recursively process subdirectory
+            } else {
+                let fileExtension = path.extname(file).toLowerCase();
+                if (allowedExtensions.includes(fileExtension)) {
+                    const isValid = await isAllowedImage(filePath);
+
+                    if (!isValid) {
+                        ctx.log.info(`File ${filePath} is not a valid ${fileExtension} image or is corrupted. Skipping.`);
+                        continue;
+                    }
+
+                    let ssId = relativeFilePath;
+                    if (ctx.options.stripExtension) {
+                        ssId = path.join(relativePath, path.basename(file, fileExtension));
+                    }
+
+                    let viewport = 'default';
+
+                    if (!ctx.options.ignoreResolutions) {
+                        const dimensions = getImageDimensions(filePath);
+                        if (!dimensions) {
+                            ctx.log.info(`Unable to determine dimensions for image: ${filePath}`)
+                        } else {
+                            const width = dimensions.width;
+                            const height = dimensions.height;
+                            viewport = `${width}x${height}`;
+                        }
+                    }
+
+                    await ctx.client.uploadScreenshot(ctx.build, filePath, ssId, 'default', viewport, ctx.log);
+                    ctx.log.info(`${filePath} : uploaded successfully`)
+                    noOfScreenshots++;
+                } else {
+                    ctx.log.info(`File ${filePath} has invalid file extension: ${fileExtension}. Skipping`)
+                }
+            }
+        }
+    }
+
+    await processDirectory(ctx.uploadFilePath);
+    if(noOfScreenshots == 0){
+        ctx.log.info(`No screenshots uploaded.`);
+    } else {
+        ctx.log.info(`${noOfScreenshots} screenshots uploaded successfully.`);
+    }
 }
