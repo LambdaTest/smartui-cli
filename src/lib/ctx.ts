@@ -67,6 +67,7 @@ export default (options: Record<string, string>): Context => {
             waitForPageRender: config.waitForPageRender || 0,
             waitForTimeout: config.waitForTimeout || 0,
             enableJavaScript: config.enableJavaScript || false,
+            clienableJavaScript: config.clienableJavaScript || true,
             allowedHostnames: config.allowedHostnames || []
         },
         uploadFilePath: '',

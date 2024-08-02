@@ -79,7 +79,7 @@ export default class Queue {
 async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record<string, any>> {
     updateLogContext({task: 'discovery'});
     ctx.log.debug(`Processing snapshot ${snapshot.name}`);
-    let cliEnableJavaScript = true;
+    let cliEnableJavaScript = ctx.config.clienableJavaScript;
 
     let launchOptions: Record<string, any> = { headless: false }
     let contextOptions: Record<string, any> = {

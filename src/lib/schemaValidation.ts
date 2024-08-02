@@ -109,6 +109,10 @@ const ConfigSchema = {
             type: "boolean",
             errorMessage: "Invalid config; enableJavaScript must be true/false"
         },
+        clienableJavaScript: {
+            type: "boolean",
+            errorMessage: "Invalid config; clienableJavaScript must be true/false"
+        },
         allowedHostnames: {
             type: "array",
             items: {
