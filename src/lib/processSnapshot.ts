@@ -82,7 +82,7 @@ async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record
 
     let launchOptions: Record<string, any> = { headless: true }
     let contextOptions: Record<string, any> = {
-        javaScriptEnabled: ctx.config.clienableJavaScript,
+        javaScriptEnabled: ctx.config.cliEnableJavaScript,
         userAgent: constants.CHROME_USER_AGENT,
     }
     if (!ctx.browser?.isConnected()) {
@@ -219,7 +219,7 @@ async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record
             }
             
         }
-        if (ctx.config.clienableJavaScript && fullPage) await page.evaluate(scrollToBottomAndBackToTop);
+        if (ctx.config.cliEnableJavaScript && fullPage) await page.evaluate(scrollToBottomAndBackToTop);
 
         try {
             await page.waitForLoadState('networkidle', { timeout: 5000 });

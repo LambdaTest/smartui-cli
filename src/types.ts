@@ -20,7 +20,7 @@ export interface Context {
         waitForPageRender: number;
         waitForTimeout: number;
         enableJavaScript: boolean;
-        clienableJavaScript: boolean;
+        cliEnableJavaScript: boolean;
         allowedHostnames: Array<string>;
     };
     uploadFilePath: string;
