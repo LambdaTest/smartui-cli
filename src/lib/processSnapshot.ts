@@ -79,12 +79,10 @@ export default class Queue {
 async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record<string, any>> {
     updateLogContext({task: 'discovery'});
     ctx.log.debug(`Processing snapshot ${snapshot.name}`);
-    let cliEnableJavaScript = ctx.config.clienableJavaScript;
 
-    let launchOptions: Record<string, any> = { headless: false }
+    let launchOptions: Record<string, any> = { headless: true }
     let contextOptions: Record<string, any> = {
-
-        javaScriptEnabled: cliEnableJavaScript,
+        javaScriptEnabled: ctx.config.clienableJavaScript,
         userAgent: constants.CHROME_USER_AGENT,
     }
     if (!ctx.browser?.isConnected()) {
@@ -221,7 +219,7 @@ async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record
             }
             
         }
-        if (cliEnableJavaScript && fullPage) await page.evaluate(scrollToBottomAndBackToTop);
+        if (ctx.config.clienableJavaScript && fullPage) await page.evaluate(scrollToBottomAndBackToTop);
 
         try {
             await page.waitForLoadState('networkidle', { timeout: 5000 });
@@ -229,8 +227,6 @@ async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record
         } catch (error) {
             ctx.log.debug(`Network idle failed due to ${error}`);
         }
-
-        await new Promise(r => setTimeout(r, 30000));
         
         // snapshot options
         if (processedOptions.element) {
@@ -263,12 +259,6 @@ async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record
             }
         }
     }
-
-    // add dom resources to cache
-
-    const domBase64 = Buffer.from(snapshot.dom.html);
-    
-    ctx.log.debug(`Cache entries: ${Object.keys(cache)}`);
 
     if (snapshot.dom.resources.length) {
         for (let resource of snapshot.dom.resources) {
