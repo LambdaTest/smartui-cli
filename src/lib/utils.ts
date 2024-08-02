@@ -11,7 +11,7 @@ export function delDir(dir: string): void {
 
 export function scrollToBottomAndBackToTop({
     frequency = 100,
-    timing = 8,
+    timing = 150,
     remoteWindow = window 
 } = {}): Promise<void> {
     return new Promise(resolve => {
