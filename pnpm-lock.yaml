@@ -9,17 +9,17 @@ importers:
   .:
     dependencies:
       '@playwright/browser-chromium':
-        specifier: ^1.40.1
-        version: 1.40.1
+        specifier: ^1.45.3
+        version: 1.45.3
       '@playwright/browser-firefox':
-        specifier: ^1.40.1
-        version: 1.40.1
+        specifier: ^1.45.3
+        version: 1.45.3
       '@playwright/browser-webkit':
-        specifier: ^1.40.1
-        version: 1.40.1
+        specifier: ^1.45.3
+        version: 1.45.3
       '@playwright/test':
-        specifier: ^1.40.1
-        version: 1.40.1
+        specifier: ^1.45.3
+        version: 1.45.3
       '@types/cross-spawn':
         specifier: ^6.0.4
         version: 6.0.5
@@ -388,21 +388,21 @@ packages:
     resolution: {integrity: sha512-oGB+UxlgWcgQkgwo8GcEGwemoTFt3FIO9ababBmaGwXIoBKZ+GTy0pP185beGg7Llih/NSHSV2XAs1lnznocSg==}
     engines: {node: '>= 8'}
 
-  '@playwright/browser-chromium@1.40.1':
-    resolution: {integrity: sha512-uNmjHYXBTYTfJkf89D6zVUcesCFzZ/yjkPj8FvBJQ6yf3na/j1rcjVNzx0PzOAGcWKioB/rnWRBi7b5ojOdCHA==}
-    engines: {node: '>=16'}
+  '@playwright/browser-chromium@1.45.3':
+    resolution: {integrity: sha512-UVPW8HveE8SghaahoMy8CfG0QdJ2mO0BZLOcPT8nlQh7Z97Gkv4e3Ad69D1oCqM3m3zYkDPAiGB+hOASNS0d/g==}
+    engines: {node: '>=18'}
 
-  '@playwright/browser-firefox@1.40.1':
-    resolution: {integrity: sha512-ZhlyECMfzO+ZZWVtImLvbEaI5f6du/t/AXWG9WgcRFIFkLSRZaoPuQnvA0IBc+z/ahfgk1qK9NkffN9aOu5bmA==}
-    engines: {node: '>=16'}
+  '@playwright/browser-firefox@1.45.3':
+    resolution: {integrity: sha512-YuAXUcQfSw1BkkRFcRJTguBdtf2pUuIGMFydBjUzHtOBpJmTxeR8THWT/OzPTqdJy2bpSXWV9ktFJPRYL+i5pw==}
+    engines: {node: '>=18'}
 
-  '@playwright/browser-webkit@1.40.1':
-    resolution: {integrity: sha512-vsvVzLvOoiClDXnNkLDRULqXsuuSgMyUZEcUghkgfFDV6/gQ+oP2dAHSsxjcaPM3eWqUgM5mJIm7VNTXD4qIfg==}
-    engines: {node: '>=16'}
+  '@playwright/browser-webkit@1.45.3':
+    resolution: {integrity: sha512-68Z6XT2sGPyCM3sC8rke/s3vsjbYwscUqGFUzBIvLlivFNrjm5v1Ax1nHs5nOm0ReOnhgcOdYia0AEUuuee+CQ==}
+    engines: {node: '>=18'}
 
-  '@playwright/test@1.40.1':
-    resolution: {integrity: sha512-EaaawMTOeEItCRvfmkI9v6rBkF1svM8wjl/YPRrg2N2Wmp+4qJYkWtJsbew1szfKKDm6fPLy4YAanBhIlf9dWw==}
-    engines: {node: '>=16'}
+  '@playwright/test@1.45.3':
+    resolution: {integrity: sha512-UKF4XsBfy+u3MFWEH44hva1Q8Da28G6RFtR2+5saw+jgAFQV5yYnB1fu68Mz7fO+5GJF3wgwAIs0UelU8TxFrA==}
+    engines: {node: '>=18'}
     hasBin: true
 
   '@types/cross-spawn@6.0.5':
@@ -918,14 +918,14 @@ packages:
     resolution: {integrity: sha512-saLsH7WeYYPiD25LDuLRRY/i+6HaPYr6G1OUlN39otzkSTxKnubR9RTxS3/Kk50s1g2JTgFwWQDQyplC5/SHZg==}
     engines: {node: '>= 6'}
 
-  playwright-core@1.40.1:
-    resolution: {integrity: sha512-+hkOycxPiV534c4HhpfX6yrlawqVUzITRKwHAmYfmsVreltEl6fAZJ3DPfLMOODw0H3s1Itd6MDCWmP1fl/QvQ==}
-    engines: {node: '>=16'}
+  playwright-core@1.45.3:
+    resolution: {integrity: sha512-+ym0jNbcjikaOwwSZycFbwkWgfruWvYlJfThKYAlImbxUgdWFO2oW70ojPm4OpE4t6TAo2FY/smM+hpVTtkhDA==}
+    engines: {node: '>=18'}
     hasBin: true
 
-  playwright@1.40.1:
-    resolution: {integrity: sha512-2eHI7IioIpQ0bS1Ovg/HszsN/XKNwEG1kbzSDDmADpclKc7CyqkHw7Mg2JCz/bbCxg25QUPcjksoMW7JcIFQmw==}
-    engines: {node: '>=16'}
+  playwright@1.45.3:
+    resolution: {integrity: sha512-QhVaS+lpluxCaioejDZ95l4Y4jSFCsBvl2UZkpeXlzxmqS+aABr5c82YmfMHrL6x27nvrvykJAFpkzT2eWdJww==}
+    engines: {node: '>=18'}
     hasBin: true
 
   postcss-load-config@4.0.1:
@@ -1412,21 +1412,21 @@ snapshots:
       '@nodelib/fs.scandir': 2.1.5
       fastq: 1.15.0
 
-  '@playwright/browser-chromium@1.40.1':
+  '@playwright/browser-chromium@1.45.3':
     dependencies:
-      playwright-core: 1.40.1
+      playwright-core: 1.45.3
 
-  '@playwright/browser-firefox@1.40.1':
+  '@playwright/browser-firefox@1.45.3':
     dependencies:
-      playwright-core: 1.40.1
+      playwright-core: 1.45.3
 
-  '@playwright/browser-webkit@1.40.1':
+  '@playwright/browser-webkit@1.45.3':
     dependencies:
-      playwright-core: 1.40.1
+      playwright-core: 1.45.3
 
-  '@playwright/test@1.40.1':
+  '@playwright/test@1.45.3':
     dependencies:
-      playwright: 1.40.1
+      playwright: 1.45.3
 
   '@types/cross-spawn@6.0.5':
     dependencies:
@@ -1960,11 +1960,11 @@ snapshots:
 
   pirates@4.0.6: {}
 
-  playwright-core@1.40.1: {}
+  playwright-core@1.45.3: {}
 
-  playwright@1.40.1:
+  playwright@1.45.3:
     dependencies:
-      playwright-core: 1.40.1
+      playwright-core: 1.45.3
     optionalDependencies:
       fsevents: 2.3.2
 

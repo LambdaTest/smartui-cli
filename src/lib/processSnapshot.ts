@@ -1,6 +1,6 @@
 import { Snapshot, Context, ProcessedSnapshot } from "../types.js";
 import { scrollToBottomAndBackToTop, getRenderViewports } from "./utils.js"
-import { firefox, Locator } from "@playwright/test"
+import { chromium, Locator } from "@playwright/test"
 import constants from "./constants.js";
 import { updateLogContext } from '../lib/logger.js'
 
@@ -79,16 +79,18 @@ export default class Queue {
 async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record<string, any>> {
     updateLogContext({task: 'discovery'});
     ctx.log.debug(`Processing snapshot ${snapshot.name}`);
+    let cliEnableJavaScript = true;
 
-    let launchOptions: Record<string, any> = { headless: true }
+    let launchOptions: Record<string, any> = { headless: false }
     let contextOptions: Record<string, any> = {
-        javaScriptEnabled: ctx.config.enableJavaScript,
+
+        javaScriptEnabled: cliEnableJavaScript,
         userAgent: constants.CHROME_USER_AGENT,
     }
     if (!ctx.browser?.isConnected()) {
         if (ctx.env.HTTP_PROXY || ctx.env.HTTPS_PROXY) launchOptions.proxy = { server: ctx.env.HTTP_PROXY || ctx.env.HTTPS_PROXY };
-        ctx.browser = await firefox.launch(launchOptions);
-        ctx.log.debug(`Firefox launched with options ${JSON.stringify(launchOptions)}`);
+        ctx.browser = await chromium.launch(launchOptions);
+        ctx.log.debug(`Chromium launched with options ${JSON.stringify(launchOptions)}`);
     }
     const context = await ctx.browser.newContext(contextOptions);
     ctx.log.debug(`Browser context created with options ${JSON.stringify(contextOptions)}`);
@@ -219,7 +221,7 @@ async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record
             }
             
         }
-        if (ctx.config.enableJavaScript && fullPage) await page.evaluate(scrollToBottomAndBackToTop);
+        if (cliEnableJavaScript && fullPage) await page.evaluate(scrollToBottomAndBackToTop);
 
         try {
             await page.waitForLoadState('networkidle', { timeout: 5000 });
@@ -227,6 +229,8 @@ async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record
         } catch (error) {
             ctx.log.debug(`Network idle failed due to ${error}`);
         }
+
+        await new Promise(r => setTimeout(r, 30000));
         
         // snapshot options
         if (processedOptions.element) {
@@ -261,6 +265,11 @@ async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record
     }
 
     // add dom resources to cache
+
+    const domBase64 = Buffer.from(snapshot.dom.html);
+    
+    ctx.log.debug(`Cache entries: ${Object.keys(cache)}`);
+
     if (snapshot.dom.resources.length) {
         for (let resource of snapshot.dom.resources) {
             cache[resource.url] = {
