@@ -263,11 +263,6 @@ async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record
     }
 
     // add dom resources to cache
-
-    const domBase64 = Buffer.from(snapshot.dom.html);
-    
-    ctx.log.debug(`Cache entries: ${Object.keys(cache)}`);
-
     if (snapshot.dom.resources.length) {
         for (let resource of snapshot.dom.resources) {
             cache[resource.url] = {
