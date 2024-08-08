@@ -219,7 +219,7 @@ async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record
             }
             
         }
-        if (ctx.config.cliEnableJavaScript && fullPage) await page.evaluate(scrollToBottomAndBackToTop);
+        if (ctx.config.cliEnableJavaScript && fullPage) await page.evaluate(scrollToBottomAndBackToTop, { frequency: 100, timing: ctx.config.scrollDom });
 
         try {
             await page.waitForLoadState('networkidle', { timeout: 5000 });
