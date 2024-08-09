@@ -113,11 +113,11 @@ const ConfigSchema = {
             type: "boolean",
             errorMessage: "Invalid config; cliEnableJavaScript must be true/false"
         },
-        scrollDom: {
+        scrollTime: {
             type: "number",
             minimum: 8,
             maximum: 500,
-            errorMessage: "Invalid config; scrollDom must be > 8 and <= 500"
+            errorMessage: "Invalid config; scrollTime must be > 8 and <= 500"
         },
         allowedHostnames: {
             type: "array",

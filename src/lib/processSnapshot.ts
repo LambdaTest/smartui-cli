@@ -198,8 +198,21 @@ async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record
 
     // process for every viewport
     let navigated: boolean = false;
+    let previousDeviceType: string | null = null;
     let renderViewports = getRenderViewports(ctx);
-    for (const { viewport, viewportString, fullPage } of renderViewports) {
+
+    for (const { viewport, viewportString, fullPage, device } of renderViewports) {
+
+        // Check if this is the first iteration or if the device type has changed from the previous iteration
+        if (previousDeviceType !== null && previousDeviceType !== device) {
+            // If the device type has changed, reset `navigated` to false
+            // This indicates that we haven't navigated to the required page for the new device type yet
+            navigated = false;
+        }
+
+        // Update `previousDeviceType` to the current device type for comparison in the next iteration
+        previousDeviceType = device;
+
         await page.setViewportSize({ width: viewport.width, height: viewport.height ||  MIN_VIEWPORT_HEIGHT });
         ctx.log.debug(`Page resized to ${viewport.width}x${viewport.height ||  MIN_VIEWPORT_HEIGHT}`);
         
@@ -219,7 +232,7 @@ async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record
             }
             
         }
-        if (ctx.config.cliEnableJavaScript && fullPage) await page.evaluate(scrollToBottomAndBackToTop, { frequency: 100, timing: ctx.config.scrollDom });
+        if (ctx.config.cliEnableJavaScript && fullPage) await page.evaluate(scrollToBottomAndBackToTop, { frequency: 100, timing: ctx.config.scrollTime });
 
         try {
             await page.waitForLoadState('networkidle', { timeout: 5000 });
