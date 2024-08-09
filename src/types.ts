@@ -21,6 +21,7 @@ export interface Context {
         waitForTimeout: number;
         enableJavaScript: boolean;
         cliEnableJavaScript: boolean;
+        scrollTime: number;
         allowedHostnames: Array<string>;
     };
     uploadFilePath: string;

@@ -71,6 +71,9 @@ export default {
     FILE_EXTENSION_ZIP: '.zip',
     FILE_EXTENSION_GIFS: 'gif',
 
+    // Default scrollTime
+    DEFAULT_SCROLL_TIME: 8,
+
     // Magic Numbers 
     MAGIC_NUMBERS: [
         { ext: 'jpg', magic: Buffer.from([0xFF, 0xD8, 0xFF]) },
