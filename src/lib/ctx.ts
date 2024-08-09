@@ -68,7 +68,7 @@ export default (options: Record<string, string>): Context => {
             waitForTimeout: config.waitForTimeout || 0,
             enableJavaScript: config.enableJavaScript || false,
             cliEnableJavaScript: config.cliEnableJavaScript || true,
-            scrollTime: config.scrollTime || 8,
+            scrollTime: config.scrollTime || constants.DEFAULT_SCROLL_TIME,
             allowedHostnames: config.allowedHostnames || []
         },
         uploadFilePath: '',
