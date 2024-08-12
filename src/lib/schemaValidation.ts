@@ -109,6 +109,16 @@ const ConfigSchema = {
             type: "boolean",
             errorMessage: "Invalid config; enableJavaScript must be true/false"
         },
+        cliEnableJavaScript: {
+            type: "boolean",
+            errorMessage: "Invalid config; cliEnableJavaScript must be true/false"
+        },
+        scrollTime: {
+            type: "number",
+            minimum: 1,
+            maximum: 1000,
+            errorMessage: "Invalid config; scrollTime must be > 1 and <= 1000"
+        },
         allowedHostnames: {
             type: "array",
             items: {

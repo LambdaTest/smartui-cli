@@ -118,9 +118,12 @@ export function getMobileRenderViewports(ctx: Context): Record<string,any> {
 }
 
 export function getRenderViewports(ctx: Context): Array<Record<string,any>> {
-    let mobileRenderViewports = getMobileRenderViewports(ctx)
+    let mobileRenderViewports = getMobileRenderViewports(ctx);
+    let webRenderViewports = getWebRenderViewports(ctx);
+    
+    // Combine arrays ensuring web viewports are first
     return [
-        ...getWebRenderViewports(ctx),
+        ...webRenderViewports,
         ...mobileRenderViewports[constants.MOBILE_OS_IOS],
         ...mobileRenderViewports[constants.MOBILE_OS_ANDROID]
     ];
