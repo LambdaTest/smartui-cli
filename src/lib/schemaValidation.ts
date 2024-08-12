@@ -115,9 +115,9 @@ const ConfigSchema = {
         },
         scrollTime: {
             type: "number",
-            minimum: 8,
-            maximum: 500,
-            errorMessage: "Invalid config; scrollTime must be > 8 and <= 500"
+            minimum: 1,
+            maximum: 1000,
+            errorMessage: "Invalid config; scrollTime must be > 1 and <= 1000"
         },
         allowedHostnames: {
             type: "array",
