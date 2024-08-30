@@ -278,8 +278,10 @@ async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record
     // add dom resources to cache
     if (snapshot.dom.resources.length) {
         for (let resource of snapshot.dom.resources) {
+            // convert text/css content to base64
+            let body = resource.mimetype == 'text/css' ? Buffer.from(resource.content).toString('base64') : resource.content;
             cache[resource.url] = {
-                body: resource.content,
+                body: body,
                 type: resource.mimetype
             }
         }	
