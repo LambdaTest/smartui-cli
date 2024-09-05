@@ -1,4 +1,4 @@
-import { Context, Env, WebConfig, MobileConfig } from '../types.js'
+import { Context, Env, WebConfig, MobileConfig, basicAuth } from '../types.js'
 import constants from './constants.js'
 import { version } from '../../package.json'
 import { validateConfig } from './schemaValidation.js'
@@ -11,6 +11,7 @@ export default (options: Record<string, string>): Context => {
     let env: Env = getEnv();
     let webConfig: WebConfig;
     let mobileConfig: MobileConfig;
+    let basicAuthObj: basicAuth
     let config = constants.DEFAULT_CONFIG;
     let port: number;
     let resolutionOff: boolean;
@@ -52,9 +53,12 @@ export default (options: Record<string, string>): Context => {
     if (config.mobile) {
         mobileConfig = {
             devices: config.mobile.devices,
-            fullPage: config.mobile.fullPage || true,
+            fullPage: config.mobile.fullPage ?? true,
             orientation: config.mobile.orientation || constants.MOBILE_ORIENTATION_PORTRAIT,
         }
+    }
+    if (config.basicAuthorization){
+        basicAuthObj = config.basicAuthorization
     }
 
     return {
@@ -69,7 +73,8 @@ export default (options: Record<string, string>): Context => {
             enableJavaScript: config.enableJavaScript || false,
             cliEnableJavaScript: config.cliEnableJavaScript || true,
             scrollTime: config.scrollTime || constants.DEFAULT_SCROLL_TIME,
-            allowedHostnames: config.allowedHostnames || []
+            allowedHostnames: config.allowedHostnames || [],
+            basicAuthorization: basicAuthObj
         },
         uploadFilePath: '',
         webStaticConfig: [],

@@ -23,6 +23,7 @@ export interface Context {
         cliEnableJavaScript: boolean;
         scrollTime: number;
         allowedHostnames: Array<string>;
+        basicAuthorization: basicAuth | undefined
     };
     uploadFilePath: string;
     webStaticConfig: WebStaticConfig;
@@ -141,3 +142,8 @@ export type FigmaDesignConfig = {
     depth: number;
     figma_config: FigmaConfigItem[];
 };
+
+export interface basicAuth {
+    username: string;
+    password: string;
+}

@@ -92,6 +92,21 @@ async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record
     }
     const context = await ctx.browser.newContext(contextOptions);
     ctx.log.debug(`Browser context created with options ${JSON.stringify(contextOptions)}`);
+
+    // Setting the cookies in playwright context
+    const domainName = new URL(snapshot.url).hostname;
+    ctx.log.debug('Setting cookies in context for domain:', domainName);
+    const cookieArray = snapshot.dom.cookies.split('; ').map(cookie => {
+        const [name, value] = cookie.split('=');
+        return {
+            name: name.trim(),
+            value: value.trim(),
+            domain: domainName,
+            path: '/'
+        };
+    });
+    await context.addCookies(cookieArray);
+
     const page = await context.newPage();
     let cache: Record<string, any> = {};
 
@@ -110,11 +125,24 @@ async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record
             ctx.config.allowedHostnames.push(new URL(snapshot.url).hostname);
             if (ctx.config.enableJavaScript) ALLOWED_RESOURCES.push('script');
 
+            let requestOptions: Record<string, any> = {
+                timeout: REQUEST_TIMEOUT
+            }
+            if (requestUrl === snapshot.url && ctx.config.basicAuthorization ) {
+                ctx.log.debug(`Adding basic authorization to the headers for root url`); 
+                let token = Buffer.from(`${ctx.config.basicAuthorization.username}:${ctx.config.basicAuthorization.password}`).toString('base64');
+                requestOptions.headers = {
+                    ...request.headers(),
+                    Authorization: `Basic ${token}`
+                };
+            }
+
             const response = await page.request.fetch(request, { timeout: REQUEST_TIMEOUT });
             const body = await response.body();
+
             if (!body) {
                 ctx.log.debug(`Handling request ${requestUrl}\n - skipping no response`);
-            } else if (!body.length) {
+			} else if (!body.length) {
                 ctx.log.debug(`Handling request ${requestUrl}\n - skipping empty response`);
             } else if (requestUrl === snapshot.url) {
                 ctx.log.debug(`Handling request ${requestUrl}\n - skipping root resource`);
