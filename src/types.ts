@@ -23,6 +23,7 @@ export interface Context {
         cliEnableJavaScript: boolean;
         scrollTime: number;
         allowedHostnames: Array<string>;
+        basicAuthorization: {username: string, password: string}
     };
     uploadFilePath: string;
     webStaticConfig: WebStaticConfig;

@@ -52,7 +52,7 @@ export default (options: Record<string, string>): Context => {
     if (config.mobile) {
         mobileConfig = {
             devices: config.mobile.devices,
-            fullPage: config.mobile.fullPage || true,
+            fullPage: config.mobile.fullPage ?? true,
             orientation: config.mobile.orientation || constants.MOBILE_ORIENTATION_PORTRAIT,
         }
     }
@@ -69,7 +69,8 @@ export default (options: Record<string, string>): Context => {
             enableJavaScript: config.enableJavaScript || false,
             cliEnableJavaScript: config.cliEnableJavaScript || true,
             scrollTime: config.scrollTime || constants.DEFAULT_SCROLL_TIME,
-            allowedHostnames: config.allowedHostnames || []
+            allowedHostnames: config.allowedHostnames || [],
+            basicAuthorization: config.basicAuthorization || {username: '', password:''}
         },
         uploadFilePath: '',
         webStaticConfig: [],

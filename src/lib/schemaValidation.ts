@@ -133,6 +133,19 @@ const ConfigSchema = {
                 uniqueItems: "Invalid config; duplicates in allowedHostnames"
             }
 
+        },
+        basicAuthorization: {
+            type: "object",
+            properties: {
+                username: {
+                    type: "string",
+                    errorMessage: "username is mandatory"
+                },
+                password: {
+                    type: "string", 
+                    errorMessage: "password is mandatory"
+                },
+            }
         }
     },
     anyOf: [

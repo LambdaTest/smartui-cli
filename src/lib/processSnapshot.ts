@@ -3,12 +3,27 @@ import { scrollToBottomAndBackToTop, getRenderViewports } from "./utils.js"
 import { chromium, Locator } from "@playwright/test"
 import constants from "./constants.js";
 import { updateLogContext } from '../lib/logger.js'
+import mime from 'mime-types';
+import fetch from 'node-fetch';
 
 const MAX_RESOURCE_SIZE = 15 * (1024 ** 2); // 15MB
 var ALLOWED_RESOURCES = ['document', 'stylesheet', 'image', 'media', 'font', 'other'];
 const ALLOWED_STATUSES = [200, 201];
 const REQUEST_TIMEOUT = 10000;
 const MIN_VIEWPORT_HEIGHT = 1080;
+
+async function makeDirectRequest(request, username, password) {
+    let headers = { ...request.headers() };
+    let token = Buffer.from(`${username}:${password}`).toString('base64');
+    headers.Authorization = `Basic ${token}`;
+  
+    const response = await fetch(request.url(), { 
+      method: request.method(),
+      headers: headers,
+    });
+  
+    return response.arrayBuffer();
+}
 
 export default class Queue {
     private snapshots: Array<Snapshot> = [];
@@ -80,7 +95,9 @@ async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record
     updateLogContext({task: 'discovery'});
     ctx.log.debug(`Processing snapshot ${snapshot.name}`);
 
-    let launchOptions: Record<string, any> = { headless: true }
+    let launchOptions: Record<string, any> = { headless: false, 
+        // proxy: { server: 'http://3.214.241.254:28687'} 
+    } // Need to change at the end    *********************************
     let contextOptions: Record<string, any> = {
         javaScriptEnabled: ctx.config.cliEnableJavaScript,
         userAgent: constants.CHROME_USER_AGENT,
@@ -92,6 +109,19 @@ async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record
     }
     const context = await ctx.browser.newContext(contextOptions);
     ctx.log.debug(`Browser context created with options ${JSON.stringify(contextOptions)}`);
+
+    // Setting the cookies in playwright context
+    const cookieArray = snapshot.dom.cookie.split('; ').map(cookie => {
+        const [name, value] = cookie.split('=');
+        return {
+            name: name.trim(),
+            value: value.trim(),
+            domain: 'www.ashleymadison.com', // Need to adjust it later            *****************************************************
+            path: '/'
+        };
+    });
+    await context.addCookies(cookieArray);
+
     const page = await context.newPage();
     let cache: Record<string, any> = {};
 
@@ -110,11 +140,32 @@ async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record
             ctx.config.allowedHostnames.push(new URL(snapshot.url).hostname);
             if (ctx.config.enableJavaScript) ALLOWED_RESOURCES.push('script');
 
+            // const response = await route.fetch();
             const response = await page.request.fetch(request, { timeout: REQUEST_TIMEOUT });
             const body = await response.body();
+            let mimeType;
+            let detectedMime;
+
+            if (response) {
+                mimeType = response.headers()['content-type'];
+                detectedMime = mime.lookup(requestUrl);
+            }
+
             if (!body) {
                 ctx.log.debug(`Handling request ${requestUrl}\n - skipping no response`);
-            } else if (!body.length) {
+            } else if (ctx.config.basicAuthorization.username !== '' && (mimeType?.includes('font') || (detectedMime && detectedMime.includes('font')))) {
+                console.log('- Requesting font asset directly');
+                const directBody = await makeDirectRequest(request, ctx.config.basicAuthorization.username, ctx.config.basicAuthorization.password);
+                if (directBody && directBody.length > 0) {
+                    cache[requestUrl] = {
+                        body: directBody.toString('base64'),
+                        type: response.headers()['content-type']
+                    };
+                    console.log(`Handling request ${requestUrl}\n - Caching font requests`);
+                } else {
+                    ctx.log.debug(`Handling request ${requestUrl}\n - Failed to cache font request due to empty response`);
+                }
+			} else if (!body.length) {
                 ctx.log.debug(`Handling request ${requestUrl}\n - skipping empty response`);
             } else if (requestUrl === snapshot.url) {
                 ctx.log.debug(`Handling request ${requestUrl}\n - skipping root resource`);
