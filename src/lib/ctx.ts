@@ -57,9 +57,6 @@ export default (options: Record<string, string>): Context => {
             orientation: config.mobile.orientation || constants.MOBILE_ORIENTATION_PORTRAIT,
         }
     }
-
-    console.dir(basicAuthObj)
-    console.log("**************")
     if (config.basicAuthorization){
         basicAuthObj = config.basicAuthorization
     }
