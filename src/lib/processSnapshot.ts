@@ -95,9 +95,7 @@ async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record
     updateLogContext({task: 'discovery'});
     ctx.log.debug(`Processing snapshot ${snapshot.name}`);
 
-    let launchOptions: Record<string, any> = { headless: false, 
-        // proxy: { server: 'http://3.214.241.254:28687'} 
-    } // Need to change at the end    *********************************
+    let launchOptions: Record<string, any> = { headless: true } 
     let contextOptions: Record<string, any> = {
         javaScriptEnabled: ctx.config.cliEnableJavaScript,
         userAgent: constants.CHROME_USER_AGENT,
