@@ -3,7 +3,6 @@ import { scrollToBottomAndBackToTop, getRenderViewports } from "./utils.js"
 import { chromium, Locator } from "@playwright/test"
 import constants from "./constants.js";
 import { updateLogContext } from '../lib/logger.js'
-import axios from "axios";
 
 const MAX_RESOURCE_SIZE = 15 * (1024 ** 2); // 15MB
 var ALLOWED_RESOURCES = ['document', 'stylesheet', 'image', 'media', 'font', 'other'];
@@ -81,8 +80,7 @@ async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record
     updateLogContext({task: 'discovery'});
     ctx.log.debug(`Processing snapshot ${snapshot.name}`);
 
-    let launchOptions: Record<string, any> = { headless: false,
-        proxy: { server: 'http://3.214.241.254:28687'} }
+    let launchOptions: Record<string, any> = { headless: true }
     let contextOptions: Record<string, any> = {
         javaScriptEnabled: ctx.config.cliEnableJavaScript,
         userAgent: constants.CHROME_USER_AGENT,
