@@ -130,8 +130,8 @@ async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record
             let requestOptions: Record<string, any> = {
                 timeout: REQUEST_TIMEOUT
             }
-            if (requestUrl === snapshot.url && ctx.config.basicAuthorization.username !== '' ) {
-                ctx.log.debug(`Adding basic authorization to the headers for root url`);
+            if (requestUrl === snapshot.url && ctx.config.basicAuthorization ) {
+                ctx.log.debug(`Adding basic authorization to the headers for root url with username: ${ctx.config.basicAuthorization.username}`);
                 let token = Buffer.from(`${ctx.config.basicAuthorization.username}:${ctx.config.basicAuthorization.password}`).toString('base64');
                 requestOptions.headers = {
                     ...request.headers(),
