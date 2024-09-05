@@ -139,11 +139,11 @@ const ConfigSchema = {
             properties: {
                 username: {
                     type: "string",
-                    errorMessage: "username is mandatory"
+                    errorMessage: "Invalid config; username is mandatory"
                 },
                 password: {
                     type: "string", 
-                    errorMessage: "password is mandatory"
+                    errorMessage: "Invalid config; password is mandatory"
                 },
             }
         }

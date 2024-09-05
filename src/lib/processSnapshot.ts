@@ -4,7 +4,7 @@ import { chromium, Locator } from "@playwright/test"
 import constants from "./constants.js";
 import { updateLogContext } from '../lib/logger.js'
 import mime from 'mime-types';
-import fetch from 'node-fetch';
+import axios from "axios";
 
 const MAX_RESOURCE_SIZE = 15 * (1024 ** 2); // 15MB
 var ALLOWED_RESOURCES = ['document', 'stylesheet', 'image', 'media', 'font', 'other'];
@@ -16,13 +16,14 @@ async function makeDirectRequest(request, username, password) {
     let headers = { ...request.headers() };
     let token = Buffer.from(`${username}:${password}`).toString('base64');
     headers.Authorization = `Basic ${token}`;
-  
-    const response = await fetch(request.url(), { 
-      method: request.method(),
-      headers: headers,
+
+    const response = await axios({
+        method: request.method(),
+        headers: headers,
+        responseType: 'arraybuffer',
     });
   
-    return response.arrayBuffer();
+    return response.data;
 }
 
 export default class Queue {
