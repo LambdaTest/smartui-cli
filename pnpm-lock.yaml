@@ -56,9 +56,6 @@ importers:
       listr2:
         specifier: ^7.0.1
         version: 7.0.2
-      mime-types:
-        specifier: ^2.1.35
-        version: 2.1.35
       sharp:
         specifier: ^0.33.4
         version: 0.33.4

@@ -3,7 +3,6 @@ import { scrollToBottomAndBackToTop, getRenderViewports } from "./utils.js"
 import { chromium, Locator } from "@playwright/test"
 import constants from "./constants.js";
 import { updateLogContext } from '../lib/logger.js'
-import mime from 'mime-types';
 import axios from "axios";
 
 const MAX_RESOURCE_SIZE = 15 * (1024 ** 2); // 15MB
@@ -11,20 +10,6 @@ var ALLOWED_RESOURCES = ['document', 'stylesheet', 'image', 'media', 'font', 'ot
 const ALLOWED_STATUSES = [200, 201];
 const REQUEST_TIMEOUT = 10000;
 const MIN_VIEWPORT_HEIGHT = 1080;
-
-async function makeDirectRequest(request, username, password) {
-    let headers = { ...request.headers() };
-    let token = Buffer.from(`${username}:${password}`).toString('base64');
-    headers.Authorization = `Basic ${token}`;
-
-    const response = await axios({
-        method: request.method(),
-        headers: headers,
-        responseType: 'arraybuffer',
-    });
-  
-    return response.data;
-}
 
 export default class Queue {
     private snapshots: Array<Snapshot> = [];
@@ -96,7 +81,8 @@ async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record
     updateLogContext({task: 'discovery'});
     ctx.log.debug(`Processing snapshot ${snapshot.name}`);
 
-    let launchOptions: Record<string, any> = { headless: true }
+    let launchOptions: Record<string, any> = { headless: false,
+        proxy: { server: 'http://3.214.241.254:28687'} }
     let contextOptions: Record<string, any> = {
         javaScriptEnabled: ctx.config.cliEnableJavaScript,
         userAgent: constants.CHROME_USER_AGENT,
@@ -110,10 +96,8 @@ async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record
     ctx.log.debug(`Browser context created with options ${JSON.stringify(contextOptions)}`);
 
     // Setting the cookies in playwright context
-    const snapshotUrl = new URL(snapshot.url);
-    const domainName = snapshotUrl.hostname;
-
-    console.log('Domain:', domainName);
+    const domainName = new URL(snapshot.url).hostname;
+    ctx.log.debug('Setting cookies in context for domain:', domainName);
     const cookieArray = snapshot.dom.cookies.split('; ').map(cookie => {
         const [name, value] = cookie.split('=');
         return {
@@ -143,31 +127,23 @@ async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record
             ctx.config.allowedHostnames.push(new URL(snapshot.url).hostname);
             if (ctx.config.enableJavaScript) ALLOWED_RESOURCES.push('script');
 
-            // const response = await route.fetch();
+            let requestOptions: Record<string, any> = {
+                timeout: REQUEST_TIMEOUT
+            }
+            if (requestUrl === snapshot.url && ctx.config.basicAuthorization.username !== '' ) {
+                ctx.log.debug(`Adding basic authorization to the headers for root url`);
+                let token = Buffer.from(`${ctx.config.basicAuthorization.username}:${ctx.config.basicAuthorization.password}`).toString('base64');
+                requestOptions.headers = {
+                    ...request.headers(),
+                    Authorization: `Basic ${token}`
+                };
+            }
+
             const response = await page.request.fetch(request, { timeout: REQUEST_TIMEOUT });
             const body = await response.body();
-            let mimeType;
-            let detectedMime;
-
-            if (response) {
-                mimeType = response.headers()['content-type'];
-                detectedMime = mime.lookup(requestUrl);
-            }
 
             if (!body) {
                 ctx.log.debug(`Handling request ${requestUrl}\n - skipping no response`);
-            } else if (ctx.config.basicAuthorization.username !== '' && (mimeType?.includes('font') || (detectedMime && detectedMime.includes('font')))) {
-                console.log('- Requesting font asset directly');
-                const directBody = await makeDirectRequest(request, ctx.config.basicAuthorization.username, ctx.config.basicAuthorization.password);
-                if (directBody && directBody.length > 0) {
-                    cache[requestUrl] = {
-                        body: directBody.toString('base64'),
-                        type: response.headers()['content-type']
-                    };
-                    console.log(`Handling request ${requestUrl}\n - Caching font requests`);
-                } else {
-                    ctx.log.debug(`Handling request ${requestUrl}\n - Failed to cache font request due to empty response`);
-                }
 			} else if (!body.length) {
                 ctx.log.debug(`Handling request ${requestUrl}\n - skipping empty response`);
             } else if (requestUrl === snapshot.url) {
