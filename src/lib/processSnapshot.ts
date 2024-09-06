@@ -96,16 +96,27 @@ async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record
     // Setting the cookies in playwright context
     const domainName = new URL(snapshot.url).hostname;
     ctx.log.debug('Setting cookies in context for domain:', domainName);
+
+
     const cookieArray = snapshot.dom.cookies.split('; ').map(cookie => {
+        if (!cookie) return null;
         const [name, value] = cookie.split('=');
+        if (!name || !value) return null;
+
         return {
             name: name.trim(),
             value: value.trim(),
             domain: domainName,
             path: '/'
         };
-    });
-    await context.addCookies(cookieArray);
+    }).filter(Boolean);
+
+
+    if (cookieArray && Array.isArray(cookieArray) && cookieArray.length > 0) {
+        await context.addCookies(cookieArray);
+    } else {
+        ctx.log.debug('No valid cookies to add.');
+    }
 
     const page = await context.newPage();
     let cache: Record<string, any> = {};
