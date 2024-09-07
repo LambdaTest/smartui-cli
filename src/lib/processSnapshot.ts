@@ -114,8 +114,9 @@ async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record
 
     if (cookieArray && Array.isArray(cookieArray) && cookieArray.length > 0) {
         await context.addCookies(cookieArray);
+        ctx.log.debug('Cookies added');
     } else {
-        ctx.log.debug('No valid cookies to add.');
+        ctx.log.debug('No valid cookies to add');
     }
 
     const page = await context.newPage();
