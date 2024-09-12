@@ -23,7 +23,8 @@ export interface Context {
         cliEnableJavaScript: boolean;
         scrollTime: number;
         allowedHostnames: Array<string>;
-        basicAuthorization: basicAuth | undefined
+        basicAuthorization: basicAuth | undefined;
+        smartIgnore: boolean;
     };
     uploadFilePath: string;
     webStaticConfig: WebStaticConfig;
@@ -57,8 +58,8 @@ export interface Env {
     HTTPS_PROXY: string | undefined;
     GITHUB_ACTIONS: string | undefined;
     FIGMA_TOKEN: string | undefined;
-    LT_USERNAME : string | undefined;
-    LT_ACCESS_KEY : string | undefined;
+    LT_USERNAME: string | undefined;
+    LT_ACCESS_KEY: string | undefined;
     BASELINE_BRANCH: string | undefined;
     CURRENT_BRANCH: string | undefined;
 }
@@ -118,7 +119,7 @@ export interface Build {
 
 export interface WebConfig {
     browsers: Array<string>;
-    viewports: Array<{width: number, height: number}>;
+    viewports: Array<{ width: number, height: number }>;
 }
 
 export interface MobileConfig {

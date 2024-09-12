@@ -21,19 +21,19 @@ const ConfigSchema = {
     type: "object",
     properties: {
         web: {
-			type: "object",
-    		properties: {
-				browsers: {
-					type: "array",
-					items: { type: "string", enum: [constants.CHROME, constants.FIREFOX, constants.SAFARI, constants.EDGE] },
-					uniqueItems: true,
-					maxItems: 4,
+            type: "object",
+            properties: {
+                browsers: {
+                    type: "array",
+                    items: { type: "string", enum: [constants.CHROME, constants.FIREFOX, constants.SAFARI, constants.EDGE] },
+                    uniqueItems: true,
+                    maxItems: 4,
                     errorMessage: `Invalid config; allowed browsers - ${constants.CHROME}, ${constants.FIREFOX}, ${constants.SAFARI}, ${constants.EDGE}`
-				},
-				viewports: {
-					type: "array",
-					items: {
-						type: "array",
+                },
+                viewports: {
+                    type: "array",
+                    items: {
+                        type: "array",
                         oneOf: [
                             {
                                 items: [{ type: "number", minimum: 320, maximum: 7680 }],
@@ -43,22 +43,22 @@ const ConfigSchema = {
                             {
                                 items: [
                                     { type: "number", minimum: 320, maximum: 7680 },
-                                    { type: "number", minimum: 320, maximum: 7680 } 
+                                    { type: "number", minimum: 320, maximum: 7680 }
                                 ],
                                 minItems: 2,
                                 maxItems: 2
                             }
                         ],
                         errorMessage: "Invalid config; width/height must be >= 320 and <= 7680"
-					},
-					uniqueItems: true,
-					maxItems: 5,
+                    },
+                    uniqueItems: true,
+                    maxItems: 5,
                     errorMessage: "Invalid config; max unique viewports allowed - 5"
-				}
-    		},
-			required: ["browsers", "viewports"],
-			additionalProperties: false
-		},
+                }
+            },
+            required: ["browsers", "viewports"],
+            additionalProperties: false
+        },
         mobile: {
             type: "object",
             properties: {
@@ -74,7 +74,7 @@ const ConfigSchema = {
                         }
                     },
                     uniqueItems: true,
-					maxItems: 20,
+                    maxItems: 20,
                     errorMessage: {
                         uniqueItems: "Invalid config; duplicate mobile devices",
                         maxItems: "Invalid config; max mobile devices allowed - 20"
@@ -113,6 +113,10 @@ const ConfigSchema = {
             type: "boolean",
             errorMessage: "Invalid config; cliEnableJavaScript must be true/false"
         },
+        smartIgnore: {
+            type: "boolean",
+            errorMessage: "Invalid config; smartIgnore must be true/false"
+        },
         scrollTime: {
             type: "number",
             minimum: 1,
@@ -142,7 +146,7 @@ const ConfigSchema = {
                     errorMessage: "Invalid config; username is mandatory"
                 },
                 password: {
-                    type: "string", 
+                    type: "string",
                     errorMessage: "Invalid config; password is mandatory"
                 },
             }
@@ -166,7 +170,7 @@ const WebStaticConfigSchema: JSONSchemaType<WebStaticConfig> = {
                 errorMessage: "name is mandatory and cannot be empty"
             },
             url: {
-                type: "string", 
+                type: "string",
                 format: "web-url",
                 errorMessage: "url is mandatory and must be a valid web URL"
             },
@@ -179,7 +183,7 @@ const WebStaticConfigSchema: JSONSchemaType<WebStaticConfig> = {
             },
         },
         required: ["name", "url"],
-		additionalProperties: false
+        additionalProperties: false
     },
     uniqueItems: true
 }
@@ -193,7 +197,7 @@ const SnapshotSchema: JSONSchemaType<Snapshot> = {
             errorMessage: "Invalid snapshot; name is mandatory and cannot be empty"
         },
         url: {
-            type: "string", 
+            type: "string",
             format: "web-url",
             errorMessage: "Invalid snapshot; url is mandatory and must be a valid web URL"
         },
@@ -254,7 +258,7 @@ const SnapshotSchema: JSONSchemaType<Snapshot> = {
                             items: { type: "string", minLength: 1 },
                             uniqueItems: true,
                             errorMessage: "Invalid snapshot options; ignoreDOM xpath array must have unique and non-empty items"
-                        },   
+                        },
                     }
                 },
                 selectDOM: {
@@ -283,7 +287,7 @@ const SnapshotSchema: JSONSchemaType<Snapshot> = {
                             items: { type: "string", minLength: 1 },
                             uniqueItems: true,
                             errorMessage: "Invalid snapshot options; selectDOM xpath array must have unique and non-empty items"
-                        }, 
+                        },
                     }
                 }
             },
