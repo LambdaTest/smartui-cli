@@ -126,6 +126,7 @@ async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record
     await page.route('**/*', async (route, request) => {
         const requestUrl = request.url()
         const requestHostname = new URL(requestUrl).hostname;
+        let requestOptions: Record<string, any> = { timeout: REQUEST_TIMEOUT }
 
         try {
             // abort audio/video media requests
@@ -136,11 +137,7 @@ async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record
             // handle discovery config
             ctx.config.allowedHostnames.push(new URL(snapshot.url).hostname);
             if (ctx.config.enableJavaScript) ALLOWED_RESOURCES.push('script');
-
-            let requestOptions: Record<string, any> = {
-                timeout: REQUEST_TIMEOUT
-            }
-            if (requestUrl === snapshot.url && ctx.config.basicAuthorization ) {
+            if (ctx.config.basicAuthorization) {
                 ctx.log.debug(`Adding basic authorization to the headers for root url`); 
                 let token = Buffer.from(`${ctx.config.basicAuthorization.username}:${ctx.config.basicAuthorization.password}`).toString('base64');
                 requestOptions.headers = {
@@ -149,9 +146,20 @@ async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record
                 };
             }
 
-            const response = await page.request.fetch(request, { timeout: REQUEST_TIMEOUT });
-            const body = await response.body();
+            // get response
+            let response, body;
+            if (requestUrl === snapshot.url) {
+                response = {
+                    status: () => 200,
+                    headers: () => ({ 'content-type': 'text/html' }) 
+                }
+                body = snapshot.dom.html
+            } else {
+                response = await page.request.fetch(request, requestOptions);
+                body = await response.body();
+            }
 
+            // handle response
             if (!body) {
                 ctx.log.debug(`Handling request ${requestUrl}\n - skipping no response`);
 			} else if (!body.length) {
