@@ -16,7 +16,7 @@ export default class Queue {
     private processing: boolean = false;
     private processingSnapshot: string = '';
     private ctx: Context;
-  
+
     constructor(ctx: Context) {
         this.ctx = ctx;
     }
@@ -28,7 +28,7 @@ export default class Queue {
             this.processNext();
         }
     }
-  
+
     private async processNext(): Promise<void> {
         if (!this.isEmpty()) {
             const snapshot = this.snapshots.shift();
@@ -37,10 +37,10 @@ export default class Queue {
                 let { processedSnapshot, warnings } = await processSnapshot(snapshot, this.ctx);
                 await this.ctx.client.uploadSnapshot(this.ctx, processedSnapshot);
                 this.ctx.totalSnapshots++;
-                this.processedSnapshots.push({name: snapshot.name, warnings});
+                this.processedSnapshots.push({ name: snapshot.name, warnings });
             } catch (error: any) {
                 this.ctx.log.debug(`snapshot failed; ${error}`);
-                this.processedSnapshots.push({name: snapshot.name, error: error.message});
+                this.processedSnapshots.push({ name: snapshot.name, error: error.message });
             }
             // Close open browser contexts and pages
             if (this.ctx.browser) {
@@ -77,8 +77,8 @@ export default class Queue {
 }
 
 async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record<string, any>> {
-    updateLogContext({task: 'discovery'});
-    ctx.log.debug(`Processing snapshot ${snapshot.name}`);
+    updateLogContext({ task: 'discovery' });
+    ctx.log.debug(`Processing snapshot ${snapshot.name} ${snapshot.url}`);
 
     let launchOptions: Record<string, any> = { headless: true }
     let contextOptions: Record<string, any> = {
@@ -92,35 +92,44 @@ async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record
     }
     const context = await ctx.browser.newContext(contextOptions);
     ctx.log.debug(`Browser context created with options ${JSON.stringify(contextOptions)}`);
-
     // Setting the cookies in playwright context
-    const domainName = new URL(snapshot.url).hostname;
-    ctx.log.debug('Setting cookies in context for domain:', domainName);
+    if (snapshot.dom.cookies) {
+        const domainName = new URL(snapshot.url).hostname;
+        ctx.log.debug(`Setting cookies for domain: ${domainName}`);
 
+        const cookieArray = snapshot.dom.cookies.split('; ').map(cookie => {
+            if (!cookie) return null;
+            const [name, value] = cookie.split('=');
+            if (!name || !value) return null;
 
-    const cookieArray = snapshot.dom.cookies.split('; ').map(cookie => {
-        if (!cookie) return null;
-        const [name, value] = cookie.split('=');
-        if (!name || !value) return null;
+            return {
+                name: name.trim(),
+                value: value.trim(),
+                domain: domainName,
+                path: '/'
+            };
+        }).filter(Boolean);
 
-        return {
-            name: name.trim(),
-            value: value.trim(),
-            domain: domainName,
-            path: '/'
-        };
-    }).filter(Boolean);
-
-
-    if (cookieArray && Array.isArray(cookieArray) && cookieArray.length > 0) {
-        await context.addCookies(cookieArray);
-        ctx.log.debug('Cookies added');
-    } else {
-        ctx.log.debug('No valid cookies to add');
+        if (cookieArray.length > 0) {
+            await context.addCookies(cookieArray);
+        } else {
+            ctx.log.debug('No valid cookies to add');
+        }
     }
-
     const page = await context.newPage();
+
+    // populate cache with already captured resources
     let cache: Record<string, any> = {};
+    if (snapshot.dom.resources.length) {
+        for (let resource of snapshot.dom.resources) {
+            // convert text/css content to base64
+            let body = resource.mimetype == 'text/css' ? Buffer.from(resource.content).toString('base64') : resource.content;
+            cache[resource.url] = {
+                body: body,
+                type: resource.mimetype
+            }
+        }
+    }
 
     // Use route to intercept network requests and discover resources
     await page.route('**/*', async (route, request) => {
@@ -138,7 +147,7 @@ async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record
             ctx.config.allowedHostnames.push(new URL(snapshot.url).hostname);
             if (ctx.config.enableJavaScript) ALLOWED_RESOURCES.push('script');
             if (ctx.config.basicAuthorization) {
-                ctx.log.debug(`Adding basic authorization to the headers for root url`); 
+                ctx.log.debug(`Adding basic authorization to the headers for root url`);
                 let token = Buffer.from(`${ctx.config.basicAuthorization.username}:${ctx.config.basicAuthorization.password}`).toString('base64');
                 requestOptions.headers = {
                     ...request.headers(),
@@ -151,9 +160,15 @@ async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record
             if (requestUrl === snapshot.url) {
                 response = {
                     status: () => 200,
-                    headers: () => ({ 'content-type': 'text/html' }) 
+                    headers: () => ({ 'content-type': 'text/html' })
                 }
-                body = snapshot.dom.html
+                body = snapshot.dom.html;
+            } else if (cache[requestUrl]) {
+                response = {
+                    status: () => 200,
+                    headers: () => ({ 'content-type': cache[requestUrl].mimetype })
+                }
+                body = cache[requestUrl].body;
             } else {
                 response = await page.request.fetch(request, requestOptions);
                 body = await response.body();
@@ -162,7 +177,7 @@ async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record
             // handle response
             if (!body) {
                 ctx.log.debug(`Handling request ${requestUrl}\n - skipping no response`);
-			} else if (!body.length) {
+            } else if (!body.length) {
                 ctx.log.debug(`Handling request ${requestUrl}\n - skipping empty response`);
             } else if (requestUrl === snapshot.url) {
                 ctx.log.debug(`Handling request ${requestUrl}\n - skipping root resource`);
@@ -204,7 +219,7 @@ async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record
     let ignoreOrSelectBoxes: string;
     if (options && Object.keys(options).length) {
         ctx.log.debug(`Snapshot options: ${JSON.stringify(options)}`);
-        
+
         const isNotAllEmpty = (obj: Record<string, Array<string>>): boolean => {
             for (let key in obj) if (obj[key]?.length) return true;
             return false;
@@ -240,7 +255,7 @@ async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record
                         selectors.push(...value);
                         break;
                 }
-            } 
+            }
         }
     }
 
@@ -261,14 +276,14 @@ async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record
         // Update `previousDeviceType` to the current device type for comparison in the next iteration
         previousDeviceType = device;
 
-        await page.setViewportSize({ width: viewport.width, height: viewport.height ||  MIN_VIEWPORT_HEIGHT });
-        ctx.log.debug(`Page resized to ${viewport.width}x${viewport.height ||  MIN_VIEWPORT_HEIGHT}`);
-        
+        await page.setViewportSize({ width: viewport.width, height: viewport.height || MIN_VIEWPORT_HEIGHT });
+        ctx.log.debug(`Page resized to ${viewport.width}x${viewport.height || MIN_VIEWPORT_HEIGHT}`);
+
         // navigate to snapshot url once
         if (!navigated) {
             try {
                 // domcontentloaded event is more reliable than load event
-                await page.goto(snapshot.url, { waitUntil: "domcontentloaded"});
+                await page.goto(snapshot.url, { waitUntil: "domcontentloaded" });
                 // adding extra timeout since domcontentloaded event is fired pretty quickly
                 await new Promise(r => setTimeout(r, 1250));
                 if (ctx.config.waitForTimeout) await page.waitForTimeout(ctx.config.waitForTimeout);
@@ -278,7 +293,7 @@ async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record
                 ctx.log.debug(`Navigation to discovery page failed; ${error}`)
                 throw new Error(error.message)
             }
-            
+
         }
         if (ctx.config.cliEnableJavaScript && fullPage) await page.evaluate(scrollToBottomAndBackToTop, { frequency: 100, timing: ctx.config.scrollTime });
 
@@ -289,8 +304,6 @@ async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record
             ctx.log.debug(`Network idle failed due to ${error}`);
         }
 
-        await new Promise(r => setTimeout(r, 1000));
-        
         // snapshot options
         if (processedOptions.element) {
             let l = await page.locator(processedOptions.element).all()
@@ -321,18 +334,6 @@ async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record
                 });
             }
         }
-    }
-
-    // add dom resources to cache
-    if (snapshot.dom.resources.length) {
-        for (let resource of snapshot.dom.resources) {
-            // convert text/css content to base64
-            let body = resource.mimetype == 'text/css' ? Buffer.from(resource.content).toString('base64') : resource.content;
-            cache[resource.url] = {
-                body: body,
-                type: resource.mimetype
-            }
-        }	
     }
 
     return {
