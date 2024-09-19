@@ -150,6 +150,15 @@ const ConfigSchema = {
                     errorMessage: "Invalid config; password is mandatory"
                 },
             }
+        },
+        requestHeaders: {
+            type: "object",
+            properties: {
+                auth: {
+                    type: "string", 
+                    errorMessage: "Invalid config; auth is mandatory"
+                },
+            }
         }
     },
     anyOf: [

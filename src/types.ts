@@ -25,6 +25,7 @@ export interface Context {
         allowedHostnames: Array<string>;
         basicAuthorization: basicAuth | undefined;
         smartIgnore: boolean;
+        requestHeaders: authToken | undefined
     };
     uploadFilePath: string;
     webStaticConfig: WebStaticConfig;
@@ -147,4 +148,8 @@ export type FigmaDesignConfig = {
 export interface basicAuth {
     username: string;
     password: string;
+}
+
+export interface authToken {
+    auth: string;
 }
