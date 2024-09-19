@@ -11,8 +11,8 @@ export default (options: Record<string, string>): Context => {
     let env: Env = getEnv();
     let webConfig: WebConfig;
     let mobileConfig: MobileConfig;
-    let basicAuthObj: basicAuth
-    let requestHeaderObj: authToken
+    let basicAuthObj: basicAuth;
+    let requestHeaderObj: authToken;
     let config = constants.DEFAULT_CONFIG;
     let port: number;
     let resolutionOff: boolean;

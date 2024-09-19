@@ -146,18 +146,19 @@ async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record
             // handle discovery config
             ctx.config.allowedHostnames.push(new URL(snapshot.url).hostname);
             if (ctx.config.enableJavaScript) ALLOWED_RESOURCES.push('script');
-            
+
             if (ctx.config.basicAuthorization || ctx.config.requestHeaders) {
-                ctx.log.debug(`Adding basic authorization to the headers for root url`);
-                let token;
-                if(ctx.config.basicAuthorization){
-                    token = Buffer.from(`${ctx.config.basicAuthorization.username}:${ctx.config.basicAuthorization.password}`).toString('base64');
-                } else {
-                    token = ctx.config.requestHeaders.auth
+                ctx.log.debug(`Adding basic authorization to the headers for url ${requestUrl}`);
+                let basicToken;
+                if (ctx.config.basicAuthorization){
+                    let token = Buffer.from(`${ctx.config.basicAuthorization.username}:${ctx.config.basicAuthorization.password}`).toString('base64');
+                    basicToken = `Basic ${token}`
+                } else if (ctx.config.requestHeaders) {
+                    basicToken = ctx.config.requestHeaders.auth
                 }
                 requestOptions.headers = {
                     ...request.headers(),
-                    Authorization: `Basic ${token}`
+                    Authorization: basicToken
                 };
             }
 
