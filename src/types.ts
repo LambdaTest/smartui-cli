@@ -86,6 +86,15 @@ export interface Snapshot {
             class?: string,
             cssSelector?: string,
             xpath?: string
+        },
+        web?: {
+            browsers?: string[],
+            viewports: ([number] | [number, number])[]
+        },
+        mobile?: {
+            devices: string[],
+            fullPage?: boolean,
+            orientation?: string
         }
     }
 }
