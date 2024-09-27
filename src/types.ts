@@ -87,7 +87,7 @@ export interface Snapshot {
             xpath?: string
         },
         web?: {
-            browsers: string[],
+            browsers?: string[],
             viewports: ([number] | [number, number])[]
         },
         mobile?: {

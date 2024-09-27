@@ -315,8 +315,8 @@ const SnapshotSchema: JSONSchemaType<Snapshot> = {
                             errorMessage: "Invalid snapshot options; viewports must be an array of unique arrays."
                         }
                     },
-                    required: ["browsers", "viewports"],
-                    errorMessage: "Invalid snapshot options; web must include both browsers and viewports properties."
+                    required: ["viewports"],
+                    errorMessage: "Invalid snapshot options; web must include viewports property."
                 },
                 mobile: {
                     type: "object",
