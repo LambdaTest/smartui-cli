@@ -229,14 +229,14 @@ async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record
             processedOptions.web = {};
         
             // Check and process viewports in web
-            if (options.web.viewports && Array.isArray(options.web.viewports) && options.web.viewports.length > 0) {
+            if (options.web.viewports && options.web.viewports.length > 0) {
                 processedOptions.web.viewports = options.web.viewports.filter(viewport => 
                     Array.isArray(viewport) && viewport.length > 0
                 );
             }
         
             // Check and process browsers in web
-            if (options.web.browsers && Array.isArray(options.web.browsers) && options.web.browsers.length > 0) {
+            if (options.web.browsers && options.web.browsers.length > 0) {
                 processedOptions.web.browsers = options.web.browsers;
             }
         }
@@ -245,19 +245,19 @@ async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record
             processedOptions.mobile = {};
         
             // Check and process devices in mobile
-            if (options.mobile.devices && Array.isArray(options.mobile.devices) && options.mobile.devices.length > 0) {
+            if (options.mobile.devices && options.mobile.devices.length > 0) {
                 processedOptions.mobile.devices = options.mobile.devices;
             }
             
             // Check if 'fullPage' is provided and is a boolean, otherwise set default to true
-            if ('fullPage' in options.mobile && typeof options.mobile.fullPage === 'boolean') {
+            if (options.mobile.hasOwnProperty('fullPage') && typeof options.mobile.fullPage === 'boolean') {
                 processedOptions.mobile.fullPage = options.mobile.fullPage;
             } else {
                 processedOptions.mobile.fullPage = true; // Default value for fullPage
             }
         
             // Check if 'orientation' is provided and is valid, otherwise set default to 'portrait'
-            if ('orientation' in options.mobile && (options.mobile.orientation === 'portrait' || options.mobile.orientation === 'landscape')) {
+            if (options.mobile.hasOwnProperty('orientation') && (options.mobile.orientation === 'portrait' || options.mobile.orientation === 'landscape')) {
                 processedOptions.mobile.orientation = options.mobile.orientation;
             } else {
                 processedOptions.mobile.orientation = 'portrait'; // Default value for orientation
