@@ -1,47 +1,65 @@
-# SmartUI CLI
-[![SmartUI-Testing](https://smartui.lambdatest.com/static/media/LTBadge.64a05e73.svg)](https://smartui.lambdatest.com)
+# SmartUI-CLI
 
-The SmartUI CLI is used to create configs, take screenshots and upload to [SmartUI Dashboard](https://smartui.lambdatest.com/) via
-the command line.
+<img height="400" src="https://user-images.githubusercontent.com/126776938/232535511-8d51cf1b-1a33-48fc-825c-b13e7a9ec388.png">
+
+<p align="center">
+  <a href="https://www.lambdatest.com/blog/?utm_source=github&utm_medium=repo&utm_campaign=playwright-sample" target="_bank">Blog</a>
+  &nbsp; &#8901; &nbsp;
+  <a href="https://www.lambdatest.com/support/docs/?utm_source=github&utm_medium=repo&utm_campaign=playwright-sample" target="_bank">Docs</a>
+  &nbsp; &#8901; &nbsp;
+  <a href="https://www.lambdatest.com/learning-hub/?utm_source=github&utm_medium=repo&utm_campaign=playwright-sample" target="_bank">Learning Hub</a>
+  &nbsp; &#8901; &nbsp;
+  <a href="https://www.lambdatest.com/newsletter/?utm_source=github&utm_medium=repo&utm_campaign=playwright-sample" target="_bank">Newsletter</a>
+  &nbsp; &#8901; &nbsp;
+  <a href="https://www.lambdatest.com/certifications/?utm_source=github&utm_medium=repo&utm_campaign=playwright-sample" target="_bank">Certifications</a>
+  &nbsp; &#8901; &nbsp;
+  <a href="https://www.youtube.com/c/LambdaTest" target="_bank">YouTube</a>
+</p>
+&emsp;
+&emsp;
+&emsp;
+
+
+
+[<img height="58" width="200" src="https://user-images.githubusercontent.com/70570645/171866795-52c11b49-0728-4229-b073-4b704209ddde.png">](https://accounts.lambdatest.com/register?utm_source=github&utm_medium=repo&utm_campaign=playwright-sample)
+
+
+The **SmartUI-CLI** allows you to capture visual snapshots of your web applications, upload images, and run visual regression tests using [LambdaTest's SmartUI](https://www.lambdatest.com/visual-regression-testing) platform directly from the command line.
 
 - [Installation](#installation)
-- [Start using CLI](#start-using-cli)
+- [Commands](#commands)
+- [Documentation](#documentation)
+- [Issues](#issues)
 
 ## Installation
 
 ```sh-session
-$ npm install -g @lambdatest/smartui-cli --force
+$ npm install smartui-cli
 ```
 
-## Start using CLI 
+## Commands
+- `npx smartui exec` - Capture DOM assets for visual testing across multiple browsers and resolutions.
+- `npx smartui capture` - Bulk capture static URLs for visual testing.
+- `npx smartui upload` - Upload custom images or screenshots for visual comparison.
+- `npx smartui upload-figma` - Upload Figma design images for visual comparison.
+- `npx smartui config` - Creates configuration file according to the usecase.
 
-#### Create URL Json file
-```sh-session
-$ smartui config:web-static urls.json
-```
+### Documentation
 
-#### Create custom Web Config file
-```sh-session
-$ smartui config:create-web smartui-web.json
-```
+In addition to its core functionalities, the SmartUI CLI leverages LambdaTest's cloud infrastructure for robust, scalable visual regression testing across various browsers and devices.
 
-#### Configure your Project Token
+- [SmartUI Selenium SDK](https://www.lambdatest.com/support/docs/smartui-selenium-java-sdk) - A complete SDK to capture DOM assets for visual tests.
+- [LambdaTest Documentation](https://www.lambdatest.com/support/docs/) - Official LambdaTest documentation for SmartUI and other integrations.
+- [Bulk capturing static URLs with SmartUI](https://www.lambdatest.com/support/docs/smartui-cli/) - Documentation for capturing satatic urls in bulk with SmartUI
+- [Bring your own screenshots](https://www.lambdatest.com/support/docs/smartui-cli-upload/) - Documentation for capturing satatic urls in bulk
+- [Figma CLI](https://www.lambdatest.com/support/docs/smartui-cli-figma/) - Documentation for uploading figma components to SmartUI
 
-Create a new web project from [SmartUI Dashboard](https://smartui.lambdatest.com/) and copy the project token and set on CLI via command
+### Issues
 
-<b>For Linux/macOS:</b>
+If you encounter problems with SmartUI-CLI, [add an issue on GitHub](https://github.com/LambdaTest/smartui-cli/issues/new).
 
-```
- export PROJECT_TOKEN="****-****-****-************"
-```
+For other support issues, reach out via [LambdaTest Support](https://www.lambdatest.com/support).
 
-<b>For Windows:</b>
+------
 
-```
- set PROJECT_TOKEN="****-****-****-************"
-```
-  
-#### Capture Screenshots
-```sh-session
-$ smartui capture urls.json --config smartui-web.json
-```
+[Know more](https://www.lambdatest.com/visual-regression-testing) about SmartUI and it's AI enabled comparison engines.
