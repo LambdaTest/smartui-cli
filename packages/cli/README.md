@@ -37,6 +37,9 @@ The **SmartUI-CLI** allows you to capture visual snapshots of your web applicati
 $ npm install smartui-cli
 ```
 
+**Note:**  
+If you face any problems executing tests with SmartUI-CLI `versions >= v4.x.x`, upgrade your Node.js version to `v20.3` or above.
+
 ## Commands
 - `npx smartui exec` - Capture DOM assets for visual testing across multiple browsers and resolutions.
 - `npx smartui capture` - Bulk capture static URLs for visual testing.
