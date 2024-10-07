@@ -80,7 +80,10 @@ async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record
     updateLogContext({ task: 'discovery' });
     ctx.log.debug(`Processing snapshot ${snapshot.name} ${snapshot.url}`);
 
-    let launchOptions: Record<string, any> = { headless: true }
+    let launchOptions: Record<string, any> = {
+        headless: true,
+        args: constants.LAUNCH_ARGS
+    }
     let contextOptions: Record<string, any> = {
         javaScriptEnabled: ctx.config.cliEnableJavaScript,
         userAgent: constants.CHROME_USER_AGENT,
@@ -92,8 +95,8 @@ async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record
     }
     const context = await ctx.browser.newContext(contextOptions);
     ctx.log.debug(`Browser context created with options ${JSON.stringify(contextOptions)}`);
-    // Setting the cookies in playwright context
-    if (snapshot.dom.cookies) {
+    // Setting cookies in playwright context
+    if (!ctx.env.SMARTUI_DO_NOT_USE_CAPTURED_COOKIES && snapshot.dom.cookies) {
         const domainName = new URL(snapshot.url).hostname;
         ctx.log.debug(`Setting cookies for domain: ${domainName}`);
 
@@ -135,7 +138,13 @@ async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record
     await page.route('**/*', async (route, request) => {
         const requestUrl = request.url()
         const requestHostname = new URL(requestUrl).hostname;
-        let requestOptions: Record<string, any> = { timeout: REQUEST_TIMEOUT }
+        let requestOptions: Record<string, any> = {
+            timeout: REQUEST_TIMEOUT,
+            headers: {
+                ...await request.allHeaders(),
+                ...constants.REQUEST_HEADERS
+            }
+        }
 
         try {
             // abort audio/video media requests
@@ -149,10 +158,7 @@ async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record
             if (ctx.config.basicAuthorization) {
                 ctx.log.debug(`Adding basic authorization to the headers for root url`);
                 let token = Buffer.from(`${ctx.config.basicAuthorization.username}:${ctx.config.basicAuthorization.password}`).toString('base64');
-                requestOptions.headers = {
-                    ...request.headers(),
-                    Authorization: `Basic ${token}`
-                };
+                requestOptions.headers.Authorization = `Basic ${token}`;
             }
 
             // get response

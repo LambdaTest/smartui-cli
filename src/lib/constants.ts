@@ -46,6 +46,66 @@ export default {
     EDGE_CHANNEL: 'msedge',
     WEBKIT: 'webkit',
 
+    // discovery browser launch arguments
+    LAUNCH_ARGS: [
+        // disable the translate popup and optimization downloads
+        '--disable-features=Translate,OptimizationGuideModelDownloading',
+        // disable several subsystems which run network requests in the background
+        '--disable-background-networking',
+        // disable task throttling of timer tasks from background pages
+        '--disable-background-timer-throttling',
+        // disable backgrounding renderer processes
+        '--disable-renderer-backgrounding',
+        // disable backgrounding renderers for occluded windows (reduce nondeterminism)
+        '--disable-backgrounding-occluded-windows',
+        // disable crash reporting
+        '--disable-breakpad',
+        // disable client side phishing detection
+        '--disable-client-side-phishing-detection',
+        // disable default component extensions with background pages for performance
+        '--disable-component-extensions-with-background-pages',
+        // disable installation of default apps on first run
+        '--disable-default-apps',
+        // work-around for environments where a small /dev/shm partition causes crashes
+        '--disable-dev-shm-usage',
+        // disable extensions
+        '--disable-extensions',
+        // disable hang monitor dialogs in renderer processes
+        '--disable-hang-monitor',
+        // disable inter-process communication flooding protection for javascript
+        '--disable-ipc-flooding-protection',
+        // disable web notifications and the push API
+        '--disable-notifications',
+        // disable the prompt when a POST request causes page navigation
+        '--disable-prompt-on-repost',
+        // disable syncing browser data with google accounts
+        '--disable-sync',
+        // disable site-isolation to make network requests easier to intercept
+        '--disable-site-isolation-trials',
+        // disable the first run tasks, whether or not it's actually the first run
+        '--no-first-run',
+        // disable the sandbox for all process types that are normally sandboxed
+        '--no-sandbox',
+        // specify a consistent encryption backend across platforms
+        '--password-store=basic',
+        // use a mock keychain on Mac to prevent blocking permissions dialogs
+        '--use-mock-keychain',
+        // enable remote debugging on the first available port
+        '--remote-debugging-port=0',
+        // sets navigator.webdriver to false
+        '--disable-blink-features=AutomationControlled',
+        // disable UA-CH feature
+		`--disable-features=UserAgentClientHint`,
+    ],
+
+    // discovery request headers
+    REQUEST_HEADERS: {
+        // `HeadlessChrome` is added to sec-ch-ua, `--disable-features=UserAgentClientHint` doesn't seem to work
+        'sec-ch-ua':'"Chromium";v="129", "Not=A?Brand";v="8"',
+        'sec-ch-ua-mobile': '"?0"',
+        'sec-ch-ua-platform': '"Windows"'
+    },
+
     // user agents
     CHROME_USER_AGENT: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.107 Safari/537.3',
     FIREFOX_USER_AGENT: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:112.0) Gecko/20100101 Firefox/112.0',
