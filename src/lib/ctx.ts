@@ -47,8 +47,8 @@ export default (options: Record<string, string>): Context => {
     }
 
     if (config.web) {
-        webConfig = {browsers: config.web.browsers, viewports: []};
-        for (let viewport of config.web?.viewports) webConfig.viewports.push({ width: viewport[0], height: viewport[1] || 0});
+        webConfig = { browsers: config.web.browsers, viewports: [] };
+        for (let viewport of config.web?.viewports) webConfig.viewports.push({ width: viewport[0], height: viewport[1] || 0 });
     }
     if (config.mobile) {
         mobileConfig = {
@@ -57,7 +57,7 @@ export default (options: Record<string, string>): Context => {
             orientation: config.mobile.orientation || constants.MOBILE_ORIENTATION_PORTRAIT,
         }
     }
-    if (config.basicAuthorization){
+    if (config.basicAuthorization) {
         basicAuthObj = config.basicAuthorization
     }
 
@@ -74,7 +74,8 @@ export default (options: Record<string, string>): Context => {
             cliEnableJavaScript: config.cliEnableJavaScript || true,
             scrollTime: config.scrollTime || constants.DEFAULT_SCROLL_TIME,
             allowedHostnames: config.allowedHostnames || [],
-            basicAuthorization: basicAuthObj
+            basicAuthorization: basicAuthObj,
+            smartIgnore: config.smartIgnore ?? false
         },
         uploadFilePath: '',
         webStaticConfig: [],

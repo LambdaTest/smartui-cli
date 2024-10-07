@@ -23,7 +23,8 @@ export interface Context {
         cliEnableJavaScript: boolean;
         scrollTime: number;
         allowedHostnames: Array<string>;
-        basicAuthorization: basicAuth | undefined
+        basicAuthorization: basicAuth | undefined;
+        smartIgnore: boolean;
     };
     uploadFilePath: string;
     webStaticConfig: WebStaticConfig;
@@ -86,6 +87,15 @@ export interface Snapshot {
             class?: string,
             cssSelector?: string,
             xpath?: string
+        },
+        web?: {
+            browsers?: string[],
+            viewports: ([number] | [number, number])[]
+        },
+        mobile?: {
+            devices: string[],
+            fullPage?: boolean,
+            orientation?: string
         }
     }
 }
@@ -119,7 +129,7 @@ export interface Build {
 
 export interface WebConfig {
     browsers: Array<string>;
-    viewports: Array<{width: number, height: number}>;
+    viewports: Array<{ width: number, height: number }>;
 }
 
 export interface MobileConfig {

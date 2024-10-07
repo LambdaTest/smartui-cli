@@ -231,6 +231,45 @@ async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record
             return false;
         }
 
+        if (options.web && Object.keys(options.web).length) {
+            processedOptions.web = {};
+        
+            // Check and process viewports in web
+            if (options.web.viewports && options.web.viewports.length > 0) {
+                processedOptions.web.viewports = options.web.viewports.filter(viewport => 
+                    Array.isArray(viewport) && viewport.length > 0
+                );
+            }
+        
+            // Check and process browsers in web
+            if (options.web.browsers && options.web.browsers.length > 0) {
+                processedOptions.web.browsers = options.web.browsers;
+            }
+        }
+
+        if (options.mobile && Object.keys(options.mobile).length) {
+            processedOptions.mobile = {};
+        
+            // Check and process devices in mobile
+            if (options.mobile.devices && options.mobile.devices.length > 0) {
+                processedOptions.mobile.devices = options.mobile.devices;
+            }
+            
+            // Check if 'fullPage' is provided and is a boolean, otherwise set default to true
+            if (options.mobile.hasOwnProperty('fullPage') && typeof options.mobile.fullPage === 'boolean') {
+                processedOptions.mobile.fullPage = options.mobile.fullPage;
+            } else {
+                processedOptions.mobile.fullPage = true; // Default value for fullPage
+            }
+        
+            // Check if 'orientation' is provided and is valid, otherwise set default to 'portrait'
+            if (options.mobile.hasOwnProperty('orientation') && (options.mobile.orientation === 'portrait' || options.mobile.orientation === 'landscape')) {
+                processedOptions.mobile.orientation = options.mobile.orientation;
+            } else {
+                processedOptions.mobile.orientation = 'portrait'; // Default value for orientation
+            }
+        }
+
         if (options.element && Object.keys(options.element).length) {
             if (options.element.id) processedOptions.element = '#' + options.element.id;
             else if (options.element.class) processedOptions.element = '.' + options.element.class;
@@ -340,6 +379,7 @@ async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record
                 });
             }
         }
+        ctx.log.debug(`Processed options: ${JSON.stringify(processedOptions)}`);
     }
 
     return {
