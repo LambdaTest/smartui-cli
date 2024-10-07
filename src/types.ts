@@ -52,14 +52,15 @@ export interface Context {
 export interface Env {
     PROJECT_TOKEN: string;
     SMARTUI_CLIENT_API_URL: string;
-    LT_SDK_DEBUG: string | undefined;
+    SMARTUI_DO_NOT_USE_CAPTURED_COOKIES: boolean;
     SMARTUI_GIT_INFO_FILEPATH: string | undefined;
     HTTP_PROXY: string | undefined;
     HTTPS_PROXY: string | undefined;
     GITHUB_ACTIONS: string | undefined;
     FIGMA_TOKEN: string | undefined;
-    LT_USERNAME: string | undefined;
-    LT_ACCESS_KEY: string | undefined;
+    LT_USERNAME : string | undefined;
+    LT_ACCESS_KEY : string | undefined;
+    LT_SDK_DEBUG: boolean;
     BASELINE_BRANCH: string | undefined;
     CURRENT_BRANCH: string | undefined;
 }
