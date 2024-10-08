@@ -75,8 +75,8 @@ export default (options: Record<string, string>): Context => {
             scrollTime: config.scrollTime || constants.DEFAULT_SCROLL_TIME,
             allowedHostnames: config.allowedHostnames || [],
             basicAuthorization: basicAuthObj,
-            smartIgnore: config.smartIgnore ?? false
-            deferUploads: config.deferUploads ?? false,
+            smartIgnore: config.smartIgnore ?? false,
+            deferUploads: config.deferUploads ?? false
         },
         uploadFilePath: '',
         webStaticConfig: [],

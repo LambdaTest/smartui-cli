@@ -40,6 +40,22 @@ export default class Queue {
         }
     }
 
+    private processGenerateVariants(snapshot: Snapshot): void {
+        if (snapshot.options) {
+            if (snapshot.options.web) {
+                this.generateWebVariants(snapshot, snapshot.options.web);
+            }
+            if (snapshot.options.mobile) {
+                this.generateMobileVariants(snapshot, snapshot.options.mobile);
+            }
+        } 
+        
+        if (!snapshot.options || (!snapshot.options.web && !snapshot.options.mobile)) {
+            this.generateVariants(snapshot, this.ctx.config);
+        }
+    }
+    
+
     private generateVariants(snapshot: Snapshot, config: any): void {
         // Process web configurations if they exist
         
@@ -275,17 +291,12 @@ export default class Queue {
                     this.snapshotNames.push(snapshot.name);
                 }
 
-                if (snapshot && snapshot.options && snapshot.options.web){
-                    this.generateWebVariants(snapshot, snapshot.options.web);
+                if (snapshot) {
+                    this.processGenerateVariants(snapshot);
                 }
 
-                if (snapshot && snapshot.options && snapshot.options.mobile){
-                    this.generateMobileVariants(snapshot, snapshot.options.mobile)
-                }
-
-                if ( (snapshot && !snapshot.options)  || (snapshot && snapshot.options && !snapshot.options.web && !snapshot.options.mobile) ) {
-                    this.generateVariants(snapshot, this.ctx.config);
-                }
+                console.log("***********")
+                console.log(JSON.stringify(snapshot.options))
 
                 if (!drop) {
                     let { processedSnapshot, warnings } = await processSnapshot(snapshot, this.ctx);
