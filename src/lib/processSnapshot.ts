@@ -72,7 +72,7 @@ export default class Queue {
     }
 
     isEmpty(): boolean {
-        return this.snapshots.length ? false : true;
+        return this.snapshots && this.snapshots.length ? false : true;
     }
 }
 
