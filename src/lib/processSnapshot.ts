@@ -50,7 +50,7 @@ export default class Queue {
             }
         } 
         
-        if (!snapshot.options || (!snapshot.options.web && !snapshot.options.mobile)) {
+        if (!snapshot.options || (snapshot.options && !snapshot.options.web && !snapshot.options.mobile)) {
             this.generateVariants(snapshot, this.ctx.config);
         }
     }
@@ -290,11 +290,11 @@ export default class Queue {
                     }
                 }
 
-                if (snapshot && snapshot.name && !this.snapshotNames.includes(snapshot.name)) {
+                if (snapshot && snapshot.name && !this.snapshotNames.includes(snapshot.name) && !drop) {
                     this.snapshotNames.push(snapshot.name);
                 }
 
-                if (snapshot) {
+                if (snapshot && !drop) {
                     this.processGenerateVariants(snapshot);
                 }
 
