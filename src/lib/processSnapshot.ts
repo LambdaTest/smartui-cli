@@ -227,9 +227,7 @@ export default class Queue {
                     const viewportExists = snapshot.options.web.viewports.some(existingViewport => 
                         existingViewport[0] === width &&
                         (existingViewport.length < 2 || existingViewport[1] === height)
-                    );         
-                    console.log(variant)
-                    console.log(viewportExists)           
+                    );                 
                     if (!viewportExists) {
                         if (height > 0) {
                             snapshot.options.web.viewports.push([width, height]);
@@ -284,7 +282,12 @@ export default class Queue {
                 let drop = false;
 
                 if (snapshot && snapshot.name && this.snapshotNames.includes(snapshot.name)) {
-                    drop = this.filterExistingVariants(snapshot, this.ctx.config);
+                    if (!this.ctx.config.deferUploads){
+                        drop = true;
+                        this.ctx.log.debug(`snapshot failed; Same snapshot has been encountered with defer Uploads being false`);
+                    } else {
+                        drop = this.filterExistingVariants(snapshot, this.ctx.config);
+                    }
                 }
 
                 if (snapshot && snapshot.name && !this.snapshotNames.includes(snapshot.name)) {
@@ -294,9 +297,6 @@ export default class Queue {
                 if (snapshot) {
                     this.processGenerateVariants(snapshot);
                 }
-
-                console.log("***********")
-                console.log(JSON.stringify(snapshot.options))
 
                 if (!drop) {
                     let { processedSnapshot, warnings } = await processSnapshot(snapshot, this.ctx);
