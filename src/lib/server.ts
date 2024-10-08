@@ -36,7 +36,8 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 			let { snapshot, testType } = request.body;
 			if (!validateSnapshot(snapshot)) throw new Error(validateSnapshot.errors[0].message);
 			ctx.testType = testType;
-			ctx.snapshotQueue?.enqueue(snapshot);
+			const start = ctx.config.deferUploads ? false : true;
+			ctx.snapshotQueue?.enqueue(snapshot, start);
 			replyCode = 200;
 			replyBody = { data: { message: "success", warnings: [] }};
 		} catch (error: any) {

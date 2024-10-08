@@ -10,6 +10,10 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
 
             try {
                 // wait for snapshot queue to be empty
+                if(ctx.config.deferUploads){
+                    console.log("started after processing because of deferuploads")
+                    ctx.snapshotQueue?.startProcessingfunc()
+                }
                 await new Promise((resolve) => {
                     let output: string = '';
                     const intervalId = setInterval(() => {

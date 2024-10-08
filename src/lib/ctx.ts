@@ -76,6 +76,7 @@ export default (options: Record<string, string>): Context => {
             allowedHostnames: config.allowedHostnames || [],
             basicAuthorization: basicAuthObj,
             smartIgnore: config.smartIgnore ?? false
+            deferUploads: config.deferUploads ?? false,
         },
         uploadFilePath: '',
         webStaticConfig: [],

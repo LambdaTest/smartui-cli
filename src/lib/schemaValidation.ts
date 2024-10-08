@@ -150,7 +150,11 @@ const ConfigSchema = {
                     errorMessage: "Invalid config; password is mandatory"
                 },
             }
-        }
+        },
+        deferUploads: {
+            type: "boolean",
+            errorMessage: "Invalid config; deferUploads must be true/false"
+        },
     },
     anyOf: [
         { required: ["web"] },

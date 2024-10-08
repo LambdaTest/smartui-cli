@@ -16,28 +16,283 @@ export default class Queue {
     private processing: boolean = false;
     private processingSnapshot: string = '';
     private ctx: Context;
+    private snapshotNames: Array<string> = [];
+    private variants: Array<string> = [];
 
     constructor(ctx: Context) {
         this.ctx = ctx;
     }
 
-    enqueue(item: Snapshot): void {
+    enqueue(item: Snapshot, start: boolean): void {
         this.snapshots.push(item);
+        if(start){
+            if (!this.processing) {
+                this.processing = true;
+                this.processNext();
+            }
+        }
+    }
+
+    startProcessingfunc(): void {
         if (!this.processing) {
             this.processing = true;
             this.processNext();
         }
     }
 
+    private generateVariants(snapshot: Snapshot, config: any): void {
+        // Process web configurations if they exist
+        
+        if (config.web) {
+            const browsers = config.web.browsers || [];
+            const viewports = config.web.viewports || [];
+            
+            for (const browser of browsers) {
+                for (const viewport of viewports) {
+                    const width = viewport.width;
+                    const height = viewport.height || 0;  // Use 0 if height is not provided
+                    const variant = `${snapshot.name}_${browser}_viewport[${width}]_viewport[${height}]`;
+                    this.variants.push(variant);
+                }
+            }
+        }
+    
+        // Process mobile configurations if they exist
+        if (config.mobile) {
+            const devices = config.mobile.devices || [];
+            const orientation = config.mobile.orientation || "portrait";  // Default to portrait if not provided
+            const fullPage = config.mobile.fullPage ?? true; // FullPage defaults to true if not defined
+            
+            for (const device of devices) {
+                const variant = `${snapshot.name}_${device}_${orientation}_${fullPage ? 'fullPage' : 'noFullPage'}`;
+                this.variants.push(variant);
+            }
+        }
+    }
+    
+
+    private generateWebVariants(snapshot: Snapshot, webConfig: any): void {
+        const browsers = webConfig.browsers ?? this.ctx.config.web?.browsers ?? ["chrome", "edge", "firefox", "safari"];
+        const viewports = webConfig.viewports || [];
+        
+        for (const browser of browsers) {
+            for (const viewport of viewports) {
+                const width = viewport[0];
+                const height = viewport[1] || 0;  // Use 0 if height is not provided
+                const variant = `${snapshot.name}_${browser}_viewport[${width}]_viewport[${height}]`;
+                this.variants.push(variant);
+            }
+        }
+    }
+
+    private generateMobileVariants(snapshot: Snapshot, mobileConfig: any): void {
+        const devices = mobileConfig.devices || [];
+        const orientation = mobileConfig.orientation ?? this.ctx.config.mobile?.orientation ?? "portrait";
+        const fullPage = mobileConfig.fullPage ?? this.ctx.config.mobile?.fullPage ?? true;
+        
+        for (const device of devices) {
+            const variant = `${snapshot.name}_${device}_${orientation}_${fullPage ? 'fullPage' : 'noFullPage'}`;
+            this.variants.push(variant);
+        }
+    }
+
+    private filterExistingVariants(snapshot: Snapshot, config: any): boolean {
+
+        let drop = true;
+
+        if (snapshot.options && snapshot.options.web) {
+            const webDrop = this.filterWebVariants(snapshot, snapshot.options.web);
+            if (!webDrop) drop = false;
+        }
+        
+        if (snapshot.options && snapshot.options.mobile) {
+            const mobileDrop = this.filterMobileVariants(snapshot, snapshot.options.mobile);
+            if (!mobileDrop) drop = false;
+        }
+        
+        // Fallback to the global config if neither web nor mobile options are present in snapshot.options
+        if (!snapshot.options || (snapshot.options && !snapshot.options.web && !snapshot.options.mobile)) {
+            const configDrop = this.filterVariants(snapshot, config);
+            if (!configDrop) drop = false;
+        }
+        return drop;
+    }
+
+    private filterVariants(snapshot: Snapshot, config: any): boolean {
+        let allVariantsDropped = true;
+    
+        // Process web configurations if they exist in config
+        if (config.web) {
+            const browsers = config.web.browsers || [];
+            const viewports = config.web.viewports || [];
+    
+            for (const browser of browsers) {
+                for (const viewport of viewports) {
+                    const width = viewport.width;
+                    const height = viewport.height || 0;
+                    const variant = `${snapshot.name}_${browser}_viewport[${width}]_viewport[${height}]`;
+    
+                    if (!this.variants.includes(variant)) {
+                        allVariantsDropped = false; // Found a variant that needs processing
+                        if (!snapshot.options) snapshot.options = {};
+                        if (!snapshot.options.web) snapshot.options.web = { browsers: [], viewports: [] };
+                        
+                        if (!snapshot.options.web.browsers.includes(browser)) {
+                            snapshot.options.web.browsers.push(browser);
+                        }
+    
+                        // Check for unique viewports to avoid duplicates
+                        const viewportExists = snapshot.options.web.viewports.some(existingViewport => 
+                            existingViewport[0] === width &&
+                            (existingViewport.length < 2 || existingViewport[1] === height)
+                        );
+    
+                        if (!viewportExists) {
+                            if (height > 0) {
+                                snapshot.options.web.viewports.push([width, height]);
+                            } else {
+                                snapshot.options.web.viewports.push([width]);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    
+        // Process mobile configurations if they exist in config
+        if (config.mobile) {
+            const devices = config.mobile.devices || [];
+            const orientation = config.mobile.orientation || "portrait";
+            const fullPage = config.mobile.fullPage || true;
+    
+            for (const device of devices) {
+                const variant = `${snapshot.name}_${device}_${orientation}_${fullPage ? 'fullPage' : 'noFullPage'}`;
+    
+                if (!this.variants.includes(variant)) {
+                    allVariantsDropped = false; // Found a variant that needs processing
+                    if (!snapshot.options) snapshot.options = {};
+                    if (!snapshot.options.mobile) snapshot.options.mobile = { devices: [], orientation: "portrait", fullPage: true };
+                    
+                    if (!snapshot.options.mobile.devices.includes(device)) {
+                        snapshot.options.mobile.devices.push(device);
+                    }
+                    snapshot.options.mobile.orientation = orientation;
+                    snapshot.options.mobile.fullPage = fullPage;
+                }
+            }
+        }
+    
+        return allVariantsDropped;
+    }    
+    
+    private filterWebVariants(snapshot: Snapshot, webConfig: any): boolean {
+        const browsers = webConfig.browsers ?? this.ctx.config.web?.browsers ?? ["chrome", "edge", "firefox", "safari"];
+        const viewports = webConfig.viewports || [];
+        let allVariantsDropped = true;
+    
+        if (!snapshot.options) {
+            snapshot.options = {};
+        }
+    
+        snapshot.options.web = { browsers: [], viewports: [] };
+        
+        for (const browser of browsers) {
+            for (const viewport of viewports) {
+                const width = viewport[0];
+                const height = viewport[1] || 0;
+                const variant = `${snapshot.name}_${browser}_viewport[${width}]_viewport[${height}]`;
+    
+                if (!this.variants.includes(variant)) {
+                    allVariantsDropped = false; // Found a variant that needs processing
+                    if (!snapshot.options.web.browsers.includes(browser)) {
+                        snapshot.options.web.browsers.push(browser);
+                    }
+                    // Only add unique viewports to avoid duplicates
+                    const viewportExists = snapshot.options.web.viewports.some(existingViewport => 
+                        existingViewport[0] === width &&
+                        (existingViewport.length < 2 || existingViewport[1] === height)
+                    );         
+                    console.log(variant)
+                    console.log(viewportExists)           
+                    if (!viewportExists) {
+                        if (height > 0) {
+                            snapshot.options.web.viewports.push([width, height]);
+                        } else {
+                            snapshot.options.web.viewports.push([width]);
+                        }
+                    }
+                }
+            }
+        }
+        return allVariantsDropped;
+    }
+    
+    
+    private filterMobileVariants(snapshot: Snapshot, mobileConfig: any): boolean {
+        if (!snapshot.options) {
+            snapshot.options = {};
+        }
+
+        snapshot.options.mobile = { devices: [], orientation: "portrait", fullPage: true };
+
+        const devices = mobileConfig.devices || [];
+        const orientation = mobileConfig.orientation ?? this.ctx.config.mobile?.orientation ?? "portrait";
+        const fullPage = mobileConfig.fullPage ?? this.ctx.config.mobile?.fullPage ?? true;
+        let allVariantsDropped = true;
+        
+        for (const device of devices) {
+            const variant = `${snapshot.name}_${device}_${orientation}_${fullPage ? 'fullPage' : 'noFullPage'}`;
+    
+            if (!this.variants.includes(variant)) {
+                allVariantsDropped = false; // Found a variant that needs processing
+                snapshot.options.mobile.devices.push(device);
+                snapshot.options.mobile.orientation = orientation;
+                snapshot.options.mobile.fullPage = fullPage;
+            }
+        }
+        return allVariantsDropped;
+    }
+    
+    
+
     private async processNext(): Promise<void> {
         if (!this.isEmpty()) {
-            const snapshot = this.snapshots.shift();
+            let snapshot;
+            if (this.ctx.config.deferUploads){
+                snapshot = this.snapshots.pop();
+            } else {
+                snapshot = this.snapshots.shift();
+            }
             try {
                 this.processingSnapshot = snapshot?.name;
-                let { processedSnapshot, warnings } = await processSnapshot(snapshot, this.ctx);
-                await this.ctx.client.uploadSnapshot(this.ctx, processedSnapshot);
-                this.ctx.totalSnapshots++;
-                this.processedSnapshots.push({ name: snapshot.name, warnings });
+                let drop = false;
+
+                if (snapshot && snapshot.name && this.snapshotNames.includes(snapshot.name)) {
+                    drop = this.filterExistingVariants(snapshot, this.ctx.config);
+                }
+
+                if (snapshot && snapshot.name && !this.snapshotNames.includes(snapshot.name)) {
+                    this.snapshotNames.push(snapshot.name);
+                }
+
+                if (snapshot && snapshot.options && snapshot.options.web){
+                    this.generateWebVariants(snapshot, snapshot.options.web);
+                }
+
+                if (snapshot && snapshot.options && snapshot.options.mobile){
+                    this.generateMobileVariants(snapshot, snapshot.options.mobile)
+                }
+
+                if ( (snapshot && !snapshot.options)  || (snapshot && snapshot.options && !snapshot.options.web && !snapshot.options.mobile) ) {
+                    this.generateVariants(snapshot, this.ctx.config);
+                }
+
+                if (!drop) {
+                    let { processedSnapshot, warnings } = await processSnapshot(snapshot, this.ctx);
+                    await this.ctx.client.uploadSnapshot(this.ctx, processedSnapshot);
+                    this.ctx.totalSnapshots++;
+                    this.processedSnapshots.push({ name: snapshot.name, warnings });
+                }
             } catch (error: any) {
                 this.ctx.log.debug(`snapshot failed; ${error}`);
                 this.processedSnapshots.push({ name: snapshot.name, error: error.message });
