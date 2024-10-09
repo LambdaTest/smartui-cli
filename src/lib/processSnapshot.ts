@@ -76,11 +76,10 @@ export default class Queue {
         // Process mobile configurations if they exist
         if (config.mobile) {
             const devices = config.mobile.devices || [];
-            const orientation = config.mobile.orientation || "portrait";  // Default to portrait if not provided
-            const fullPage = config.mobile.fullPage ?? true; // FullPage defaults to true if not defined
-            
+            const orientation = config.mobile.orientation || constants.MOBILE_ORIENTATION_PORTRAIT;
+        
             for (const device of devices) {
-                const variant = `${snapshot.name}_${device}_${orientation}_${fullPage ? 'fullPage' : 'noFullPage'}`;
+                const variant = `${snapshot.name}_${device}_${orientation}`;
                 this.variants.push(variant);
             }
         }
@@ -88,7 +87,7 @@ export default class Queue {
     
 
     private generateWebVariants(snapshot: Snapshot, webConfig: any): void {
-        const browsers = webConfig.browsers ?? this.ctx.config.web?.browsers ?? ["chrome", "edge", "firefox", "safari"];
+        const browsers = webConfig.browsers ?? this.ctx.config.web?.browsers ?? [constants.CHROME, constants.EDGE, constants.FIREFOX, constants.SAFARI];
         const viewports = webConfig.viewports || [];
         
         for (const browser of browsers) {
@@ -103,14 +102,14 @@ export default class Queue {
 
     private generateMobileVariants(snapshot: Snapshot, mobileConfig: any): void {
         const devices = mobileConfig.devices || [];
-        const orientation = mobileConfig.orientation ?? this.ctx.config.mobile?.orientation ?? "portrait";
-        const fullPage = mobileConfig.fullPage ?? this.ctx.config.mobile?.fullPage ?? true;
+        const orientation = mobileConfig.orientation ?? this.ctx.config.mobile?.orientation ?? constants.MOBILE_ORIENTATION_PORTRAIT;
         
         for (const device of devices) {
-            const variant = `${snapshot.name}_${device}_${orientation}_${fullPage ? 'fullPage' : 'noFullPage'}`;
+            const variant = `${snapshot.name}_${device}_${orientation}`;
             this.variants.push(variant);
         }
     }
+    
 
     private filterExistingVariants(snapshot: Snapshot, config: any): boolean {
 
@@ -178,31 +177,31 @@ export default class Queue {
         // Process mobile configurations if they exist in config
         if (config.mobile) {
             const devices = config.mobile.devices || [];
-            const orientation = config.mobile.orientation || "portrait";
+            const orientation = config.mobile.orientation || constants.MOBILE_ORIENTATION_PORTRAIT;
             const fullPage = config.mobile.fullPage || true;
-    
+        
             for (const device of devices) {
-                const variant = `${snapshot.name}_${device}_${orientation}_${fullPage ? 'fullPage' : 'noFullPage'}`;
-    
+                const variant = `${snapshot.name}_${device}_${orientation}`;
+        
                 if (!this.variants.includes(variant)) {
                     allVariantsDropped = false; // Found a variant that needs processing
                     if (!snapshot.options) snapshot.options = {};
-                    if (!snapshot.options.mobile) snapshot.options.mobile = { devices: [], orientation: "portrait", fullPage: true };
+                    if (!snapshot.options.mobile) snapshot.options.mobile = { devices: [], orientation: constants.MOBILE_ORIENTATION_PORTRAIT };
                     
                     if (!snapshot.options.mobile.devices.includes(device)) {
                         snapshot.options.mobile.devices.push(device);
                     }
                     snapshot.options.mobile.orientation = orientation;
-                    snapshot.options.mobile.fullPage = fullPage;
                 }
             }
         }
+        
     
         return allVariantsDropped;
     }    
     
     private filterWebVariants(snapshot: Snapshot, webConfig: any): boolean {
-        const browsers = webConfig.browsers ?? this.ctx.config.web?.browsers ?? ["chrome", "edge", "firefox", "safari"];
+        const browsers = webConfig.browsers ?? this.ctx.config.web?.browsers ?? [constants.CHROME, constants.EDGE, constants.FIREFOX, constants.SAFARI];
         const viewports = webConfig.viewports || [];
         let allVariantsDropped = true;
     
@@ -246,28 +245,25 @@ export default class Queue {
         if (!snapshot.options) {
             snapshot.options = {};
         }
-
-        snapshot.options.mobile = { devices: [], orientation: "portrait", fullPage: true };
-
+    
+        snapshot.options.mobile = { devices: [], orientation: constants.MOBILE_ORIENTATION_PORTRAIT };
+    
         const devices = mobileConfig.devices || [];
-        const orientation = mobileConfig.orientation ?? this.ctx.config.mobile?.orientation ?? "portrait";
+        const orientation = mobileConfig.orientation ?? this.ctx.config.mobile?.orientation ?? constants.MOBILE_ORIENTATION_PORTRAIT;
         const fullPage = mobileConfig.fullPage ?? this.ctx.config.mobile?.fullPage ?? true;
         let allVariantsDropped = true;
         
         for (const device of devices) {
-            const variant = `${snapshot.name}_${device}_${orientation}_${fullPage ? 'fullPage' : 'noFullPage'}`;
+            const variant = `${snapshot.name}_${device}_${orientation}`;
     
             if (!this.variants.includes(variant)) {
                 allVariantsDropped = false; // Found a variant that needs processing
                 snapshot.options.mobile.devices.push(device);
                 snapshot.options.mobile.orientation = orientation;
-                snapshot.options.mobile.fullPage = fullPage;
             }
         }
         return allVariantsDropped;
     }
-    
-    
 
     private async processNext(): Promise<void> {
         if (!this.isEmpty()) {
@@ -495,6 +491,45 @@ async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record
         const isNotAllEmpty = (obj: Record<string, Array<string>>): boolean => {
             for (let key in obj) if (obj[key]?.length) return true;
             return false;
+        }
+
+        if (options.web && Object.keys(options.web).length) {
+            processedOptions.web = {};
+        
+            // Check and process viewports in web
+            if (options.web.viewports && options.web.viewports.length > 0) {
+                processedOptions.web.viewports = options.web.viewports.filter(viewport => 
+                    Array.isArray(viewport) && viewport.length > 0
+                );
+            }
+        
+            // Check and process browsers in web
+            if (options.web.browsers && options.web.browsers.length > 0) {
+                processedOptions.web.browsers = options.web.browsers;
+            }
+        }
+
+        if (options.mobile && Object.keys(options.mobile).length) {
+            processedOptions.mobile = {};
+        
+            // Check and process devices in mobile
+            if (options.mobile.devices && options.mobile.devices.length > 0) {
+                processedOptions.mobile.devices = options.mobile.devices;
+            }
+            
+            // Check if 'fullPage' is provided and is a boolean, otherwise set default to true
+            if (options.mobile.hasOwnProperty('fullPage') && typeof options.mobile.fullPage === 'boolean') {
+                processedOptions.mobile.fullPage = options.mobile.fullPage;
+            } else {
+                processedOptions.mobile.fullPage = true; // Default value for fullPage
+            }
+        
+            // Check if 'orientation' is provided and is valid, otherwise set default to 'portrait'
+            if (options.mobile.hasOwnProperty('orientation') && (options.mobile.orientation === constants.MOBILE_ORIENTATION_PORTRAIT || options.mobile.orientation === constants.MOBILE_ORIENTATION_LANDSCAPE)) {
+                processedOptions.mobile.orientation = options.mobile.orientation;
+            } else {
+                processedOptions.mobile.orientation = constants.MOBILE_ORIENTATION_PORTRAIT; // Default value for orientation
+            }
         }
 
         if (options.element && Object.keys(options.element).length) {
