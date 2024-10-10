@@ -72,7 +72,7 @@ export default class Queue {
     }
 
     isEmpty(): boolean {
-        return this.snapshots.length ? false : true;
+        return this.snapshots && this.snapshots.length ? false : true;
     }
 }
 
@@ -80,7 +80,10 @@ async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record
     updateLogContext({ task: 'discovery' });
     ctx.log.debug(`Processing snapshot ${snapshot.name} ${snapshot.url}`);
 
-    let launchOptions: Record<string, any> = { headless: true }
+    let launchOptions: Record<string, any> = {
+        headless: true,
+        args: constants.LAUNCH_ARGS
+    }
     let contextOptions: Record<string, any> = {
         javaScriptEnabled: ctx.config.cliEnableJavaScript,
         userAgent: constants.CHROME_USER_AGENT,
@@ -92,8 +95,8 @@ async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record
     }
     const context = await ctx.browser.newContext(contextOptions);
     ctx.log.debug(`Browser context created with options ${JSON.stringify(contextOptions)}`);
-    // Setting the cookies in playwright context
-    if (snapshot.dom.cookies) {
+    // Setting cookies in playwright context
+    if (!ctx.env.SMARTUI_DO_NOT_USE_CAPTURED_COOKIES && snapshot.dom.cookies) {
         const domainName = new URL(snapshot.url).hostname;
         ctx.log.debug(`Setting cookies for domain: ${domainName}`);
 
@@ -135,7 +138,13 @@ async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record
     await page.route('**/*', async (route, request) => {
         const requestUrl = request.url()
         const requestHostname = new URL(requestUrl).hostname;
-        let requestOptions: Record<string, any> = { timeout: REQUEST_TIMEOUT }
+        let requestOptions: Record<string, any> = {
+            timeout: REQUEST_TIMEOUT,
+            headers: {
+                ...await request.allHeaders(),
+                ...constants.REQUEST_HEADERS
+            }
+        }
 
         try {
             // abort audio/video media requests
@@ -149,10 +158,7 @@ async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record
             if (ctx.config.basicAuthorization) {
                 ctx.log.debug(`Adding basic authorization to the headers for root url`);
                 let token = Buffer.from(`${ctx.config.basicAuthorization.username}:${ctx.config.basicAuthorization.password}`).toString('base64');
-                requestOptions.headers = {
-                    ...request.headers(),
-                    Authorization: `Basic ${token}`
-                };
+                requestOptions.headers.Authorization = `Basic ${token}`;
             }
 
             // get response
@@ -223,6 +229,45 @@ async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record
         const isNotAllEmpty = (obj: Record<string, Array<string>>): boolean => {
             for (let key in obj) if (obj[key]?.length) return true;
             return false;
+        }
+
+        if (options.web && Object.keys(options.web).length) {
+            processedOptions.web = {};
+        
+            // Check and process viewports in web
+            if (options.web.viewports && options.web.viewports.length > 0) {
+                processedOptions.web.viewports = options.web.viewports.filter(viewport => 
+                    Array.isArray(viewport) && viewport.length > 0
+                );
+            }
+        
+            // Check and process browsers in web
+            if (options.web.browsers && options.web.browsers.length > 0) {
+                processedOptions.web.browsers = options.web.browsers;
+            }
+        }
+
+        if (options.mobile && Object.keys(options.mobile).length) {
+            processedOptions.mobile = {};
+        
+            // Check and process devices in mobile
+            if (options.mobile.devices && options.mobile.devices.length > 0) {
+                processedOptions.mobile.devices = options.mobile.devices;
+            }
+            
+            // Check if 'fullPage' is provided and is a boolean, otherwise set default to true
+            if (options.mobile.hasOwnProperty('fullPage') && typeof options.mobile.fullPage === 'boolean') {
+                processedOptions.mobile.fullPage = options.mobile.fullPage;
+            } else {
+                processedOptions.mobile.fullPage = true; // Default value for fullPage
+            }
+        
+            // Check if 'orientation' is provided and is valid, otherwise set default to 'portrait'
+            if (options.mobile.hasOwnProperty('orientation') && (options.mobile.orientation === 'portrait' || options.mobile.orientation === 'landscape')) {
+                processedOptions.mobile.orientation = options.mobile.orientation;
+            } else {
+                processedOptions.mobile.orientation = 'portrait'; // Default value for orientation
+            }
         }
 
         if (options.element && Object.keys(options.element).length) {
@@ -334,6 +379,7 @@ async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record
                 });
             }
         }
+        ctx.log.debug(`Processed options: ${JSON.stringify(processedOptions)}`);
     }
 
     return {

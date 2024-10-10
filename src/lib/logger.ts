@@ -17,7 +17,7 @@ export function updateLogContext(newContext: LogContext) {
 
 const logLevel = (): string => {
     let env: Env = getEnv();
-    return (env.LT_SDK_DEBUG === 'true') ? 'debug' : 'info';
+    return (env.LT_SDK_DEBUG) ? 'debug' : 'info';
 }
 
 // Create a Winston logger
