@@ -1,6 +1,6 @@
 {
   "name": "@lambdatest/smartui-cli",
-  "version": "4.0.5",
+  "version": "4.0.6",
   "description": "A command line interface (CLI) to run SmartUI tests on LambdaTest",
   "files": [
     "dist/**/*"
@@ -21,10 +21,10 @@
   "author": "LambdaTest <keys@lambdatest.com>",
   "license": "MIT",
   "dependencies": {
-    "@playwright/browser-chromium": "^1.45.3",
-    "@playwright/browser-firefox": "^1.45.3",
-    "@playwright/browser-webkit": "^1.45.3",
-    "@playwright/test": "^1.45.3",
+    "@playwright/browser-chromium": "^1.47.2",
+    "@playwright/browser-firefox": "^1.47.2",
+    "@playwright/browser-webkit": "^1.47.2",
+    "@playwright/test": "^1.47.2",
     "@types/cross-spawn": "^6.0.4",
     "@types/node": "^20.8.9",
     "@types/which": "^3.0.2",
