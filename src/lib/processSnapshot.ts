@@ -641,6 +641,7 @@ async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record
                 });
             }
         }
+        ctx.log.debug(`Processed options: ${JSON.stringify(processedOptions)}`);
     }
 
     return {
