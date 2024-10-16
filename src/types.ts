@@ -4,7 +4,7 @@ import httpClient from './lib/httpClient.js'
 import type { Logger } from 'winston'
 import { ListrTaskWrapper, ListrRenderer } from "listr2";
 import { Browser } from '@playwright/test';
-import snapshotQueue from './lib/processSnapshot.js';
+import snapshotQueue from './lib/snapshotQueue.js';
 
 export interface Context {
     env: Env;
@@ -25,7 +25,7 @@ export interface Context {
         allowedHostnames: Array<string>;
         basicAuthorization: basicAuth | undefined;
         smartIgnore: boolean;
-        deferUploads: boolean;
+        delayedUploads: boolean;
     };
     uploadFilePath: string;
     webStaticConfig: WebStaticConfig;

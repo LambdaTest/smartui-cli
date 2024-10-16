@@ -151,9 +151,9 @@ const ConfigSchema = {
                 },
             }
         },
-        deferUploads: {
+        delayedUploads: {
             type: "boolean",
-            errorMessage: "Invalid config; deferUploads must be true/false"
+            errorMessage: "Invalid config; delayedUploads must be true/false"
         },
     },
     anyOf: [

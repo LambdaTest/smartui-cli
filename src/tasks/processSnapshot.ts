@@ -10,8 +10,8 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
 
             try {
                 // wait for snapshot queue to be empty
-                if(ctx.config.deferUploads){
-                    ctx.log.info("started after processing because of deferuploads")
+                if(ctx.config.delayedUploads){
+                    ctx.log.debug("started after processing because of delayedUploads")
                     ctx.snapshotQueue?.startProcessingfunc()
                 }
                 await new Promise((resolve) => {
