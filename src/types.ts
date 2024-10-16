@@ -25,7 +25,7 @@ export interface Context {
         allowedHostnames: Array<string>;
         basicAuthorization: basicAuth | undefined;
         smartIgnore: boolean;
-        delayedUploads: boolean;
+        delayedUpload: boolean;
     };
     uploadFilePath: string;
     webStaticConfig: WebStaticConfig;

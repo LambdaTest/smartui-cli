@@ -17,7 +17,7 @@ export default class Queue {
 
     enqueue(item: Snapshot): void {
         this.snapshots.push(item);
-        if(!this.ctx.config.delayedUploads){
+        if(!this.ctx.config.delayedUpload){
             if (!this.processing) {
                 this.processing = true;
                 this.processNext();
@@ -260,7 +260,7 @@ export default class Queue {
     private async processNext(): Promise<void> {
         if (!this.isEmpty()) {
             let snapshot;
-            if (this.ctx.config.delayedUploads){
+            if (this.ctx.config.delayedUpload){
                 snapshot = this.snapshots.pop();
             } else {
                 snapshot = this.snapshots.shift();
@@ -270,7 +270,7 @@ export default class Queue {
                 let drop = false;
 
                 if (snapshot && snapshot.name && this.snapshotNames.includes(snapshot.name)) {
-                    if (!this.ctx.config.delayedUploads){
+                    if (!this.ctx.config.delayedUpload){
                         drop = true;
                         this.ctx.log.debug(`snapshot failed; Same snapshot has been encountered with defer Uploads being false`);
                     } else {
