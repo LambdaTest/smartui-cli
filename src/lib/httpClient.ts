@@ -90,6 +90,47 @@ export default class httpClient {
         }, ctx.log)
     }
 
+    getScreenshotData(buildId: string, log: Logger) {
+        console.log("*********************")
+        const customAxiosInstance = axios.create({
+            baseURL: 'https://api.lambdatest.com/smartui/2.0',
+            headers: { 'projectToken': this.axiosInstance.defaults.headers['projectToken'] }
+        });
+
+        console.log("***********************")
+        console.log(`http request: GET /build/screenshots for buildId: ${buildId} and project token as ${this.axiosInstance.defaults.headers['projectToken']}`)
+
+        log.debug(`http request: GET /build/screenshots for buildId: ${buildId} and project token as ${this.axiosInstance.defaults.headers['projectToken']}`);
+
+        return customAxiosInstance.get('/build/screenshots', {
+            params: { buildId }
+        })
+        .then(resp => {
+            log.debug(`http response: ${JSON.stringify({
+                status: resp.status,
+                headers: resp.headers,
+                body: resp.data
+            })}`);
+            return resp.data;
+        })
+        .catch(error => {
+            if (error.response) {
+                log.debug(`http response: ${JSON.stringify({
+                    status: error.response.status,
+                    headers: error.response.headers,
+                    body: error.response.data
+                })}`);
+                throw new Error(error.response.data.error?.message || error.response.data.message);
+            }
+            if (error.request) {
+                log.debug(`http request failed: ${error.toJSON()}`);
+                throw new Error(error.toJSON().message);
+            }
+            log.debug(`http request failed: ${error.message}`);
+            throw new Error(error.message);
+        });
+    }
+
     uploadScreenshot(
         { id: buildId, name: buildName, baseline }: Build, 
         ssPath: string, ssName: string, browserName :string, viewport: string, log: Logger
