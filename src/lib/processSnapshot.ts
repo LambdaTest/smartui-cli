@@ -1,5 +1,5 @@
 import { Snapshot, Context, ProcessedSnapshot } from "../types.js";
-import { scrollToBottomAndBackToTop, getRenderViewports } from "./utils.js"
+import { scrollToBottomAndBackToTop, getRenderViewports, getRenderViewportsForOptions } from "./utils.js"
 import { chromium, Locator } from "@playwright/test"
 import constants from "./constants.js";
 import { updateLogContext } from '../lib/logger.js'
@@ -241,7 +241,14 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
     // process for every viewport
     let navigated: boolean = false;
     let previousDeviceType: string | null = null;
-    let renderViewports = getRenderViewports(ctx);
+
+    let renderViewports;
+
+    if((snapshot.options && snapshot.options.web)  || (snapshot.options && snapshot.options.mobile)){
+        renderViewports = getRenderViewportsForOptions(snapshot.options)
+    } else {
+        renderViewports = getRenderViewports(ctx);
+    }
 
     for (const { viewport, viewportString, fullPage, device } of renderViewports) {
 
