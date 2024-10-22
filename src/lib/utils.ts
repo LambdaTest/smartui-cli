@@ -157,7 +157,12 @@ export function getMobileRenderViewportsForOptions(options: any): Record<string,
             let portrait = (orientation === constants.MOBILE_ORIENTATION_PORTRAIT);
 
             // Check if fullPage is specified, otherwise use default
-            let fullPage = options.mobile.fullPage !== undefined ? options.mobile.fullPage : true;
+            let fullPage
+            if (options.mobile.fullPage === undefined || options.mobile.fullPage){
+                fullPage = true
+            } else {
+                fullPage = false
+            }
 
             mobileRenderViewports[os]?.push({
                 viewport: { width: portrait ? width : height, height: portrait ? height : width },
