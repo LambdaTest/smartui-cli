@@ -10,7 +10,7 @@ import createBuild from '../tasks/createBuild.js'
 import exec from '../tasks/exec.js'
 import processSnapshots from '../tasks/processSnapshot.js'
 import finalizeBuild from '../tasks/finalizeBuild.js'
-import snapshotQueue from '../lib/processSnapshot.js'
+import snapshotQueue from '../lib/snapshotQueue.js'
 
 const command = new Command();
 

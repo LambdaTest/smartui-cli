@@ -93,6 +93,33 @@ export function getWebRenderViewports(ctx: Context): Array<Record<string,any>> {
     return webRenderViewports
 }
 
+export function getWebRenderViewportsForOptions(options: any): Array<Record<string,any>> {
+    let webRenderViewports: Array<Record<string,any>> = [];
+
+    if (options.web && Array.isArray(options.web.viewports)) {
+        for (const viewport of options.web.viewports) {
+            if (Array.isArray(viewport) && viewport.length > 0) {
+                let viewportObj: { width: number; height?: number } = {
+                    width: viewport[0]
+                };
+                
+                if (viewport.length > 1) {
+                    viewportObj.height = viewport[1];
+                }
+
+                webRenderViewports.push({
+                    viewport: viewportObj,
+                    viewportString: `${viewport[0]}${viewport[1] ? 'x'+viewport[1] : ''}`,
+                    fullPage: viewport.length === 1,
+                    device: false
+                });
+            }
+        }
+    }
+
+    return webRenderViewports;
+}
+
 export function getMobileRenderViewports(ctx: Context): Record<string,any> {
     let mobileRenderViewports: Record<string, Array<Record<string, any>>> = {}
     mobileRenderViewports[constants.MOBILE_OS_IOS] = [];
@@ -117,9 +144,54 @@ export function getMobileRenderViewports(ctx: Context): Record<string,any> {
     return mobileRenderViewports
 }
 
+export function getMobileRenderViewportsForOptions(options: any): Record<string,any> {
+    let mobileRenderViewports: Record<string, Array<Record<string, any>>> = {}
+    mobileRenderViewports[constants.MOBILE_OS_IOS] = [];
+    mobileRenderViewports[constants.MOBILE_OS_ANDROID] = [];
+
+    if (options.mobile) {
+        for (const device of options.mobile.devices) {
+            let os = constants.SUPPORTED_MOBILE_DEVICES[device].os;
+            let { width, height } = constants.SUPPORTED_MOBILE_DEVICES[device].viewport;
+            let orientation = options.mobile.orientation || constants.MOBILE_ORIENTATION_PORTRAIT;
+            let portrait = (orientation === constants.MOBILE_ORIENTATION_PORTRAIT);
+
+            // Check if fullPage is specified, otherwise use default
+            let fullPage
+            if (options.mobile.fullPage === undefined || options.mobile.fullPage){
+                fullPage = true
+            } else {
+                fullPage = false
+            }
+
+            mobileRenderViewports[os]?.push({
+                viewport: { width: portrait ? width : height, height: portrait ? height : width },
+                viewportString: `${device} (${orientation})`,
+                fullPage: fullPage,
+                device: true,
+                os: os
+            })
+        }
+    }
+
+    return mobileRenderViewports
+}
+
 export function getRenderViewports(ctx: Context): Array<Record<string,any>> {
     let mobileRenderViewports = getMobileRenderViewports(ctx);
     let webRenderViewports = getWebRenderViewports(ctx);
+    
+    // Combine arrays ensuring web viewports are first
+    return [
+        ...webRenderViewports,
+        ...mobileRenderViewports[constants.MOBILE_OS_IOS],
+        ...mobileRenderViewports[constants.MOBILE_OS_ANDROID]
+    ];
+}
+
+export function getRenderViewportsForOptions(options: any): Array<Record<string,any>> {
+    let mobileRenderViewports = getMobileRenderViewportsForOptions(options);
+    let webRenderViewports = getWebRenderViewportsForOptions(options);
     
     // Combine arrays ensuring web viewports are first
     return [

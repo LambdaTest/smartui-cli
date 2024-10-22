@@ -1,5 +1,5 @@
 import { Snapshot, Context, ProcessedSnapshot } from "../types.js";
-import { scrollToBottomAndBackToTop, getRenderViewports } from "./utils.js"
+import { scrollToBottomAndBackToTop, getRenderViewports, getRenderViewportsForOptions } from "./utils.js"
 import { chromium, Locator } from "@playwright/test"
 import constants from "./constants.js";
 import { updateLogContext } from '../lib/logger.js'
@@ -10,73 +10,7 @@ const ALLOWED_STATUSES = [200, 201];
 const REQUEST_TIMEOUT = 10000;
 const MIN_VIEWPORT_HEIGHT = 1080;
 
-export default class Queue {
-    private snapshots: Array<Snapshot> = [];
-    private processedSnapshots: Array<Record<string, any>> = [];
-    private processing: boolean = false;
-    private processingSnapshot: string = '';
-    private ctx: Context;
-
-    constructor(ctx: Context) {
-        this.ctx = ctx;
-    }
-
-    enqueue(item: Snapshot): void {
-        this.snapshots.push(item);
-        if (!this.processing) {
-            this.processing = true;
-            this.processNext();
-        }
-    }
-
-    private async processNext(): Promise<void> {
-        if (!this.isEmpty()) {
-            const snapshot = this.snapshots.shift();
-            try {
-                this.processingSnapshot = snapshot?.name;
-                let { processedSnapshot, warnings } = await processSnapshot(snapshot, this.ctx);
-                await this.ctx.client.uploadSnapshot(this.ctx, processedSnapshot);
-                this.ctx.totalSnapshots++;
-                this.processedSnapshots.push({ name: snapshot.name, warnings });
-            } catch (error: any) {
-                this.ctx.log.debug(`snapshot failed; ${error}`);
-                this.processedSnapshots.push({ name: snapshot.name, error: error.message });
-            }
-            // Close open browser contexts and pages
-            if (this.ctx.browser) {
-                for (let context of this.ctx.browser.contexts()) {
-                    for (let page of context.pages()) {
-                        await page.close();
-                        this.ctx.log.debug(`Closed browser page for snapshot ${snapshot.name}`);
-                    }
-                    await context.close();
-                    this.ctx.log.debug(`Closed browser context for snapshot ${snapshot.name}`);
-                }
-            }
-            this.processNext();
-        } else {
-            this.processing = false;
-        }
-    }
-
-    isProcessing(): boolean {
-        return this.processing;
-    }
-
-    getProcessingSnapshot(): string {
-        return this.processingSnapshot;
-    }
-
-    getProcessedSnapshots(): Array<Record<string, any>> {
-        return this.processedSnapshots;
-    }
-
-    isEmpty(): boolean {
-        return this.snapshots && this.snapshots.length ? false : true;
-    }
-}
-
-async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record<string, any>> {
+export default async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record<string, any>> {
     updateLogContext({ task: 'discovery' });
     ctx.log.debug(`Processing snapshot ${snapshot.name} ${snapshot.url}`);
 
@@ -231,6 +165,45 @@ async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record
             return false;
         }
 
+        if (options.web && Object.keys(options.web).length) {
+            processedOptions.web = {};
+        
+            // Check and process viewports in web
+            if (options.web.viewports && options.web.viewports.length > 0) {
+                processedOptions.web.viewports = options.web.viewports.filter(viewport => 
+                    Array.isArray(viewport) && viewport.length > 0
+                );
+            }
+        
+            // Check and process browsers in web
+            if (options.web.browsers && options.web.browsers.length > 0) {
+                processedOptions.web.browsers = options.web.browsers;
+            }
+        }
+
+        if (options.mobile && Object.keys(options.mobile).length) {
+            processedOptions.mobile = {};
+        
+            // Check and process devices in mobile
+            if (options.mobile.devices && options.mobile.devices.length > 0) {
+                processedOptions.mobile.devices = options.mobile.devices;
+            }
+            
+            // Check if 'fullPage' is provided and is a boolean, otherwise set default to true
+            if (options.mobile.hasOwnProperty('fullPage') && typeof options.mobile.fullPage === 'boolean') {
+                processedOptions.mobile.fullPage = options.mobile.fullPage;
+            } else {
+                processedOptions.mobile.fullPage = true; // Default value for fullPage
+            }
+        
+            // Check if 'orientation' is provided and is valid, otherwise set default to 'portrait'
+            if (options.mobile.hasOwnProperty('orientation') && (options.mobile.orientation === constants.MOBILE_ORIENTATION_PORTRAIT || options.mobile.orientation === constants.MOBILE_ORIENTATION_LANDSCAPE)) {
+                processedOptions.mobile.orientation = options.mobile.orientation;
+            } else {
+                processedOptions.mobile.orientation = constants.MOBILE_ORIENTATION_PORTRAIT; // Default value for orientation
+            }
+        }
+
         if (options.element && Object.keys(options.element).length) {
             if (options.element.id) processedOptions.element = '#' + options.element.id;
             else if (options.element.class) processedOptions.element = '.' + options.element.class;
@@ -268,7 +241,14 @@ async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record
     // process for every viewport
     let navigated: boolean = false;
     let previousDeviceType: string | null = null;
-    let renderViewports = getRenderViewports(ctx);
+
+    let renderViewports;
+
+    if((snapshot.options && snapshot.options.web)  || (snapshot.options && snapshot.options.mobile)){
+        renderViewports = getRenderViewportsForOptions(snapshot.options)
+    } else {
+        renderViewports = getRenderViewports(ctx);
+    }
 
     for (const { viewport, viewportString, fullPage, device } of renderViewports) {
 
@@ -340,6 +320,7 @@ async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record
                 });
             }
         }
+        ctx.log.debug(`Processed options: ${JSON.stringify(processedOptions)}`);
     }
 
     return {
