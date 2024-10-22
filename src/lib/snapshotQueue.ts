@@ -271,7 +271,7 @@ export default class Queue {
 
                 if (!this.ctx.config.delayedUpload && snapshot && snapshot.name && this.snapshotNames.includes(snapshot.name)) {
                     drop = true;
-                    this.ctx.log.info(`SmartUI snapshot failed; Same snapshot ${snapshot.name} has been encountered with delayedUploads being false`);
+                    this.ctx.log.info(`Skipping duplicate smartUI snapshot ${snapshot.name}, please try with delayedUploads config true to capture duplicate screenshots.`);
                 }
 
                 if (this.ctx.config.delayedUpload && snapshot && snapshot.name && this.snapshotNames.includes(snapshot.name)) {
