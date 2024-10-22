@@ -170,7 +170,7 @@ export default class Queue {
         if (config.mobile) {
             const devices = config.mobile.devices || [];
             const orientation = config.mobile.orientation || constants.MOBILE_ORIENTATION_PORTRAIT;
-            const fullPage = config.mobile.fullPage || true;
+            const fullPage = config.mobile.fullPage ?? true;
         
             for (const device of devices) {
                 const variant = `${snapshot.name}_${device}_${orientation}`;
@@ -178,7 +178,7 @@ export default class Queue {
                 if (!this.variants.includes(variant)) {
                     allVariantsDropped = false; // Found a variant that needs processing
                     if (!snapshot.options) snapshot.options = {};
-                    if (!snapshot.options.mobile) snapshot.options.mobile = { devices: [], orientation: constants.MOBILE_ORIENTATION_PORTRAIT };
+                    if (!snapshot.options.mobile) snapshot.options.mobile = { devices: [], orientation: constants.MOBILE_ORIENTATION_PORTRAIT, fullPage: fullPage };
                     
                     if (!snapshot.options.mobile.devices.includes(device)) {
                         snapshot.options.mobile.devices.push(device);
@@ -238,12 +238,12 @@ export default class Queue {
             snapshot.options = {};
         }
     
-        snapshot.options.mobile = { devices: [], orientation: constants.MOBILE_ORIENTATION_PORTRAIT };
-    
         const devices = mobileConfig.devices || [];
         const orientation = mobileConfig.orientation ?? this.ctx.config.mobile?.orientation ?? constants.MOBILE_ORIENTATION_PORTRAIT;
         const fullPage = mobileConfig.fullPage ?? this.ctx.config.mobile?.fullPage ?? true;
         let allVariantsDropped = true;
+
+        snapshot.options.mobile = { devices: [], orientation: constants.MOBILE_ORIENTATION_PORTRAIT, fullPage: fullPage };
         
         for (const device of devices) {
             const variant = `${snapshot.name}_${device}_${orientation}`;
@@ -272,7 +272,7 @@ export default class Queue {
                 if (snapshot && snapshot.name && this.snapshotNames.includes(snapshot.name)) {
                     if (!this.ctx.config.delayedUpload){
                         drop = true;
-                        this.ctx.log.debug(`snapshot failed; Same snapshot has been encountered with defer Uploads being false`);
+                        this.ctx.log.debug(`snapshot failed; Same snapshot has been encountered with delayedUploads being false`);
                     } else {
                         drop = this.filterExistingVariants(snapshot, this.ctx.config);
                     }
