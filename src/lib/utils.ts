@@ -235,6 +235,40 @@ export async function startPolling(ctx: Context, task: any): Promise<void> {
                 clearInterval(intervalId);
                 console.log(`Fetching results completed. Final results written to ${ctx.options.fetchResultsFileName}`);
                 isPollingActive = false;
+
+
+                // Evaluating Summary
+                let totalScreenshotsWithMismatches = 0;
+                let totalVariantsWithMismatches = 0;
+                const totalScreenshots = Object.keys(resp.screenshots || {}).length;
+                let totalVariants = 0;
+
+                for (const [screenshot, variants] of Object.entries(resp.screenshots || {})) {
+                    let screenshotHasMismatch = false;
+                    let variantMismatchCount = 0;
+
+                    totalVariants += variants.length; // Add to total variants count
+
+                    for (const variant of variants) {
+                        if (variant.mismatch_percentage > 0) {
+                            screenshotHasMismatch = true;
+                            variantMismatchCount++;
+                        }
+                    }
+
+                    if (screenshotHasMismatch) {
+                        totalScreenshotsWithMismatches++;
+                        totalVariantsWithMismatches += variantMismatchCount;
+                    }
+                }
+
+                // Display summary
+                console.log(`\nSummary of Mismatches:`);
+                console.log(`Total Variants with Mismatches: ${totalVariantsWithMismatches} out of ${totalVariants}`);
+                console.log(`Total Screenshots with Mismatches: ${totalScreenshotsWithMismatches} out of ${totalScreenshots}`);
+                console.log(`Branch Name: ${resp.build.branch_name}`);
+                console.log(`Project Name: ${resp.project.name}`);
+                console.log(`Build ID: ${resp.build.build_id}`);
             }
         } catch (error: any) {
             console.error(`Error fetching screenshot data: ${error.message}`);
