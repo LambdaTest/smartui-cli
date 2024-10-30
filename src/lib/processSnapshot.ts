@@ -11,7 +11,6 @@ const REQUEST_TIMEOUT = 10000;
 const MIN_VIEWPORT_HEIGHT = 1080;
 
 export default async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record<string, any>> {
-
     updateLogContext({ task: 'discovery' });
     ctx.log.debug(`Processing snapshot ${snapshot.name} ${snapshot.url}`);
 
