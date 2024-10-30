@@ -12,8 +12,6 @@ const MIN_VIEWPORT_HEIGHT = 1080;
 
 export default async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record<string, any>> {
 
-
-    let resp = await ctx.client.getScreenshotData(ctx.build.id, ctx.log)
     updateLogContext({ task: 'discovery' });
     ctx.log.debug(`Processing snapshot ${snapshot.name} ${snapshot.url}`);
 

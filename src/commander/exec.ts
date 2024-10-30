@@ -19,8 +19,18 @@ command
     .description('Run test commands around SmartUI')
     .argument('<command...>', 'Command supplied for running tests')
     .option('-P, --port <number>', 'Port number for the server')
+    .option('--fetch-results [filename]', 'Fetch results and optionally specify an output file, e.g., <filename>.json')
     .action(async function(execCommand, _, command) {
         let ctx: Context = ctxInit(command.optsWithGlobals());
+
+        const { fetchResults } = command.opts();
+        if (fetchResults) {
+            ctx.options.fetchResults = true
+            ctx.options.fetchResultsFileName = fetchResults === true ? 'results.json' : fetchResults;
+            // Additional logic for fetching results can go here
+        } else {
+            ctx.options.fetchResults = false
+        }
 
         if (!which.sync(execCommand[0], { nothrow: true })) {
             ctx.log.error(`Error: Command not found "${execCommand[0]}"`);
