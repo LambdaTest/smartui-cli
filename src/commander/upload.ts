@@ -25,6 +25,7 @@ command
     .option('-i, --ignoreDir <patterns>', 'Comma-separated list of directories to ignore', val => {
         return val.split(',').map(pattern => pattern.trim());
     })
+    .option('--fetch-results [filename]', 'Fetch results and optionally specify an output file, e.g., <filename>.json')
     .action(async function(directory, _, command) {
         let ctx: Context = ctxInit(command.optsWithGlobals());
 
@@ -38,6 +39,14 @@ command
             return;
         }
         ctx.uploadFilePath = directory;
+
+        const { fetchResults } = command.opts();
+        if (fetchResults) {
+            ctx.options.fetchResults = true
+            ctx.options.fetchResultsFileName = fetchResults === true ? 'results.json' : fetchResults;
+        } else {
+            ctx.options.fetchResults = false
+        }
 
         let tasks = new Listr<Context>(
             [

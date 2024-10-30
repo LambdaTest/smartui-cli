@@ -3,6 +3,8 @@ import { Context } from '../types.js'
 import { chromium, firefox, webkit, Browser } from '@playwright/test'
 import constants from './constants.js';
 
+let isPollingActive = false;
+
 export function delDir(dir: string): void {
     if (fs.existsSync(dir)) {
         fs.rmSync(dir, { recursive: true });
@@ -199,4 +201,45 @@ export function getRenderViewportsForOptions(options: any): Array<Record<string,
         ...mobileRenderViewports[constants.MOBILE_OS_IOS],
         ...mobileRenderViewports[constants.MOBILE_OS_ANDROID]
     ];
+}
+
+// Global SIGINT handler
+process.on('SIGINT', () => {
+    if (isPollingActive) {
+        console.log('Fetching results interrupted. Exiting...');
+        isPollingActive = false;
+    } else {
+        console.log('\nExiting gracefully...');
+    }
+    process.exit(0);
+});
+
+// Background polling function
+export async function startPolling(ctx: Context, task: any): Promise<void> {
+    console.log('Fetching results in progress....');
+    isPollingActive = true;
+
+    const intervalId = setInterval(async () => {
+        if (!isPollingActive) {
+            clearInterval(intervalId);
+            return;
+        }
+        
+        try {
+            const resp = await ctx.client.getScreenshotData(ctx.build.id, ctx.build.baseline, ctx.log);
+
+            fs.writeFileSync(ctx.options.fetchResultsFileName, JSON.stringify(resp, null, 2));
+            ctx.log.debug(`Updated results in ${ctx.options.fetchResultsFileName}`);
+
+            if (resp.build.build_status_ind === 'completed' || resp.build.build_status_ind === 'error') {
+                clearInterval(intervalId);
+                console.log(`Fetching results completed. Final results written to ${ctx.options.fetchResultsFileName}`);
+                isPollingActive = false;
+            }
+        } catch (error: any) {
+            console.error(`Error fetching screenshot data: ${error.message}`);
+            clearInterval(intervalId);
+            isPollingActive = false;
+        }
+    }, 5000);
 }

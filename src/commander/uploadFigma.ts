@@ -19,8 +19,17 @@ command
     .argument('<file>', 'figma design config file')
     .option('--markBaseline', 'Mark the uploaded images as baseline')
     .option('--buildName <buildName>' , 'Name of the build')
+    .option('--fetch-results [filename]', 'Fetch results and optionally specify an output file, e.g., <filename>.json')
     .action(async function(file, _, command) {
         let ctx: Context = ctxInit(command.optsWithGlobals());
+
+        const { fetchResults } = command.opts();
+        if (fetchResults) {
+            ctx.options.fetchResults = true
+            ctx.options.fetchResultsFileName = fetchResults === true ? 'results.json' : fetchResults;
+        } else {
+            ctx.options.fetchResults = false
+        }
 
         if (!fs.existsSync(file)) {
             console.log(`Error: Figma Config file ${file} not found.`);

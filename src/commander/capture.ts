@@ -17,8 +17,17 @@ command
     .description('Capture screenshots of static sites')
     .argument('<file>', 'Web static config file')
     .option('--parallel', 'Capture parallely on all browsers')
+    .option('--fetch-results [filename]', 'Fetch results and optionally specify an output file, e.g., <filename>.json')
     .action(async function(file, _, command) {
         let ctx: Context = ctxInit(command.optsWithGlobals());
+
+        const { fetchResults } = command.opts();
+        if (fetchResults) {
+            ctx.options.fetchResults = true
+            ctx.options.fetchResultsFileName = fetchResults === true ? 'results.json' : fetchResults;
+        } else {
+            ctx.options.fetchResults = false
+        }
 
         if (!fs.existsSync(file)) {
             console.log(`Error: Web Static Config file ${file} not found.`);

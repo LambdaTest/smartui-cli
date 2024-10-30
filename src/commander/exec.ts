@@ -27,7 +27,6 @@ command
         if (fetchResults) {
             ctx.options.fetchResults = true
             ctx.options.fetchResultsFileName = fetchResults === true ? 'results.json' : fetchResults;
-            // Additional logic for fetching results can go here
         } else {
             ctx.options.fetchResults = false
         }
