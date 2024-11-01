@@ -40,14 +40,6 @@ command
         }
         ctx.uploadFilePath = directory;
 
-        const { fetchResults } = command.opts();
-        if (fetchResults) {
-            ctx.options.fetchResults = true
-            ctx.options.fetchResultsFileName = fetchResults === true ? 'results.json' : fetchResults;
-        } else {
-            ctx.options.fetchResults = false
-        }
-
         let tasks = new Listr<Context>(
             [
                 auth(ctx),

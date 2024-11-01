@@ -216,7 +216,7 @@ process.on('SIGINT', () => {
 
 // Background polling function
 export async function startPolling(ctx: Context, task: any): Promise<void> {
-    console.log('Fetching results in progress....');
+    ctx.log.info('Fetching results in progress....');
     isPollingActive = true;
 
     const intervalId = setInterval(async () => {
@@ -228,12 +228,18 @@ export async function startPolling(ctx: Context, task: any): Promise<void> {
         try {
             const resp = await ctx.client.getScreenshotData(ctx.build.id, ctx.build.baseline, ctx.log);
 
+            if (!resp.build) {
+                console.error("Error: Build data is null.");
+                clearInterval(intervalId);
+                isPollingActive = false;
+            }
+
             fs.writeFileSync(ctx.options.fetchResultsFileName, JSON.stringify(resp, null, 2));
             ctx.log.debug(`Updated results in ${ctx.options.fetchResultsFileName}`);
 
-            if (resp.build.build_status_ind === 'completed' || resp.build.build_status_ind === 'error') {
+            if (resp.build.build_status_ind === constants.BUILD_COMPLETE || resp.build.build_status_ind === constants.BUILD_ERROR) {
                 clearInterval(intervalId);
-                console.log(`Fetching results completed. Final results written to ${ctx.options.fetchResultsFileName}`);
+                ctx.log.info(`Fetching results completed. Final results written to ${ctx.options.fetchResultsFileName}`);
                 isPollingActive = false;
 
 
@@ -263,12 +269,14 @@ export async function startPolling(ctx: Context, task: any): Promise<void> {
                 }
 
                 // Display summary
-                console.log(`\nSummary of Mismatches:`);
-                console.log(`Total Variants with Mismatches: ${totalVariantsWithMismatches} out of ${totalVariants}`);
-                console.log(`Total Screenshots with Mismatches: ${totalScreenshotsWithMismatches} out of ${totalScreenshots}`);
-                console.log(`Branch Name: ${resp.build.branch_name}`);
-                console.log(`Project Name: ${resp.project.name}`);
-                console.log(`Build ID: ${resp.build.build_id}`);
+                ctx.log.info(
+                    `\nSummary of Mismatches:\n` +
+                    `Total Variants with Mismatches: ${totalVariantsWithMismatches} out of ${totalVariants}\n` +
+                    `Total Screenshots with Mismatches: ${totalScreenshotsWithMismatches} out of ${totalScreenshots}\n` +
+                    `Branch Name: ${resp.build.branch}\n` +
+                    `Project Name: ${resp.project.name}\n` +
+                    `Build ID: ${resp.build.build_id}\n`
+                );                
             }
         } catch (error: any) {
             console.error(`Error fetching screenshot data: ${error.message}`);

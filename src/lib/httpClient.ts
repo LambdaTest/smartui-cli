@@ -66,7 +66,7 @@ export default class httpClient {
 
     getScreenshotData(buildId: string, baseline: boolean, log: Logger) {
         return this.request({
-            url: '/getScreenshotData',
+            url: '/screenshot',
             method: 'GET',
             params: { buildId, baseline }
         }, log)
@@ -75,7 +75,7 @@ export default class httpClient {
                 return response;
             })
             .catch(error => {
-                log.error(`Error fetching screenshot data for buildId: ${buildId}`);
+                log.error(`Error fetching screenshot data for buildId: ${buildId}. Error: ${error.message}`);
                 throw error;
             });
     }

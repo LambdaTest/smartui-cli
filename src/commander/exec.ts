@@ -23,14 +23,6 @@ command
     .action(async function(execCommand, _, command) {
         let ctx: Context = ctxInit(command.optsWithGlobals());
 
-        const { fetchResults } = command.opts();
-        if (fetchResults) {
-            ctx.options.fetchResults = true
-            ctx.options.fetchResultsFileName = fetchResults === true ? 'results.json' : fetchResults;
-        } else {
-            ctx.options.fetchResults = false
-        }
-
         if (!which.sync(execCommand[0], { nothrow: true })) {
             ctx.log.error(`Error: Command not found "${execCommand[0]}"`);
             return
