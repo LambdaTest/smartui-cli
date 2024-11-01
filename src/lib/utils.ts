@@ -229,7 +229,7 @@ export async function startPolling(ctx: Context, task: any): Promise<void> {
             const resp = await ctx.client.getScreenshotData(ctx.build.id, ctx.build.baseline, ctx.log);
 
             if (!resp.build) {
-                console.error("Error: Build data is null.");
+                ctx.log.info("Error: Build data is null.");
                 clearInterval(intervalId);
                 isPollingActive = false;
             }
@@ -279,7 +279,7 @@ export async function startPolling(ctx: Context, task: any): Promise<void> {
                 );                
             }
         } catch (error: any) {
-            console.error(`Error fetching screenshot data: ${error.message}`);
+            ctx.log.error(`Error fetching screenshot data: ${error.message}`);
             clearInterval(intervalId);
             isPollingActive = false;
         }

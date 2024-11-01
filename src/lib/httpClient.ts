@@ -69,16 +69,8 @@ export default class httpClient {
             url: '/screenshot',
             method: 'GET',
             params: { buildId, baseline }
-        }, log)
-            .then(response => {
-                log.debug(`Fetched screenshot data successfully for buildId: ${buildId}`);
-                return response;
-            })
-            .catch(error => {
-                log.error(`Error fetching screenshot data for buildId: ${buildId}. Error: ${error.message}`);
-                throw error;
-            });
-    }
+        }, log);
+    }    
 
     finalizeBuild(buildId: string, totalSnapshots: number, log: Logger) {
         let params: Record<string, string | number> = {buildId};
