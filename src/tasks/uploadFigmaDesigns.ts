@@ -4,6 +4,7 @@ import { captureScreenshots } from '../lib/screenshot.js'
 import chalk from 'chalk';
 import { updateLogContext } from '../lib/logger.js'
 import uploadFigmaDesigns from '../lib/uploadFigmaDesigns.js';
+import { startPolling } from '../lib/utils.js';
 
 export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRendererFactory> => {
     return {
@@ -11,6 +12,9 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
         task: async (ctx, task): Promise<void> => {
             try {
                 ctx.task = task;
+                if (ctx.options.fetchResults) {
+                    startPolling(ctx, task);
+                }
                 updateLogContext({task: 'upload-figma'});
 
                 let results = await uploadFigmaDesigns(ctx);

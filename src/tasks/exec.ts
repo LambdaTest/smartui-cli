@@ -3,11 +3,17 @@ import { Context } from '../types.js'
 import chalk from 'chalk'
 import spawn from 'cross-spawn'
 import { updateLogContext } from '../lib/logger.js'
+import { startPolling } from '../lib/utils.js'
 
 export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRendererFactory>  =>  {
     return {
         title: `Executing '${ctx.args.execCommand?.join(' ')}'`,
         task: async (ctx, task): Promise<void> => {
+
+            if (ctx.options.fetchResults) {
+                startPolling(ctx, task);
+            }
+
             updateLogContext({task: 'exec'});
 
             return new Promise((resolve, reject) => {

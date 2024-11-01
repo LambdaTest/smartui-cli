@@ -3,6 +3,8 @@ import { Context } from '../types.js'
 import { chromium, firefox, webkit, Browser } from '@playwright/test'
 import constants from './constants.js';
 
+let isPollingActive = false;
+
 export function delDir(dir: string): void {
     if (fs.existsSync(dir)) {
         fs.rmSync(dir, { recursive: true });
@@ -199,4 +201,87 @@ export function getRenderViewportsForOptions(options: any): Array<Record<string,
         ...mobileRenderViewports[constants.MOBILE_OS_IOS],
         ...mobileRenderViewports[constants.MOBILE_OS_ANDROID]
     ];
+}
+
+// Global SIGINT handler
+process.on('SIGINT', () => {
+    if (isPollingActive) {
+        console.log('Fetching results interrupted. Exiting...');
+        isPollingActive = false;
+    } else {
+        console.log('\nExiting gracefully...');
+    }
+    process.exit(0);
+});
+
+// Background polling function
+export async function startPolling(ctx: Context, task: any): Promise<void> {
+    ctx.log.info('Fetching results in progress....');
+    isPollingActive = true;
+
+    const intervalId = setInterval(async () => {
+        if (!isPollingActive) {
+            clearInterval(intervalId);
+            return;
+        }
+        
+        try {
+            const resp = await ctx.client.getScreenshotData(ctx.build.id, ctx.build.baseline, ctx.log);
+
+            if (!resp.build) {
+                ctx.log.info("Error: Build data is null.");
+                clearInterval(intervalId);
+                isPollingActive = false;
+            }
+
+            fs.writeFileSync(ctx.options.fetchResultsFileName, JSON.stringify(resp, null, 2));
+            ctx.log.debug(`Updated results in ${ctx.options.fetchResultsFileName}`);
+
+            if (resp.build.build_status_ind === constants.BUILD_COMPLETE || resp.build.build_status_ind === constants.BUILD_ERROR) {
+                clearInterval(intervalId);
+                ctx.log.info(`Fetching results completed. Final results written to ${ctx.options.fetchResultsFileName}`);
+                isPollingActive = false;
+
+
+                // Evaluating Summary
+                let totalScreenshotsWithMismatches = 0;
+                let totalVariantsWithMismatches = 0;
+                const totalScreenshots = Object.keys(resp.screenshots || {}).length;
+                let totalVariants = 0;
+
+                for (const [screenshot, variants] of Object.entries(resp.screenshots || {})) {
+                    let screenshotHasMismatch = false;
+                    let variantMismatchCount = 0;
+
+                    totalVariants += variants.length; // Add to total variants count
+
+                    for (const variant of variants) {
+                        if (variant.mismatch_percentage > 0) {
+                            screenshotHasMismatch = true;
+                            variantMismatchCount++;
+                        }
+                    }
+
+                    if (screenshotHasMismatch) {
+                        totalScreenshotsWithMismatches++;
+                        totalVariantsWithMismatches += variantMismatchCount;
+                    }
+                }
+
+                // Display summary
+                ctx.log.info(
+                    `\nSummary of Mismatches:\n` +
+                    `Total Variants with Mismatches: ${totalVariantsWithMismatches} out of ${totalVariants}\n` +
+                    `Total Screenshots with Mismatches: ${totalScreenshotsWithMismatches} out of ${totalScreenshots}\n` +
+                    `Branch Name: ${resp.build.branch}\n` +
+                    `Project Name: ${resp.project.name}\n` +
+                    `Build ID: ${resp.build.build_id}\n`
+                );                
+            }
+        } catch (error: any) {
+            ctx.log.error(`Error fetching screenshot data: ${error.message}`);
+            clearInterval(intervalId);
+            isPollingActive = false;
+        }
+    }, 5000);
 }
