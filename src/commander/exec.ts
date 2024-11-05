@@ -19,6 +19,7 @@ command
     .description('Run test commands around SmartUI')
     .argument('<command...>', 'Command supplied for running tests')
     .option('-P, --port <number>', 'Port number for the server')
+    .option('--fetch-results [filename]', 'Fetch results and optionally specify an output file, e.g., <filename>.json')
     .action(async function(execCommand, _, command) {
         let ctx: Context = ctxInit(command.optsWithGlobals());
 

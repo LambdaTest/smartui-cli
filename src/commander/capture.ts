@@ -17,6 +17,7 @@ command
     .description('Capture screenshots of static sites')
     .argument('<file>', 'Web static config file')
     .option('--parallel', 'Capture parallely on all browsers')
+    .option('--fetch-results [filename]', 'Fetch results and optionally specify an output file, e.g., <filename>.json')
     .action(async function(file, _, command) {
         let ctx: Context = ctxInit(command.optsWithGlobals());
 
