@@ -2,6 +2,7 @@ import fs from 'fs'
 import { Context } from '../types.js'
 import { chromium, firefox, webkit, Browser } from '@playwright/test'
 import constants from './constants.js';
+import chalk from 'chalk';
 
 let isPollingActive = false;
 
@@ -270,16 +271,23 @@ export async function startPolling(ctx: Context, task: any): Promise<void> {
 
                 // Display summary
                 ctx.log.info(
-                    `\nSummary of Mismatches:\n` +
-                    `Total Variants with Mismatches: ${totalVariantsWithMismatches} out of ${totalVariants}\n` +
-                    `Total Screenshots with Mismatches: ${totalScreenshotsWithMismatches} out of ${totalScreenshots}\n` +
-                    `Branch Name: ${resp.build.branch}\n` +
-                    `Project Name: ${resp.project.name}\n` +
-                    `Build ID: ${resp.build.build_id}\n`
-                );                
+                    chalk.green.bold(
+                        `\nSummary of Mismatches:\n` +
+                        `${chalk.yellow('Total Variants with Mismatches:')} ${chalk.white(totalVariantsWithMismatches)} out of ${chalk.white(totalVariants)}\n` +
+                        `${chalk.yellow('Total Screenshots with Mismatches:')} ${chalk.white(totalScreenshotsWithMismatches)} out of ${chalk.white(totalScreenshots)}\n` +
+                        `${chalk.yellow('Branch Name:')} ${chalk.white(resp.build.branch)}\n` +
+                        `${chalk.yellow('Project Name:')} ${chalk.white(resp.project.name)}\n` +
+                        `${chalk.yellow('Build ID:')} ${chalk.white(resp.build.build_id)}\n`
+                    )
+                );                            
             }
         } catch (error: any) {
-            ctx.log.error(`Error fetching screenshot data: ${error.message}`);
+            if (error.message.includes('ENOTFOUND')) {
+                ctx.log.error('Error: Network error occurred while fetching build results. Please check your connection and try again.');
+                clearInterval(intervalId);
+            } else {
+                ctx.log.error(`Error fetching screenshot data: ${error.message}`);
+            }
             clearInterval(intervalId);
             isPollingActive = false;
         }

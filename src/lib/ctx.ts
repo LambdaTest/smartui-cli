@@ -44,9 +44,16 @@ export default (options: Record<string, string>): Context => {
         ignoreStripExtension = options.removeExtensions || false
         ignoreFilePattern = options.ignoreDir || []
 
-        if(options.fetchResults){
+        if (options.fetchResults) {
+            if (options.fetchResults !== true && !options.fetchResults.endsWith('.json')) {
+                console.error("Error: The file extension for --fetch-results must be .json");
+                process.exit(1);
+            }
             fetchResultObj = true
             fetchResultsFileObj = options.fetchResults === true ? 'results.json' : options.fetchResults;
+        } else {
+            fetchResultObj = false
+            fetchResultsFileObj = ''
         }
     } catch (error: any) {
         console.log(`[smartui] Error: ${error.message}`);
