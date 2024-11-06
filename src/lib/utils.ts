@@ -42,7 +42,8 @@ export function scrollToBottomAndBackToTop({
 
 export async function launchBrowsers(ctx: Context): Promise<Record<string, Browser>> {
     let browsers: Record<string, Browser> = {};
-    let launchOptions: Record<string, any> = { headless: true };
+    const isHeadless = process.env.HEADLESS?.toLowerCase() === 'false' ? false : true;
+    let launchOptions: Record<string, any> = { headless: isHeadless };
 
     if (ctx.config.web) {
         for (const browser of ctx.config.web.browsers) {
