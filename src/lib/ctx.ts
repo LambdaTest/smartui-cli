@@ -18,6 +18,8 @@ export default (options: Record<string, string>): Context => {
     let extensionFiles: string;
     let ignoreStripExtension: Array<string>;
     let ignoreFilePattern: Array<string>;
+    let fetchResultObj: boolean;
+    let fetchResultsFileObj: string;
     try {
         if (options.config) {
             config = JSON.parse(fs.readFileSync(options.config, 'utf-8'));
@@ -41,6 +43,18 @@ export default (options: Record<string, string>): Context => {
         extensionFiles = options.files || ['png', 'jpeg', 'jpg'];
         ignoreStripExtension = options.removeExtensions || false
         ignoreFilePattern = options.ignoreDir || []
+
+        if (options.fetchResults) {
+            if (options.fetchResults !== true && !options.fetchResults.endsWith('.json')) {
+                console.error("Error: The file extension for --fetch-results must be .json");
+                process.exit(1);
+            }
+            fetchResultObj = true
+            fetchResultsFileObj = options.fetchResults === true ? 'results.json' : options.fetchResults;
+        } else {
+            fetchResultObj = false
+            fetchResultsFileObj = ''
+        }
     } catch (error: any) {
         console.log(`[smartui] Error: ${error.message}`);
         process.exit();
@@ -103,6 +117,8 @@ export default (options: Record<string, string>): Context => {
             fileExtension: extensionFiles,
             stripExtension: ignoreStripExtension,
             ignorePattern: ignoreFilePattern,
+            fetchResults: fetchResultObj,
+            fetchResultsFileName: fetchResultsFileObj,
         },
         cliVersion: version,
         totalSnapshots: -1
