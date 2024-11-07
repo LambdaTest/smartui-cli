@@ -135,6 +135,9 @@ export default {
     // Default scrollTime
     DEFAULT_SCROLL_TIME: 8,
 
+    // Default page load time
+    DEFAULT_PAGE_LOAD_TIMEOUT: 180000,
+
     // Magic Numbers 
     MAGIC_NUMBERS: [
         { ext: 'jpg', magic: Buffer.from([0xFF, 0xD8, 0xFF]) },

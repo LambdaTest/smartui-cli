@@ -14,7 +14,7 @@ async function captureScreenshotsForConfig(
     browserName: string,
     renderViewports: Array<Record<string,any>>
 ): Promise<void> {
-    let pageOptions = { waitUntil: process.env.SMARTUI_PAGE_WAIT_UNTIL_EVENT || 'domcontentloaded', timeout: ctx.config.waitForPageRender || 60000 };
+    let pageOptions = { waitUntil: process.env.SMARTUI_PAGE_WAIT_UNTIL_EVENT || 'domcontentloaded', timeout: ctx.config.waitForPageRender || constants.DEFAULT_PAGE_LOAD_TIMEOUT };
     let ssId = name.toLowerCase().replace(/\s/g, '_');
     let context: BrowserContext;
     let contextOptions: Record<string, any> = {};
@@ -103,6 +103,10 @@ async function captureScreenshotsSync(
 export async function  captureScreenshots(ctx: Context): Promise<Record<string,any>> {
     // Clean up directory to store screenshots
     utils.delDir('screenshots');
+    console.log(`ctx.options.parallel ${ctx.options.parallel} `);
+
+    // Check Parallel Option and divide web static config accordingly
+    console.log(`Capturing screenshots for ${ctx.webStaticConfig.length} URLs`);
 
     let browsers: Record<string,Browser> = {};
     let capturedScreenshots: number = 0;
