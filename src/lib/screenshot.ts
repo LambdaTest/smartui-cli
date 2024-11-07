@@ -14,7 +14,7 @@ async function captureScreenshotsForConfig(
     browserName: string,
     renderViewports: Array<Record<string,any>>
 ): Promise<void> {
-    let pageOptions = { waitUntil: process.env.SMARTUI_PAGE_WAIT_UNTIL_EVENT || 'domcontentloaded', timeout: ctx.config.waitForPageRender || constants.DEFAULT_PAGE_LOAD_TIMEOUT };
+    let pageOptions = { waitUntil: process.env.SMARTUI_PAGE_WAIT_UNTIL_EVENT || 'load', timeout: ctx.config.waitForPageRender || constants.DEFAULT_PAGE_LOAD_TIMEOUT };
     let ssId = name.toLowerCase().replace(/\s/g, '_');
     let context: BrowserContext;
     let contextOptions: Record<string, any> = {};
