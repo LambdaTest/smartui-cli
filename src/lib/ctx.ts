@@ -18,6 +18,7 @@ export default (options: Record<string, string>): Context => {
     let extensionFiles: string;
     let ignoreStripExtension: Array<string>;
     let ignoreFilePattern: Array<string>;
+    let parallelObj: number;
     try {
         if (options.config) {
             config = JSON.parse(fs.readFileSync(options.config, 'utf-8'));
@@ -41,6 +42,8 @@ export default (options: Record<string, string>): Context => {
         extensionFiles = options.files || ['png', 'jpeg', 'jpg'];
         ignoreStripExtension = options.removeExtensions || false
         ignoreFilePattern = options.ignoreDir || []
+
+        parallelObj = options.parallel ? options.parallel === true? 1 : options.parallel: -1;
     } catch (error: any) {
         console.log(`[smartui] Error: ${error.message}`);
         process.exit();
@@ -59,7 +62,7 @@ export default (options: Record<string, string>): Context => {
     }
     if (config.basicAuthorization) {
         basicAuthObj = config.basicAuthorization
-    }
+    }   
 
     return {
         env: env,
@@ -95,7 +98,8 @@ export default (options: Record<string, string>): Context => {
         },
         args: {},
         options: {
-            parallel: options.parallel ? true : false,
+            parallel: parallelObj,
+            force: options.force ? true : false,
             markBaseline: options.markBaseline ? true : false,
             buildName: options.buildName || '',
             port: port,
