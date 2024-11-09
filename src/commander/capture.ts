@@ -23,18 +23,18 @@ command
         let ctx: Context = ctxInit(command.optsWithGlobals());
         
         if (!fs.existsSync(file)) {
-            console.log(`Error: Web Static Config file ${file} not found.`);
+            ctx.log.error(`Web Static Config file ${file} not found.`);
             return;
         }
         try {
             ctx.webStaticConfig = JSON.parse(fs.readFileSync(file, 'utf8'));
             if (!validateWebStaticConfig(ctx.webStaticConfig)) throw new Error(validateWebStaticConfig.errors[0].message);
             if(ctx.webStaticConfig && ctx.webStaticConfig.length === 0) {
-                console.log(`[smartui] Error: No URLs found in the specified config file -> ${file}`);
+                ctx.log.error(`No URLs found in the specified config file -> ${file}`);
                 return;
             }
         } catch (error: any) {
-            console.log(`[smartui] Error: Invalid Web Static Config; ${error.message}`);
+            ctx.log.error(`Invalid Web Static Config; ${error.message}`);
             return;
         }
         //Print Config here in debug mode
