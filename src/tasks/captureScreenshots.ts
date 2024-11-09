@@ -18,7 +18,6 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
 
                 if (ctx.options.parallel) {
                     let { totalCapturedScreenshots, output } = await captureScreenshotsConcurrent(ctx);
-                    console.log(`#### captureScreenshotsConcurrent  ${totalCapturedScreenshots}`);
                     if (totalCapturedScreenshots != ctx.webStaticConfig.length) {
                         throw new Error(output)
                     }

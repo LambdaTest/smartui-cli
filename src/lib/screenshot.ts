@@ -259,7 +259,11 @@ export async function captureScreenshotsConcurrent(ctx: Context): Promise<Record
     let browserInstances = ctx.options.parallel || 1;
     let optimizeBrowserInstances : number = 0
     optimizeBrowserInstances = Math.floor(Math.log2(totalSnapshots));
-    if (browserInstances != -1 && optimizeBrowserInstances > browserInstances) {
+    if (optimizeBrowserInstances < 1) {
+        optimizeBrowserInstances = 1;
+    }
+
+    if (optimizeBrowserInstances > browserInstances) {
         optimizeBrowserInstances = browserInstances;
     }
 
@@ -274,9 +278,9 @@ export async function captureScreenshotsConcurrent(ctx: Context): Promise<Record
     } else {
         urlsPerInstance = Math.ceil(totalSnapshots / optimizeBrowserInstances);
     }
-    console.log(`*** browserInstances requested ${ctx.options.parallel} `);
-    console.log(`*** optimizeBrowserInstances  ${optimizeBrowserInstances} `);
-    console.log(`*** urlsPerInstance  ${urlsPerInstance}`);
+    ctx.log.debug(`*** browserInstances requested ${ctx.options.parallel} `);
+    ctx.log.debug(`*** optimizeBrowserInstances  ${optimizeBrowserInstances} `);
+    ctx.log.debug(`*** urlsPerInstance  ${urlsPerInstance}`);
     ctx.task.output = `URLs : ${totalSnapshots} || Parallel Browser Instances: ${optimizeBrowserInstances}\n`;
     //Divide the URLs into chunks
     let staticURLChunks = splitURLs(ctx.webStaticConfig, urlsPerInstance);
@@ -292,7 +296,6 @@ export async function captureScreenshotsConcurrent(ctx: Context): Promise<Record
         totalCapturedScreenshots += response.capturedScreenshots;
         output += response.finalOutput;
     });
-    console.log(`*** totalCapturedScreenshots ${totalCapturedScreenshots}`);
 
     utils.delDir('screenshots');
 

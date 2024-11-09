@@ -16,7 +16,7 @@ command
     .name('capture')
     .description('Capture screenshots of static sites')
     .argument('<file>', 'Web static config file')
-    .option('-P, --parallel [number]', 'Specify the number of instances per browser', parseInt)
+    .option('-C, --parallel [number]', 'Specify the number of instances per browser', parseInt)
     .option('-F, --force', 'forcefully apply the specified parallel instances per browser')
     .option('--fetch-results [filename]', 'Fetch results and optionally specify an output file, e.g., <filename>.json')
     .action(async function(file, _, command) {
