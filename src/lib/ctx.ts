@@ -43,7 +43,7 @@ export default (options: Record<string, string>): Context => {
         ignoreStripExtension = options.removeExtensions || false
         ignoreFilePattern = options.ignoreDir || []
 
-        parallelObj = options.parallel ? options.parallel === true? 1 : options.parallel: -1;
+        parallelObj = options.parallel ? options.parallel === true? 1 : options.parallel: 1;
     } catch (error: any) {
         console.log(`[smartui] Error: ${error.message}`);
         process.exit();

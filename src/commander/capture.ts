@@ -36,6 +36,8 @@ command
             console.log(`[smartui] Error: Invalid Web Static Config; ${error.message}`);
             return;
         }
+        //Print Config here in debug mode
+        ctx.log.debug(ctx.config);
 
         let tasks = new Listr<Context>(
             [

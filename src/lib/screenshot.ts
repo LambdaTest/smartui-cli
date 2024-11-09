@@ -276,20 +276,17 @@ export async function captureScreenshotsConcurrent(ctx: Context): Promise<Record
     }
     console.log(`*** browserInstances requested ${ctx.options.parallel} `);
     console.log(`*** optimizeBrowserInstances  ${optimizeBrowserInstances} `);
-    console.log(`*** urlsPerInstance  ${urlsPerInstance} = ${totalSnapshots} / ${optimizeBrowserInstances}`);
-    ctx.task.output = `Parallel Browser Instances: ${optimizeBrowserInstances}\n`;
+    console.log(`*** urlsPerInstance  ${urlsPerInstance}`);
+    ctx.task.output = `URLs : ${totalSnapshots} || Parallel Browser Instances: ${optimizeBrowserInstances}\n`;
     //Divide the URLs into chunks
     let staticURLChunks = splitURLs(ctx.webStaticConfig, urlsPerInstance);
     let totalCapturedScreenshots: number = 0;
     let output: any = '';
 
     const responses = await Promise.all(staticURLChunks.map(async (urlConfig) => {
-        console.log(`@@@@  staticURLChunks  ${JSON.stringify(urlConfig)}`);
         let { capturedScreenshots, finalOutput} =  await processChunk(ctx, urlConfig);
         return { capturedScreenshots, finalOutput };
       }));
-
-    console.log(`*** responses  ${JSON.stringify(responses)}`);
 
     responses.forEach((response: Record<string, any>) => {
         totalCapturedScreenshots += response.capturedScreenshots;
@@ -326,7 +323,6 @@ async function processChunk(ctx: Context, urlConfig: Array<Record<string, any>>)
 
     for (let staticConfig of urlConfig) { 
         try {
-            console.log(`#### staticConfig  ${JSON.stringify(staticConfig)}`);
             await captureScreenshotsAsync(ctx, staticConfig, browsers);
 
             utils.delDir(`screenshots/${staticConfig.name.toLowerCase().replace(/\s/g, '_')}`);
