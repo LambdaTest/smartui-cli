@@ -64,6 +64,14 @@ export default class httpClient {
         }, log)
     }
 
+    getScreenshotData(buildId: string, baseline: boolean, log: Logger) {
+        return this.request({
+            url: '/screenshot',
+            method: 'GET',
+            params: { buildId, baseline }
+        }, log);
+    }    
+
     finalizeBuild(buildId: string, totalSnapshots: number, log: Logger) {
         let params: Record<string, string | number> = {buildId};
         if (totalSnapshots > -1) params.totalSnapshots = totalSnapshots;

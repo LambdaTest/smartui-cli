@@ -3,6 +3,7 @@ import { Context } from '../types.js'
 import { captureScreenshots, captureScreenshotsConcurrent } from '../lib/screenshot.js'
 import chalk from 'chalk';
 import { updateLogContext } from '../lib/logger.js'
+import { startPolling } from '../lib/utils.js';
 
 export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRendererFactory>  =>  {
     return {
@@ -10,6 +11,9 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
         task: async (ctx, task): Promise<void> => {
             try {
                 ctx.task = task;
+                if (ctx.options.fetchResults) {
+                    startPolling(ctx, task);
+                }
                 updateLogContext({task: 'capture'});
 
                 if (ctx.options.parallel) {

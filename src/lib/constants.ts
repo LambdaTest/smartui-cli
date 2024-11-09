@@ -122,6 +122,10 @@ export default {
     MOBILE_ORIENTATION_PORTRAIT: 'portrait',
     MOBILE_ORIENTATION_LANDSCAPE: 'landscape',
 
+    // build status
+    BUILD_COMPLETE: 'completed',
+    BUILD_ERROR: 'error',
+
     // CI
     GITHUB_API_HOST: 'https://api.github.com',
 
