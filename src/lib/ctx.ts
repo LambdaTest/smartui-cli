@@ -18,6 +18,7 @@ export default (options: Record<string, string>): Context => {
     let extensionFiles: string;
     let ignoreStripExtension: Array<string>;
     let ignoreFilePattern: Array<string>;
+    let parallelObj: number;
     let fetchResultObj: boolean;
     let fetchResultsFileObj: string;
     try {
@@ -44,6 +45,7 @@ export default (options: Record<string, string>): Context => {
         ignoreStripExtension = options.removeExtensions || false
         ignoreFilePattern = options.ignoreDir || []
 
+        parallelObj = options.parallel ? options.parallel === true? 1 : options.parallel: 1;
         if (options.fetchResults) {
             if (options.fetchResults !== true && !options.fetchResults.endsWith('.json')) {
                 console.error("Error: The file extension for --fetch-results must be .json");
@@ -73,7 +75,7 @@ export default (options: Record<string, string>): Context => {
     }
     if (config.basicAuthorization) {
         basicAuthObj = config.basicAuthorization
-    }
+    }   
 
     return {
         env: env,
@@ -109,7 +111,8 @@ export default (options: Record<string, string>): Context => {
         },
         args: {},
         options: {
-            parallel: options.parallel ? true : false,
+            parallel: parallelObj,
+            force: options.force ? true : false,
             markBaseline: options.markBaseline ? true : false,
             buildName: options.buildName || '',
             port: port,
