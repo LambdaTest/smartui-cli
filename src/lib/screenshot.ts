@@ -14,7 +14,7 @@ async function captureScreenshotsForConfig(
     browserName: string,
     renderViewports: Array<Record<string,any>>
 ): Promise<void> {
-    let pageOptions = { waitUntil: process.env.SMARTUI_PAGE_WAIT_UNTIL_EVENT || 'load' };
+    let pageOptions = { waitUntil: process.env.SMARTUI_PAGE_WAIT_UNTIL_EVENT || 'load', timeout: ctx.config.waitForPageRender || constants.DEFAULT_PAGE_LOAD_TIMEOUT };
     let ssId = name.toLowerCase().replace(/\s/g, '_');
     let context: BrowserContext;
     let contextOptions: Record<string, any> = {};
@@ -249,4 +249,98 @@ export async function uploadScreenshots(ctx: Context): Promise<void> {
     } else {
         ctx.log.info(`${noOfScreenshots} screenshots uploaded successfully.`);
     }
+}
+
+export async function captureScreenshotsConcurrent(ctx: Context): Promise<Record<string,any>> {
+    // Clean up directory to store screenshots
+    utils.delDir('screenshots');
+
+    let totalSnapshots = ctx.webStaticConfig && ctx.webStaticConfig.length;
+    let browserInstances = ctx.options.parallel || 1;
+    let optimizeBrowserInstances : number = 0
+    optimizeBrowserInstances = Math.floor(Math.log2(totalSnapshots));
+    if (optimizeBrowserInstances < 1) {
+        optimizeBrowserInstances = 1;
+    }
+
+    if (optimizeBrowserInstances > browserInstances) {
+        optimizeBrowserInstances = browserInstances;
+    }
+
+    // If force flag is set, use the requested browser instances
+    if (ctx.options.force && browserInstances > 1){
+        optimizeBrowserInstances = browserInstances;
+    }
+
+    let urlsPerInstance : number = 0;
+    if (optimizeBrowserInstances == 1) {
+        urlsPerInstance = totalSnapshots;
+    } else {
+        urlsPerInstance = Math.ceil(totalSnapshots / optimizeBrowserInstances);
+    }
+    ctx.log.debug(`*** browserInstances requested ${ctx.options.parallel} `);
+    ctx.log.debug(`*** optimizeBrowserInstances  ${optimizeBrowserInstances} `);
+    ctx.log.debug(`*** urlsPerInstance  ${urlsPerInstance}`);
+    ctx.task.output = `URLs : ${totalSnapshots} || Parallel Browser Instances: ${optimizeBrowserInstances}\n`;
+    //Divide the URLs into chunks
+    let staticURLChunks = splitURLs(ctx.webStaticConfig, urlsPerInstance);
+    let totalCapturedScreenshots: number = 0;
+    let output: any = '';
+
+    const responses = await Promise.all(staticURLChunks.map(async (urlConfig) => {
+        let { capturedScreenshots, finalOutput} =  await processChunk(ctx, urlConfig);
+        return { capturedScreenshots, finalOutput };
+      }));
+
+    responses.forEach((response: Record<string, any>) => {
+        totalCapturedScreenshots += response.capturedScreenshots;
+        output += response.finalOutput;
+    });
+
+    utils.delDir('screenshots');
+
+    return { totalCapturedScreenshots, output };
+}
+
+function splitURLs(arr : any, chunkSize : number) {
+    const result = [];
+    for (let i = 0; i < arr.length; i += chunkSize) {
+      result.push(arr.slice(i, i + chunkSize));
+    }
+    return result;
+}
+
+async function processChunk(ctx: Context, urlConfig: Array<Record<string, any>>): Promise<Record<string,any>> {
+    
+    let browsers: Record<string,Browser> = {};
+    let capturedScreenshots: number = 0;
+    let finalOutput: string = '';
+
+    try {
+        browsers = await utils.launchBrowsers(ctx);
+    } catch (error) {
+        await utils.closeBrowsers(browsers);
+        ctx.log.debug(error)
+        throw new Error(`Failed launching browsers ${error}`);
+    }
+
+    for (let staticConfig of urlConfig) { 
+        try {
+            await captureScreenshotsAsync(ctx, staticConfig, browsers);
+
+            utils.delDir(`screenshots/${staticConfig.name.toLowerCase().replace(/\s/g, '_')}`);
+            let output = (`${chalk.gray(staticConfig.name)} ${chalk.green('\u{2713}')}\n`);
+            ctx.task.output = ctx.task.output? ctx.task.output +output : output;
+            finalOutput += output;
+            capturedScreenshots++;
+        } catch (error) {
+            ctx.log.debug(`screenshot capture failed for ${JSON.stringify(staticConfig)}; error: ${error}`);
+            let output = `${chalk.gray(staticConfig.name)} ${chalk.red('\u{2717}')}\n`;
+            ctx.task.output += output;
+            finalOutput += output;
+        }
+    }
+
+    await utils.closeBrowsers(browsers);
+    return { capturedScreenshots, finalOutput };
 }
