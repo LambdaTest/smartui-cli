@@ -123,12 +123,12 @@ export default class httpClient {
             log.debug(`${ssName} for ${browserName} ${viewport} uploaded successfully`);
         })
         .catch(error => {
-            log.error(`Unable to upload screenshot ${error}`)
+            log.error(`Unable to upload screenshot ${JSON.stringify(error)}`)
             if (error && error.response && error.response.data && error.response.data.error) {
                 throw new Error(error.response.data.error.message);
             }
             if (error) {
-                throw new Error(error.toJSON());
+                throw new Error(JSON.stringify(error));
             }
         })
     }
