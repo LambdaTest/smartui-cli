@@ -35,7 +35,8 @@ export interface Context {
         execCommand?: Array<string>
     }
     options: {
-        parallel?: boolean,
+        parallel?: number,
+        force?: boolean,
         markBaseline?: boolean,
         buildName?: string,
         port?: number,

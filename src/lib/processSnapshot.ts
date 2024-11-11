@@ -13,9 +13,10 @@ const MIN_VIEWPORT_HEIGHT = 1080;
 export default async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record<string, any>> {
     updateLogContext({ task: 'discovery' });
     ctx.log.debug(`Processing snapshot ${snapshot.name} ${snapshot.url}`);
+    const isHeadless = process.env.HEADLESS?.toLowerCase() === 'false' ? false : true;
 
     let launchOptions: Record<string, any> = {
-        headless: true,
+        headless: isHeadless,
         args: constants.LAUNCH_ARGS
     }
     let contextOptions: Record<string, any> = {
