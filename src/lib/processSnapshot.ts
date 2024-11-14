@@ -25,6 +25,7 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
     }
     if (!ctx.browser?.isConnected()) {
         if (ctx.env.HTTP_PROXY || ctx.env.HTTPS_PROXY) launchOptions.proxy = { server: ctx.env.HTTP_PROXY || ctx.env.HTTPS_PROXY };
+        if (ctx.env.SMARTUI_HTTP_PROXY || ctx.env.SMARTUI_HTTPS_PROXY) launchOptions.proxy = { server: ctx.env.SMARTUI_HTTP_PROXY || ctx.env.SMARTUI_HTTPS_PROXY };
         ctx.browser = await chromium.launch(launchOptions);
         ctx.log.debug(`Chromium launched with options ${JSON.stringify(launchOptions)}`);
     }
