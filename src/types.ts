@@ -60,6 +60,8 @@ export interface Env {
     SMARTUI_GIT_INFO_FILEPATH: string | undefined;
     HTTP_PROXY: string | undefined;
     HTTPS_PROXY: string | undefined;
+    SMARTUI_HTTP_PROXY: string | undefined;
+    SMARTUI_HTTPS_PROXY: string | undefined;
     GITHUB_ACTIONS: string | undefined;
     FIGMA_TOKEN: string | undefined;
     LT_USERNAME : string | undefined;
