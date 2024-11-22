@@ -285,8 +285,6 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
         }
         if (ctx.config.cliEnableJavaScript && fullPage) await page.evaluate(scrollToBottomAndBackToTop, { frequency: 100, timing: ctx.config.scrollTime });
 
-        ctx.log.debug(`Calculated content height: ${height}`);
-
         try {
             await page.waitForLoadState('networkidle', { timeout: 5000 });
             ctx.log.debug('Network idle 500ms');
@@ -326,6 +324,7 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
                 }
                 return Math.max(...measurements);
             });
+            ctx.log.debug(`Calculated content height: ${height}`);
 
             let locators: Array<Locator> = [];
             if (!Array.isArray(processedOptions[ignoreOrSelectBoxes][viewportString])) processedOptions[ignoreOrSelectBoxes][viewportString] = []
