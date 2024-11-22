@@ -56,6 +56,7 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
         }
     }
     const page = await context.newPage();
+    let height = 0;
 
     // populate cache with already captured resources
     let cache: Record<string, any> = {};
@@ -284,6 +285,17 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
 
         }
         if (ctx.config.cliEnableJavaScript && fullPage) await page.evaluate(scrollToBottomAndBackToTop, { frequency: 100, timing: ctx.config.scrollTime });
+         // Calculate the height of the content
+         height = await page.evaluate(() => {
+            const body = document.body;
+            const html = document.documentElement;
+            return Math.max(
+                body.scrollHeight, body.offsetHeight,
+                html.clientHeight, html.scrollHeight, html.offsetHeight
+            );
+        });
+
+        ctx.log.debug(`Calculated content height: ${height}`);
 
         try {
             await page.waitForLoadState('networkidle', { timeout: 5000 });
@@ -314,12 +326,23 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
             }
             for (const locator of locators) {
                 let bb = await locator.boundingBox();
-                if (bb) processedOptions[ignoreOrSelectBoxes][viewportString].push({
-                    left: bb.x,
-                    top: bb.y,
-                    right: bb.x + bb.width,
-                    bottom: bb.y + bb.height
-                });
+                if (bb) {
+                    // Calculate top and bottom from the bounding box properties
+                    const top = bb.y;
+                    const bottom = bb.y + bb.height;
+            
+                    // Only push if top and bottom are within the calculated height
+                    if (top <= height && bottom <= height) {
+                        processedOptions[ignoreOrSelectBoxes][viewportString].push({
+                            left: bb.x,
+                            top: top,
+                            right: bb.x + bb.width,
+                            bottom: bottom
+                        });
+                    } else {
+                        ctx.log.debug(`Bounding box for selector skipped due to exceeding height: ${JSON.stringify({ top, bottom, height })}`);
+                    }
+                }
             }
         }
         ctx.log.debug(`Processed options: ${JSON.stringify(processedOptions)}`);
