@@ -56,7 +56,6 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
         }
     }
     const page = await context.newPage();
-    let height = 0;
 
     // populate cache with already captured resources
     let cache: Record<string, any> = {};
@@ -285,15 +284,6 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
 
         }
         if (ctx.config.cliEnableJavaScript && fullPage) await page.evaluate(scrollToBottomAndBackToTop, { frequency: 100, timing: ctx.config.scrollTime });
-         // Calculate the height of the content
-         height = await page.evaluate(() => {
-            const body = document.body;
-            const html = document.documentElement;
-            return Math.max(
-                body.scrollHeight, body.offsetHeight,
-                html.clientHeight, html.scrollHeight, html.offsetHeight
-            );
-        });
 
         ctx.log.debug(`Calculated content height: ${height}`);
 
@@ -313,6 +303,30 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
                 throw new Error(`for snapshot ${snapshot.name} viewport ${viewportString}, multiple elements found for selector ${processedOptions.element}`);
             }
         } else if (selectors.length) {
+            let height = 0;
+            height = await page.evaluate(() => {
+                const DEFAULT_HEIGHT = 16384;
+                const body = document.body;
+                const html = document.documentElement;
+                if (!body || !html) {
+                    ctx.log.debug('Document body or html element is missing, using default height');
+                    return DEFAULT_HEIGHT;
+                }
+                const measurements = [
+                    body?.scrollHeight || 0,
+                    body?.offsetHeight || 0,
+                    html?.clientHeight || 0,
+                    html?.scrollHeight || 0,
+                    html?.offsetHeight || 0
+                ];
+                const allMeasurementsInvalid = measurements.every(measurement => !measurement);
+                if (allMeasurementsInvalid) {
+                    ctx.log.debug('All height measurements are invalid, using default height');
+                    return DEFAULT_HEIGHT;
+                }
+                return Math.max(...measurements);
+            });
+
             let locators: Array<Locator> = [];
             if (!Array.isArray(processedOptions[ignoreOrSelectBoxes][viewportString])) processedOptions[ignoreOrSelectBoxes][viewportString] = []
 
