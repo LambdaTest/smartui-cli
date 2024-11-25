@@ -301,6 +301,31 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
                 throw new Error(`for snapshot ${snapshot.name} viewport ${viewportString}, multiple elements found for selector ${processedOptions.element}`);
             }
         } else if (selectors.length) {
+            let height = 0;
+            height = await page.evaluate(() => {
+                const DEFAULT_HEIGHT = 16384;
+                const body = document.body;
+                const html = document.documentElement;
+                if (!body || !html) {
+                    ctx.log.debug('Document body or html element is missing, using default height');
+                    return DEFAULT_HEIGHT;
+                }
+                const measurements = [
+                    body?.scrollHeight || 0,
+                    body?.offsetHeight || 0,
+                    html?.clientHeight || 0,
+                    html?.scrollHeight || 0,
+                    html?.offsetHeight || 0
+                ];
+                const allMeasurementsInvalid = measurements.every(measurement => !measurement);
+                if (allMeasurementsInvalid) {
+                    ctx.log.debug('All height measurements are invalid, using default height');
+                    return DEFAULT_HEIGHT;
+                }
+                return Math.max(...measurements);
+            });
+            ctx.log.debug(`Calculated content height: ${height}`);
+
             let locators: Array<Locator> = [];
             if (!Array.isArray(processedOptions[ignoreOrSelectBoxes][viewportString])) processedOptions[ignoreOrSelectBoxes][viewportString] = []
 
@@ -314,12 +339,23 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
             }
             for (const locator of locators) {
                 let bb = await locator.boundingBox();
-                if (bb) processedOptions[ignoreOrSelectBoxes][viewportString].push({
-                    left: bb.x,
-                    top: bb.y,
-                    right: bb.x + bb.width,
-                    bottom: bb.y + bb.height
-                });
+                if (bb) {
+                    // Calculate top and bottom from the bounding box properties
+                    const top = bb.y;
+                    const bottom = bb.y + bb.height;
+            
+                    // Only push if top and bottom are within the calculated height
+                    if (top <= height && bottom <= height) {
+                        processedOptions[ignoreOrSelectBoxes][viewportString].push({
+                            left: bb.x,
+                            top: top,
+                            right: bb.x + bb.width,
+                            bottom: bottom
+                        });
+                    } else {
+                        ctx.log.debug(`Bounding box for selector skipped due to exceeding height: ${JSON.stringify({ top, bottom, height })}`);
+                    }
+                }
             }
         }
         ctx.log.debug(`Processed options: ${JSON.stringify(processedOptions)}`);
