@@ -61,21 +61,27 @@ export default class httpClient {
             })
     }
 
-    async auth(log: Logger): Promise<void> {
+    async auth(log: Logger, env: Env): Promise<number> {
+        let result = 1;
+        if (this.projectToken) {
+            result = 0;
+        }
         const response = await this.request({
             url: '/token/verify',
             method: 'GET',
         }, log);
-
-        // Update the projectToken after authentication
         if (response && response.projectToken) {
             this.projectToken = response.projectToken;
-            log.info('Project token updated successfully');
+            env.PROJECT_TOKEN = response.projectToken;
+            if (response.message && response.message.includes('Project created successfully')) {
+                result = 2;
+            }
+            return result;
         } else {
             throw new Error('Authentication failed, project token not received');
         }
     }
-
+    
     createBuild(git: Git, config: any, log: Logger) {
         return this.request({
             url: '/build',
