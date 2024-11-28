@@ -69,6 +69,7 @@ export interface Env {
     LT_SDK_DEBUG: boolean;
     BASELINE_BRANCH: string | undefined;
     CURRENT_BRANCH: string | undefined;
+    PROJECT_NAME: string | undefined;
 }
 
 export interface Snapshot {
