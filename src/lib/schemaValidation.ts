@@ -285,6 +285,15 @@ const SnapshotSchema: JSONSchemaType<Snapshot> = {
                             errorMessage: "Invalid snapshot options; selectDOM xpath array must have unique and non-empty items"
                         }, 
                     }
+                },
+                ignoreType:{
+                    type: "array",
+                    items: { type: "string", minLength: 1, 
+                             enum: ["default", "layout", "images", "text", "colors", "dimensions", "position", "structure"],
+                             errorMessage: "Invalid snapshot options;ignoreType cannot be empty" 
+                    },
+                    uniqueItems: true,
+                    errorMessage: "Invalid snapshot options; ignoreType must be an array of unique values from default, layout, images, text, colors, dimensions, position, structure"
                 }
             },
             additionalProperties: false
