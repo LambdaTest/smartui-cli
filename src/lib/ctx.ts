@@ -18,6 +18,9 @@ export default (options: Record<string, string>): Context => {
     let extensionFiles: string;
     let ignoreStripExtension: Array<string>;
     let ignoreFilePattern: Array<string>;
+    let parallelObj: number;
+    let fetchResultObj: boolean;
+    let fetchResultsFileObj: string;
     try {
         if (options.config) {
             config = JSON.parse(fs.readFileSync(options.config, 'utf-8'));
@@ -41,14 +44,27 @@ export default (options: Record<string, string>): Context => {
         extensionFiles = options.files || ['png', 'jpeg', 'jpg'];
         ignoreStripExtension = options.removeExtensions || false
         ignoreFilePattern = options.ignoreDir || []
+
+        parallelObj = options.parallel ? options.parallel === true? 1 : options.parallel: 1;
+        if (options.fetchResults) {
+            if (options.fetchResults !== true && !options.fetchResults.endsWith('.json')) {
+                console.error("Error: The file extension for --fetch-results must be .json");
+                process.exit(1);
+            }
+            fetchResultObj = true
+            fetchResultsFileObj = options.fetchResults === true ? 'results.json' : options.fetchResults;
+        } else {
+            fetchResultObj = false
+            fetchResultsFileObj = ''
+        }
     } catch (error: any) {
         console.log(`[smartui] Error: ${error.message}`);
         process.exit();
     }
 
     if (config.web) {
-        webConfig = {browsers: config.web.browsers, viewports: []};
-        for (let viewport of config.web?.viewports) webConfig.viewports.push({ width: viewport[0], height: viewport[1] || 0});
+        webConfig = { browsers: config.web.browsers, viewports: [] };
+        for (let viewport of config.web?.viewports) webConfig.viewports.push({ width: viewport[0], height: viewport[1] || 0 });
     }
     if (config.mobile) {
         mobileConfig = {
@@ -57,9 +73,9 @@ export default (options: Record<string, string>): Context => {
             orientation: config.mobile.orientation || constants.MOBILE_ORIENTATION_PORTRAIT,
         }
     }
-    if (config.basicAuthorization){
+    if (config.basicAuthorization) {
         basicAuthObj = config.basicAuthorization
-    }
+    }   
 
     return {
         env: env,
@@ -70,11 +86,13 @@ export default (options: Record<string, string>): Context => {
             mobile: mobileConfig,
             waitForPageRender: config.waitForPageRender || 0,
             waitForTimeout: config.waitForTimeout || 0,
-            enableJavaScript: config.enableJavaScript || false,
-            cliEnableJavaScript: config.cliEnableJavaScript || true,
+            enableJavaScript: config.enableJavaScript ?? false,
+            cliEnableJavaScript: config.cliEnableJavaScript ?? true,
             scrollTime: config.scrollTime || constants.DEFAULT_SCROLL_TIME,
             allowedHostnames: config.allowedHostnames || [],
-            basicAuthorization: basicAuthObj
+            basicAuthorization: basicAuthObj,
+            smartIgnore: config.smartIgnore ?? false,
+            delayedUpload: config.delayedUpload ?? false
         },
         uploadFilePath: '',
         webStaticConfig: [],
@@ -93,7 +111,8 @@ export default (options: Record<string, string>): Context => {
         },
         args: {},
         options: {
-            parallel: options.parallel ? true : false,
+            parallel: parallelObj,
+            force: options.force ? true : false,
             markBaseline: options.markBaseline ? true : false,
             buildName: options.buildName || '',
             port: port,
@@ -101,6 +120,8 @@ export default (options: Record<string, string>): Context => {
             fileExtension: extensionFiles,
             stripExtension: ignoreStripExtension,
             ignorePattern: ignoreFilePattern,
+            fetchResults: fetchResultObj,
+            fetchResultsFileName: fetchResultsFileObj,
         },
         cliVersion: version,
         totalSnapshots: -1

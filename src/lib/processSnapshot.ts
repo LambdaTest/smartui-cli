@@ -1,5 +1,5 @@
 import { Snapshot, Context, ProcessedSnapshot } from "../types.js";
-import { scrollToBottomAndBackToTop, getRenderViewports } from "./utils.js"
+import { scrollToBottomAndBackToTop, getRenderViewports, getRenderViewportsForOptions } from "./utils.js"
 import { chromium, Locator } from "@playwright/test"
 import constants from "./constants.js";
 import { updateLogContext } from '../lib/logger.js'
@@ -10,90 +10,29 @@ const ALLOWED_STATUSES = [200, 201];
 const REQUEST_TIMEOUT = 10000;
 const MIN_VIEWPORT_HEIGHT = 1080;
 
-export default class Queue {
-    private snapshots: Array<Snapshot> = [];
-    private processedSnapshots: Array<Record<string, any>> = [];
-    private processing: boolean = false;
-    private processingSnapshot: string = '';
-    private ctx: Context;
-
-    constructor(ctx: Context) {
-        this.ctx = ctx;
-    }
-
-    enqueue(item: Snapshot): void {
-        this.snapshots.push(item);
-        if (!this.processing) {
-            this.processing = true;
-            this.processNext();
-        }
-    }
-
-    private async processNext(): Promise<void> {
-        if (!this.isEmpty()) {
-            const snapshot = this.snapshots.shift();
-            try {
-                this.processingSnapshot = snapshot?.name;
-                let { processedSnapshot, warnings } = await processSnapshot(snapshot, this.ctx);
-                await this.ctx.client.uploadSnapshot(this.ctx, processedSnapshot);
-                this.ctx.totalSnapshots++;
-                this.processedSnapshots.push({ name: snapshot.name, warnings });
-            } catch (error: any) {
-                this.ctx.log.debug(`snapshot failed; ${error}`);
-                this.processedSnapshots.push({ name: snapshot.name, error: error.message });
-            }
-            // Close open browser contexts and pages
-            if (this.ctx.browser) {
-                for (let context of this.ctx.browser.contexts()) {
-                    for (let page of context.pages()) {
-                        await page.close();
-                        this.ctx.log.debug(`Closed browser page for snapshot ${snapshot.name}`);
-                    }
-                    await context.close();
-                    this.ctx.log.debug(`Closed browser context for snapshot ${snapshot.name}`);
-                }
-            }
-            this.processNext();
-        } else {
-            this.processing = false;
-        }
-    }
-
-    isProcessing(): boolean {
-        return this.processing;
-    }
-
-    getProcessingSnapshot(): string {
-        return this.processingSnapshot;
-    }
-
-    getProcessedSnapshots(): Array<Record<string, any>> {
-        return this.processedSnapshots;
-    }
-
-    isEmpty(): boolean {
-        return this.snapshots.length ? false : true;
-    }
-}
-
-async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record<string, any>> {
+export default async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record<string, any>> {
     updateLogContext({ task: 'discovery' });
     ctx.log.debug(`Processing snapshot ${snapshot.name} ${snapshot.url}`);
+    const isHeadless = process.env.HEADLESS?.toLowerCase() === 'false' ? false : true;
 
-    let launchOptions: Record<string, any> = { headless: true }
+    let launchOptions: Record<string, any> = {
+        headless: isHeadless,
+        args: constants.LAUNCH_ARGS
+    }
     let contextOptions: Record<string, any> = {
         javaScriptEnabled: ctx.config.cliEnableJavaScript,
         userAgent: constants.CHROME_USER_AGENT,
     }
     if (!ctx.browser?.isConnected()) {
         if (ctx.env.HTTP_PROXY || ctx.env.HTTPS_PROXY) launchOptions.proxy = { server: ctx.env.HTTP_PROXY || ctx.env.HTTPS_PROXY };
+        if (ctx.env.SMARTUI_HTTP_PROXY || ctx.env.SMARTUI_HTTPS_PROXY) launchOptions.proxy = { server: ctx.env.SMARTUI_HTTP_PROXY || ctx.env.SMARTUI_HTTPS_PROXY };
         ctx.browser = await chromium.launch(launchOptions);
         ctx.log.debug(`Chromium launched with options ${JSON.stringify(launchOptions)}`);
     }
     const context = await ctx.browser.newContext(contextOptions);
     ctx.log.debug(`Browser context created with options ${JSON.stringify(contextOptions)}`);
-    // Setting the cookies in playwright context
-    if (snapshot.dom.cookies) {
+    // Setting cookies in playwright context
+    if (!ctx.env.SMARTUI_DO_NOT_USE_CAPTURED_COOKIES && snapshot.dom.cookies) {
         const domainName = new URL(snapshot.url).hostname;
         ctx.log.debug(`Setting cookies for domain: ${domainName}`);
 
@@ -135,7 +74,13 @@ async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record
     await page.route('**/*', async (route, request) => {
         const requestUrl = request.url()
         const requestHostname = new URL(requestUrl).hostname;
-        let requestOptions: Record<string, any> = { timeout: REQUEST_TIMEOUT }
+        let requestOptions: Record<string, any> = {
+            timeout: REQUEST_TIMEOUT,
+            headers: {
+                ...await request.allHeaders(),
+                ...constants.REQUEST_HEADERS
+            }
+        }
 
         try {
             // abort audio/video media requests
@@ -149,10 +94,7 @@ async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record
             if (ctx.config.basicAuthorization) {
                 ctx.log.debug(`Adding basic authorization to the headers for root url`);
                 let token = Buffer.from(`${ctx.config.basicAuthorization.username}:${ctx.config.basicAuthorization.password}`).toString('base64');
-                requestOptions.headers = {
-                    ...request.headers(),
-                    Authorization: `Basic ${token}`
-                };
+                requestOptions.headers.Authorization = `Basic ${token}`;
             }
 
             // get response
@@ -225,6 +167,45 @@ async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record
             return false;
         }
 
+        if (options.web && Object.keys(options.web).length) {
+            processedOptions.web = {};
+        
+            // Check and process viewports in web
+            if (options.web.viewports && options.web.viewports.length > 0) {
+                processedOptions.web.viewports = options.web.viewports.filter(viewport => 
+                    Array.isArray(viewport) && viewport.length > 0
+                );
+            }
+        
+            // Check and process browsers in web
+            if (options.web.browsers && options.web.browsers.length > 0) {
+                processedOptions.web.browsers = options.web.browsers;
+            }
+        }
+
+        if (options.mobile && Object.keys(options.mobile).length) {
+            processedOptions.mobile = {};
+        
+            // Check and process devices in mobile
+            if (options.mobile.devices && options.mobile.devices.length > 0) {
+                processedOptions.mobile.devices = options.mobile.devices;
+            }
+            
+            // Check if 'fullPage' is provided and is a boolean, otherwise set default to true
+            if (options.mobile.hasOwnProperty('fullPage') && typeof options.mobile.fullPage === 'boolean') {
+                processedOptions.mobile.fullPage = options.mobile.fullPage;
+            } else {
+                processedOptions.mobile.fullPage = true; // Default value for fullPage
+            }
+        
+            // Check if 'orientation' is provided and is valid, otherwise set default to 'portrait'
+            if (options.mobile.hasOwnProperty('orientation') && (options.mobile.orientation === constants.MOBILE_ORIENTATION_PORTRAIT || options.mobile.orientation === constants.MOBILE_ORIENTATION_LANDSCAPE)) {
+                processedOptions.mobile.orientation = options.mobile.orientation;
+            } else {
+                processedOptions.mobile.orientation = constants.MOBILE_ORIENTATION_PORTRAIT; // Default value for orientation
+            }
+        }
+
         if (options.element && Object.keys(options.element).length) {
             if (options.element.id) processedOptions.element = '#' + options.element.id;
             else if (options.element.class) processedOptions.element = '.' + options.element.class;
@@ -262,7 +243,14 @@ async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record
     // process for every viewport
     let navigated: boolean = false;
     let previousDeviceType: string | null = null;
-    let renderViewports = getRenderViewports(ctx);
+
+    let renderViewports;
+
+    if((snapshot.options && snapshot.options.web)  || (snapshot.options && snapshot.options.mobile)){
+        renderViewports = getRenderViewportsForOptions(snapshot.options)
+    } else {
+        renderViewports = getRenderViewports(ctx);
+    }
 
     for (const { viewport, viewportString, fullPage, device } of renderViewports) {
 
@@ -313,6 +301,31 @@ async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record
                 throw new Error(`for snapshot ${snapshot.name} viewport ${viewportString}, multiple elements found for selector ${processedOptions.element}`);
             }
         } else if (selectors.length) {
+            let height = 0;
+            height = await page.evaluate(() => {
+                const DEFAULT_HEIGHT = 16384;
+                const body = document.body;
+                const html = document.documentElement;
+                if (!body || !html) {
+                    ctx.log.debug('Document body or html element is missing, using default height');
+                    return DEFAULT_HEIGHT;
+                }
+                const measurements = [
+                    body?.scrollHeight || 0,
+                    body?.offsetHeight || 0,
+                    html?.clientHeight || 0,
+                    html?.scrollHeight || 0,
+                    html?.offsetHeight || 0
+                ];
+                const allMeasurementsInvalid = measurements.every(measurement => !measurement);
+                if (allMeasurementsInvalid) {
+                    ctx.log.debug('All height measurements are invalid, using default height');
+                    return DEFAULT_HEIGHT;
+                }
+                return Math.max(...measurements);
+            });
+            ctx.log.debug(`Calculated content height: ${height}`);
+
             let locators: Array<Locator> = [];
             if (!Array.isArray(processedOptions[ignoreOrSelectBoxes][viewportString])) processedOptions[ignoreOrSelectBoxes][viewportString] = []
 
@@ -326,14 +339,26 @@ async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record
             }
             for (const locator of locators) {
                 let bb = await locator.boundingBox();
-                if (bb) processedOptions[ignoreOrSelectBoxes][viewportString].push({
-                    left: bb.x,
-                    top: bb.y,
-                    right: bb.x + bb.width,
-                    bottom: bb.y + bb.height
-                });
+                if (bb) {
+                    // Calculate top and bottom from the bounding box properties
+                    const top = bb.y;
+                    const bottom = bb.y + bb.height;
+            
+                    // Only push if top and bottom are within the calculated height
+                    if (top <= height && bottom <= height) {
+                        processedOptions[ignoreOrSelectBoxes][viewportString].push({
+                            left: bb.x,
+                            top: top,
+                            right: bb.x + bb.width,
+                            bottom: bottom
+                        });
+                    } else {
+                        ctx.log.debug(`Bounding box for selector skipped due to exceeding height: ${JSON.stringify({ top, bottom, height })}`);
+                    }
+                }
             }
         }
+        ctx.log.debug(`Processed options: ${JSON.stringify(processedOptions)}`);
     }
 
     return {

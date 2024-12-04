@@ -16,21 +16,29 @@ command
     .name('capture')
     .description('Capture screenshots of static sites')
     .argument('<file>', 'Web static config file')
-    .option('--parallel', 'Capture parallely on all browsers')
+    .option('-C, --parallel [number]', 'Specify the number of instances per browser', parseInt)
+    .option('-F, --force', 'forcefully apply the specified parallel instances per browser')
+    .option('--fetch-results [filename]', 'Fetch results and optionally specify an output file, e.g., <filename>.json')
     .action(async function(file, _, command) {
         let ctx: Context = ctxInit(command.optsWithGlobals());
-
+        
         if (!fs.existsSync(file)) {
-            console.log(`Error: Web Static Config file ${file} not found.`);
+            ctx.log.error(`Web Static Config file ${file} not found.`);
             return;
         }
         try {
             ctx.webStaticConfig = JSON.parse(fs.readFileSync(file, 'utf8'));
             if (!validateWebStaticConfig(ctx.webStaticConfig)) throw new Error(validateWebStaticConfig.errors[0].message);
+            if(ctx.webStaticConfig && ctx.webStaticConfig.length === 0) {
+                ctx.log.error(`No URLs found in the specified config file -> ${file}`);
+                return;
+            }
         } catch (error: any) {
-            console.log(`[smartui] Error: Invalid Web Static Config; ${error.message}`);
+            ctx.log.error(`Invalid Web Static Config; ${error.message}`);
             return;
         }
+        //Print Config here in debug mode
+        ctx.log.debug(ctx.config);
 
         let tasks = new Listr<Context>(
             [

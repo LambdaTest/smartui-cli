@@ -8,12 +8,27 @@ import pkgJSON from './../../package.json'
 
 export default class httpClient {
     axiosInstance: AxiosInstance;
+    projectToken: string;
+    projectName: string;
+    username: string;
+    accessKey: string;
 
-    constructor({ SMARTUI_CLIENT_API_URL, PROJECT_TOKEN }: Env) {
+    constructor({ SMARTUI_CLIENT_API_URL, PROJECT_TOKEN, PROJECT_NAME, LT_USERNAME, LT_ACCESS_KEY }: Env) {
+        this.projectToken = PROJECT_TOKEN || '';
+        this.projectName = PROJECT_NAME || '';
+        this.username = LT_USERNAME || '';
+        this.accessKey = LT_ACCESS_KEY || '';
+
         this.axiosInstance = axios.create({
             baseURL: SMARTUI_CLIENT_API_URL,
-            headers: { 'projectToken': PROJECT_TOKEN },
-        })
+        });
+        this.axiosInstance.interceptors.request.use((config) => {
+            config.headers['projectToken'] = this.projectToken;
+            config.headers['projectName'] = this.projectName;
+            config.headers['username'] = this.username;
+            config.headers['accessKey'] = this.accessKey;
+            return config;
+        });
     }
 
     async request(config: AxiosRequestConfig, log: Logger): Promise<Record<string, any>> {
@@ -46,13 +61,27 @@ export default class httpClient {
             })
     }
 
-    auth(log: Logger) {
-        return this.request({
+    async auth(log: Logger, env: Env): Promise<number> {
+        let result = 1;
+        if (this.projectToken) {
+            result = 0;
+        }
+        const response = await this.request({
             url: '/token/verify',
-            method: 'GET'
-        }, log)
+            method: 'GET',
+        }, log);
+        if (response && response.projectToken) {
+            this.projectToken = response.projectToken;
+            env.PROJECT_TOKEN = response.projectToken;
+            if (response.message && response.message.includes('Project created successfully')) {
+                result = 2;
+            }
+            return result;
+        } else {
+            throw new Error('Authentication failed, project token not received');
+        }
     }
-
+    
     createBuild(git: Git, config: any, log: Logger) {
         return this.request({
             url: '/build',
@@ -63,6 +92,14 @@ export default class httpClient {
             }
         }, log)
     }
+
+    getScreenshotData(buildId: string, baseline: boolean, log: Logger) {
+        return this.request({
+            url: '/screenshot',
+            method: 'GET',
+            params: { buildId, baseline }
+        }, log);
+    }    
 
     finalizeBuild(buildId: string, totalSnapshots: number, log: Logger) {
         let params: Record<string, string | number> = {buildId};
@@ -115,13 +152,13 @@ export default class httpClient {
             log.debug(`${ssName} for ${browserName} ${viewport} uploaded successfully`);
         })
         .catch(error => {
-            if (error.response) {
+            log.error(`Unable to upload screenshot ${JSON.stringify(error)}`)
+            if (error && error.response && error.response.data && error.response.data.error) {
                 throw new Error(error.response.data.error.message);
             }
-            if (error.request) {
-                throw new Error(error.toJSON().message);
+            if (error) {
+                throw new Error(JSON.stringify(error));
             }
-            throw new Error(error.message);
         })
     }
 

@@ -1,13 +1,14 @@
 {
   "name": "@lambdatest/smartui-cli",
-  "version": "4.0.4",
+  "version": "4.0.12",
   "description": "A command line interface (CLI) to run SmartUI tests on LambdaTest",
   "files": [
     "dist/**/*"
   ],
   "scripts": {
     "build": "tsup",
-    "release": "pnpm run build && pnpm publish --access public --no-git-checks"
+    "release": "pnpm run build && pnpm publish --access public --no-git-checks",
+    "local-build": "pnpm run build && pnpm pack"
   },
   "bin": {
     "smartui": "./dist/index.cjs"
@@ -21,10 +22,10 @@
   "author": "LambdaTest <keys@lambdatest.com>",
   "license": "MIT",
   "dependencies": {
-    "@playwright/browser-chromium": "^1.45.3",
-    "@playwright/browser-firefox": "^1.45.3",
-    "@playwright/browser-webkit": "^1.45.3",
-    "@playwright/test": "^1.45.3",
+    "@playwright/browser-chromium": "^1.47.2",
+    "@playwright/browser-firefox": "^1.47.2",
+    "@playwright/browser-webkit": "^1.47.2",
+    "@playwright/test": "^1.47.2",
     "@types/cross-spawn": "^6.0.4",
     "@types/node": "^20.8.9",
     "@types/which": "^3.0.2",

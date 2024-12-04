@@ -4,7 +4,7 @@ import httpClient from './lib/httpClient.js'
 import type { Logger } from 'winston'
 import { ListrTaskWrapper, ListrRenderer } from "listr2";
 import { Browser } from '@playwright/test';
-import snapshotQueue from './lib/processSnapshot.js';
+import snapshotQueue from './lib/snapshotQueue.js';
 
 export interface Context {
     env: Env;
@@ -23,7 +23,9 @@ export interface Context {
         cliEnableJavaScript: boolean;
         scrollTime: number;
         allowedHostnames: Array<string>;
-        basicAuthorization: basicAuth | undefined
+        basicAuthorization: basicAuth | undefined;
+        smartIgnore: boolean;
+        delayedUpload: boolean;
     };
     uploadFilePath: string;
     webStaticConfig: WebStaticConfig;
@@ -33,7 +35,8 @@ export interface Context {
         execCommand?: Array<string>
     }
     options: {
-        parallel?: boolean,
+        parallel?: number,
+        force?: boolean,
         markBaseline?: boolean,
         buildName?: string,
         port?: number,
@@ -41,6 +44,8 @@ export interface Context {
         fileExtension?: Array<string>,
         stripExtension?: boolean,
         ignorePattern?: Array<string>,
+        fetchResults?: boolean,
+        fetchResultsFileName?: string
     }
     cliVersion: string;
     totalSnapshots: number;
@@ -51,16 +56,20 @@ export interface Context {
 export interface Env {
     PROJECT_TOKEN: string;
     SMARTUI_CLIENT_API_URL: string;
-    LT_SDK_DEBUG: string | undefined;
+    SMARTUI_DO_NOT_USE_CAPTURED_COOKIES: boolean;
     SMARTUI_GIT_INFO_FILEPATH: string | undefined;
     HTTP_PROXY: string | undefined;
     HTTPS_PROXY: string | undefined;
+    SMARTUI_HTTP_PROXY: string | undefined;
+    SMARTUI_HTTPS_PROXY: string | undefined;
     GITHUB_ACTIONS: string | undefined;
     FIGMA_TOKEN: string | undefined;
     LT_USERNAME : string | undefined;
     LT_ACCESS_KEY : string | undefined;
+    LT_SDK_DEBUG: boolean;
     BASELINE_BRANCH: string | undefined;
     CURRENT_BRANCH: string | undefined;
+    PROJECT_NAME: string | undefined;
 }
 
 export interface Snapshot {
@@ -85,6 +94,15 @@ export interface Snapshot {
             class?: string,
             cssSelector?: string,
             xpath?: string
+        },
+        web?: {
+            browsers?: string[],
+            viewports: ([number] | [number, number])[]
+        },
+        mobile?: {
+            devices: string[],
+            fullPage?: boolean,
+            orientation?: string
         }
     }
 }
@@ -118,7 +136,7 @@ export interface Build {
 
 export interface WebConfig {
     browsers: Array<string>;
-    viewports: Array<{width: number, height: number}>;
+    viewports: Array<{ width: number, height: number }>;
 }
 
 export interface MobileConfig {
