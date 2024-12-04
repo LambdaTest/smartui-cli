@@ -294,6 +294,15 @@ const SnapshotSchema: JSONSchemaType<Snapshot> = {
                         },
                     }
                 },
+                ignoreType:{
+                    type: "array",
+                    items: { type: "string", minLength: 1, 
+                             enum: ["default", "layout", "images", "text", "colors", "dimensions", "position", "structure"],
+                             errorMessage: "Invalid snapshot options;ignoreType cannot be empty" 
+                    },
+                    uniqueItems: true,
+                    errorMessage: "Invalid snapshot options; ignoreType must be an array of unique values from default, layout, images, text, colors, dimensions, position, structure"
+                },
                 web: {
                     type: "object",
                     properties: {
