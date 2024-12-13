@@ -242,6 +242,9 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
                 }
             }
         }
+        if(options.ignoreType){
+            processedOptions.ignoreType = options.ignoreType;
+        }
     }
 
     // process for every viewport
