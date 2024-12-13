@@ -104,8 +104,7 @@ export interface Snapshot {
             fullPage?: boolean,
             orientation?: string
         },
-        loadDomContent?: boolean,
-        ignoreType?: string[]
+        loadDomContent?: boolean;
     }
 }
 
