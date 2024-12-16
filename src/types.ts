@@ -103,7 +103,8 @@ export interface Snapshot {
             devices: string[],
             fullPage?: boolean,
             orientation?: string
-        }
+        },
+        loadDomContent?: boolean;
     }
 }
 
