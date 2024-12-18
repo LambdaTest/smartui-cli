@@ -105,6 +105,7 @@ export interface Snapshot {
             orientation?: string
         },
         loadDomContent?: boolean;
+        ignoreType?: string[]
     }
 }
 
