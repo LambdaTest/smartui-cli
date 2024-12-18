@@ -26,6 +26,7 @@ command
         return val.split(',').map(pattern => pattern.trim());
     })
     .option('--fetch-results [filename]', 'Fetch results and optionally specify an output file, e.g., <filename>.json')
+    .option('--buildName <string>', 'Specify the build name')
     .action(async function(directory, _, command) {
         let ctx: Context = ctxInit(command.optsWithGlobals());
 
