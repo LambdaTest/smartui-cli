@@ -6,7 +6,6 @@ import logger from './logger.js'
 import getEnv from './env.js'
 import httpClient from './httpClient.js'
 import fs from 'fs'
-import { build } from 'tsup'
 
 export default (options: Record<string, string>): Context => {
     let env: Env = getEnv();
