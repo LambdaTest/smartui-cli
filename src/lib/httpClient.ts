@@ -82,13 +82,14 @@ export default class httpClient {
         }
     }
     
-    createBuild(git: Git, config: any, log: Logger) {
+    createBuild(git: Git, config: any, log: Logger, buildName: string) {
         return this.request({
             url: '/build',
             method: 'POST',
             data: {
                 git,
-                config
+                config,
+                buildName
             }
         }, log)
     }
