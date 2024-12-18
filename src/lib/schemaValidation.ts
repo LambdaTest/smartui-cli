@@ -360,6 +360,10 @@ const SnapshotSchema: JSONSchemaType<Snapshot> = {
                     },
                     required: ["devices"],
                     errorMessage: "Invalid snapshot options; mobile must include devices property."
+                },
+                loadDomContent: {
+                    type: "boolean",
+                    errorMessage: "Invalid snapshot options; loadDomContent must be a boolean"
                 }
             },
             additionalProperties: false

@@ -167,6 +167,10 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
             return false;
         }
 
+        if (options.loadDomContent) {
+            processedOptions.loadDomContent = true;
+        }
+
         if (options.web && Object.keys(options.web).length) {
             processedOptions.web = {};
         
