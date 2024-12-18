@@ -6,6 +6,7 @@ import logger from './logger.js'
 import getEnv from './env.js'
 import httpClient from './httpClient.js'
 import fs from 'fs'
+import { build } from 'tsup'
 
 export default (options: Record<string, string>): Context => {
     let env: Env = getEnv();
@@ -21,6 +22,7 @@ export default (options: Record<string, string>): Context => {
     let parallelObj: number;
     let fetchResultObj: boolean;
     let fetchResultsFileObj: string;
+    let buildNameObj: string;
     try {
         if (options.config) {
             config = JSON.parse(fs.readFileSync(options.config, 'utf-8'));
@@ -57,6 +59,7 @@ export default (options: Record<string, string>): Context => {
             fetchResultObj = false
             fetchResultsFileObj = ''
         }
+        buildNameObj = options.buildName || ''
     } catch (error: any) {
         console.log(`[smartui] Error: ${error.message}`);
         process.exit();
@@ -105,7 +108,7 @@ export default (options: Record<string, string>): Context => {
         },
         build: {
             id: '',
-            name: '',
+            name: buildNameObj,
             baseline: false,
             url: ''
         },
