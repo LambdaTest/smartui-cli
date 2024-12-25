@@ -421,7 +421,73 @@ const FigmaDesignConfigSchema: JSONSchemaType<FigmaDesignConfig> = {
     additionalProperties: false
 };
 
+const FigmaWebConfigSchema: JSONSchemaType<Object> = {
+    type: "object",
+    "properties": {
+        "web": {
+          "type": "object",
+          "properties": {
+            "browsers": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": ["chrome", "firefox", "safari", "edge"]
+              }
+            },
+            "viewports": {
+              "type": "array",
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "minItems": 1
+              }
+            }
+          },
+          "required": ["browsers", "viewports"]
+        },
+        "figma": {
+          "type": "object",
+          "properties": {
+            "autoDetectViewports": {
+              "type": "boolean"
+            },
+            "configs": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "figma_file_token": {
+                    "type": "string"
+                  },
+                  "figma_ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "screenshot_names": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": ["figma_file_token", "figma_ids", "screenshot_names"]
+              }
+            }
+          },
+          "required": ["autoDetectViewports", "configs"]
+        }
+    },
+     "required": ["web", "figma"],
+    additionalProperties: false
+};
+
 export const validateConfig = ajv.compile(ConfigSchema);
 export const validateWebStaticConfig = ajv.compile(WebStaticConfigSchema);
 export const validateSnapshot = ajv.compile(SnapshotSchema);
 export const validateFigmaDesignConfig = ajv.compile(FigmaDesignConfigSchema);
+export const validateWebFigmaConfig = ajv.compile(FigmaWebConfigSchema);

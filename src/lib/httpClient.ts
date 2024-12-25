@@ -33,6 +33,9 @@ export default class httpClient {
 
     async request(config: AxiosRequestConfig, log: Logger): Promise<Record<string, any>> {
         log.debug(`http request: ${config.method} ${config.url}`);
+        if(config && config.data) {
+            log.debug(config.data);
+        }
 
         return this.axiosInstance.request(config)
             .then(resp => {
@@ -50,7 +53,7 @@ export default class httpClient {
                         headers: error.response.headers,
                         body: error.response.data
                     })}`);
-                    throw new Error(error.response.data.error?.message || error.response.data.message);
+                    throw new Error(error.response.data.error?.message || error.response.data.message || error.response.data);
                 }
                 if (error.request) {
                     log.debug(`http request failed: ${error.toJSON()}`);
@@ -223,4 +226,15 @@ export default class httpClient {
             maxContentLength: Infinity, // prevent axios from limiting the content size
         }, ctx.log)
     }
+
+    getWebFigma(requestBody: any, log: Logger) {
+            return this.request({
+                url: "v2/uploadfigma",
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                data: JSON.stringify(requestBody)
+            }, log);
+        }
 }

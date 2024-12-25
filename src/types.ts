@@ -26,6 +26,7 @@ export interface Context {
         basicAuthorization: basicAuth | undefined;
         smartIgnore: boolean;
         delayedUpload: boolean;
+        figma?: FigmaWebConfig;
     };
     uploadFilePath: string;
     webStaticConfig: WebStaticConfig;
@@ -166,4 +167,9 @@ export type FigmaDesignConfig = {
 export interface basicAuth {
     username: string;
     password: string;
+}
+
+export interface FigmaWebConfig {
+    autoDetectViewports: Array<string>;
+    configs: Array<{ figma_file_token: string, figma_ids: Array<string>, screenshot_names:Array<string> }>;
 }

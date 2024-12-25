@@ -335,5 +335,35 @@ export default {
                 ]
             }
         ]
+    },
+    WEB_FIGMA_CONFIG: {
+        web: {
+            browsers: [
+                'chrome',
+                'firefox',
+                'safari',
+                'edge'
+            ],
+            viewports: [
+                [1920],
+                [1366],
+                [1028],
+            ],
+        },
+        figma: {
+            "autoDetectViewports": true,
+            "configs": [
+                {
+                  "figma_file_token": "<token>",
+                  "figma_ids": ["id-1", "id-2"],
+                  "screenshot_names": ["homepage", "about"]
+                },
+                {
+                  "figma_file_token2": "<token>",
+                  "figma_ids": ["id-1", "id-2"],
+                  "screenshot_names": ["xyz", "abc"]
+                },
+              ]
+        }
     }
 }
