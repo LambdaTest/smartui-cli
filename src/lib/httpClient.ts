@@ -229,7 +229,7 @@ export default class httpClient {
 
     getWebFigma(requestBody: any, log: Logger) {
             return this.request({
-                url: "v2/uploadfigma",
+                url: "figma-web/upload",
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
