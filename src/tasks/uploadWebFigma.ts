@@ -19,7 +19,7 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
                     throw new Error('Uploading Web Figma Screenshot failed');
                 }
                 task.title = 'Web Figma images uploaded successfully to SmartUI';
-                ctx.log.debug(`Figma designs processed: ${results}`);
+                ctx.log.debug(`Web Figma processed: ${results}`);
             } catch (error: any) {
                 ctx.log.debug(error);
                 task.output = chalk.gray(`${error.message}`);

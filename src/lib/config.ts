@@ -1,6 +1,7 @@
 import path from 'path'
 import fs from 'fs'
 import constants from './constants.js';
+import { Context } from "../types.js";
 
 export function createConfig(filepath: string) {
     // default filepath
@@ -73,13 +74,13 @@ export function createWebFigmaConfig(filepath: string) {
     filepath = filepath || '.smartui.json';
     let filetype = path.extname(filepath);
     if (filetype != '.json') {
-        console.log('Error: smartui config file must have .json extension');
+        console.log('Error: figma config file must have .json extension');
         return
     }
 
     // verify the file does not already exist
     if (fs.existsSync(filepath)) {
-        console.log(`Error: smartui config already exists: ${filepath}`);
+        console.log(`Error: figma config already exists: ${filepath}`);
         console.log(`To create a new file, please specify the file name like: 'smartui config:create-figma-web <fileName>.json'`);
         return
     }
@@ -88,4 +89,23 @@ export function createWebFigmaConfig(filepath: string) {
     fs.mkdirSync(path.dirname(filepath), { recursive: true });
     fs.writeFileSync(filepath, JSON.stringify(constants.WEB_FIGMA_CONFIG, null, 2) + '\n');
     console.log(`Created figma web config: ${filepath}`);
+};
+
+export function verifyFigmaWebConfig(ctx: Context) {
+    if (ctx.env.FIGMA_TOKEN == "") {
+        throw new Error("Missing FIGMA_TOKEN in Environment Variables");
+    }
+    if (ctx.env.LT_USERNAME == "") {
+        throw new Error("Missing LT_USERNAME in Environment Variables");
+    }
+    if (ctx.env.LT_ACCESS_KEY == "") {
+        throw new Error("Missing LT_ACCESS_KEY in Environment Variables");
+    }
+    let figma = ctx.config && ctx.config?.figma || {};
+    for (let c of figma?.configs) {
+        if (c.screenshotNames && c.screenshotNames.length > 0 && c.figmaIds && c.figmaIds.length != c.screenshotNames.length) {
+            throw new Error("Mismatch in Figma Ids and Screenshot Names");
+        }
+    }
+    return true;
 };

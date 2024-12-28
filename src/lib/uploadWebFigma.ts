@@ -1,3 +1,4 @@
+import { url } from "inspector";
 import { Context } from "../types.js";
 
 export default async (ctx: Context): Promise<string> => {
@@ -16,14 +17,19 @@ export default async (ctx: Context): Promise<string> => {
       build_name: buildName,
       web: webConfig,
       figma: figmaConfig,
-
+      smartIgnore: ctx.config.smartIgnore,
+      git: ctx.git,
     };
 
     const responseData = await ctx.client.getWebFigma(requestBody, ctx.log);
-    ctx.log.debug("responseData : "+  responseData);
+    ctx.log.debug("responseData : "+  JSON.stringify(responseData));
 
     if (responseData.data.message == "success") {
       results = responseData.data.message;
+      ctx.build = {
+        id: responseData.data.buildId,
+        url: responseData.data.buildURL || "https://smartui.lambdatestinternal.com",
+      }
     }
   } else {
     throw new Error("No Figma configuration found in config file");

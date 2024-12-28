@@ -343,15 +343,10 @@ export default {
                 'firefox',
                 'safari',
                 'edge'
-            ],
-            viewports: [
-                [1920],
-                [1366],
-                [1028],
-            ],
+            ]
         },
         figma: {
-            "autoDetectViewports": true,
+            "depth": 2,
             "configs": [
                 {
                   "figma_file_token": "<token>",
@@ -359,8 +354,8 @@ export default {
                   "screenshot_names": ["homepage", "about"]
                 },
                 {
-                  "figma_file_token2": "<token>",
-                  "figma_ids": ["id-1", "id-2"],
+                  "figma_file_token": "<token>",
+                  "figma_ids": ["id-3", "id-4"],
                   "screenshot_names": ["xyz", "abc"]
                 },
               ]
