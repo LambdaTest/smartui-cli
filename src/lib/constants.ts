@@ -370,5 +370,30 @@ export default {
                 ]
             }
         ]
+    },
+    WEB_FIGMA_CONFIG: {
+        web: {
+            browsers: [
+                'chrome',
+                'firefox',
+                'safari',
+                'edge'
+            ]
+        },
+        figma: {
+            "depth": 2,
+            "configs": [
+                {
+                  "figma_file_token": "<token>",
+                  "figma_ids": ["id-1", "id-2"],
+                  "screenshot_names": ["homepage", "about"]
+                },
+                {
+                  "figma_file_token": "<token>",
+                  "figma_ids": ["id-3", "id-4"],
+                  "screenshot_names": ["xyz", "abc"]
+                },
+              ]
+        }
     }
 }

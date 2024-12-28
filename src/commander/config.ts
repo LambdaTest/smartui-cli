@@ -1,9 +1,11 @@
 import { Command } from 'commander'
-import { createConfig, createWebStaticConfig, createFigmaConfig } from '../lib/config.js'
+import { createConfig, createWebStaticConfig, createFigmaConfig, createWebFigmaConfig } from '../lib/config.js'
 
 export const configWeb = new Command();
 export const configStatic = new Command();
 export const configFigma = new Command();
+export const configWebFigma = new Command();
+
 
 configWeb
     .name('config:create')
@@ -29,4 +31,11 @@ configFigma
         createFigmaConfig(filepath);
     })
 
+configWebFigma
+    .name('config:create-figma-web')
+    .description('Create figma config file with browsers')
+    .argument('[filepath]', 'Optional config filepath')
+    .action(async function(filepath, options) {
+        createWebFigmaConfig(filepath);
+    })
 
