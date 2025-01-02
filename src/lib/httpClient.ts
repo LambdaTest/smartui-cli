@@ -32,7 +32,8 @@ export default class httpClient {
     }
 
     async request(config: AxiosRequestConfig, log: Logger): Promise<Record<string, any>> {
-        log.debug(`http request: ${config.method} ${config.url}`);
+        const requestData = typeof config.data === 'object' ? JSON.stringify(config.data) : config.data;
+        log.debug(`http request: ${config.method} ${config.url} ${requestData}`);
 
         return this.axiosInstance.request(config)
             .then(resp => {
@@ -112,9 +113,24 @@ export default class httpClient {
         }, log)
     }
 
-    processSnapshot(ctx: Context, snapshot: ProcessedSnapshot, snapshotUuid: string) {
+    uploadSnapshot(ctx: Context, snapshot: ProcessedSnapshot) {
         return this.request({
             url: `/builds/${ctx.build.id}/snapshot`,
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            data: { 
+                snapshot,
+                test: {
+                    type: ctx.testType,
+                    source: 'cli'
+                }
+            }
+        }, ctx.log)
+    }
+
+    processSnapshot(ctx: Context, snapshot: ProcessedSnapshot, snapshotUuid: string) {
+        return this.request({
+            url: `/build/${ctx.build.id}/snapshot`,
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             data: { 
