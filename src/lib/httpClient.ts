@@ -1,7 +1,7 @@
 import fs from 'fs';
 import FormData from 'form-data';
 import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
-import { Env, ProcessedSnapshot, Git, Build, Context } from '../types.js';
+import { Env, Snapshot, ProcessedSnapshot, Git, Build, Context } from '../types.js';
 import constants from './constants.js';
 import type { Logger } from 'winston'
 import pkgJSON from './../../package.json'
@@ -32,7 +32,8 @@ export default class httpClient {
     }
 
     async request(config: AxiosRequestConfig, log: Logger): Promise<Record<string, any>> {
-        log.debug(`http request: ${config.method} ${config.url}`);
+        const requestData = typeof config.data === 'object' ? JSON.stringify(config.data) : config.data;
+        log.debug(`http request: ${config.method} ${config.url} ${requestData}`);
 
         return this.axiosInstance.request(config)
             .then(resp => {
@@ -128,6 +129,23 @@ export default class httpClient {
         }, ctx.log)
     }
 
+    processSnapshot(ctx: Context, snapshot: ProcessedSnapshot, snapshotUuid: string) {
+        return this.request({
+            url: `/build/${ctx.build.id}/snapshot`,
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            data: { 
+                name: snapshot.name,
+                url: snapshot.url,
+                snapshotUuid: snapshotUuid,
+                test: {
+                    type: ctx.testType,
+                    source: 'cli'
+                }
+            }
+        }, ctx.log)
+    }
+
     uploadScreenshot(
         { id: buildId, name: buildName, baseline }: Build, 
         ssPath: string, ssName: string, browserName :string, viewport: string, log: Logger
@@ -207,6 +225,19 @@ export default class httpClient {
         }, ctx.log)
     }
 
+    getS3PresignedURLForSnapshotUpload(ctx: Context, snapshotName: string, snapshotUuid: string) {
+        return this.request({
+            url: `/snapshotuploadurl`,
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            data: {
+                buildId: ctx.build.id,
+                snapshotName: snapshotName,
+                snapshotUuid: snapshotUuid
+            }
+        }, ctx.log)
+    }
+
     uploadLogs(ctx: Context, uploadURL: string) {
         const fileStream = fs.createReadStream(constants.LOG_FILE_PATH);
         const { size } = fs.statSync(constants.LOG_FILE_PATH);
@@ -219,6 +250,19 @@ export default class httpClient {
                 'Content-Length': size,
             },
             data: fileStream,
+            maxBodyLength: Infinity, // prevent axios from limiting the body size
+            maxContentLength: Infinity, // prevent axios from limiting the content size
+        }, ctx.log)
+    }
+
+    uploadSnapshotToS3(ctx: Context, uploadURL: string, snapshot: Snapshot) {
+        return this.request({
+            url: uploadURL,
+            method: 'PUT',
+            headers:{
+                'Content-Type': 'application/json',
+            },
+            data: snapshot,
             maxBodyLength: Infinity, // prevent axios from limiting the body size
             maxContentLength: Infinity, // prevent axios from limiting the content size
         }, ctx.log)

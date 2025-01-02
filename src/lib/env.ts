@@ -17,7 +17,8 @@ export default (): Env => {
         LT_SDK_DEBUG,
         BASELINE_BRANCH,
         CURRENT_BRANCH,
-        PROJECT_NAME
+        PROJECT_NAME, 
+        USE_KAFKA_FLOW
     } = process.env
         
     return {
@@ -36,6 +37,7 @@ export default (): Env => {
         CURRENT_BRANCH,
         LT_SDK_DEBUG: LT_SDK_DEBUG === 'true',
         SMARTUI_DO_NOT_USE_CAPTURED_COOKIES: SMARTUI_DO_NOT_USE_CAPTURED_COOKIES === 'true',
-        PROJECT_NAME
+        PROJECT_NAME,
+        USE_KAFKA_FLOW: USE_KAFKA_FLOW === 'true'
     }
 }
