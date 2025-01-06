@@ -488,7 +488,7 @@ const FigmaWebConfigSchema: JSONSchemaType<Object> = {
                                 "items": {
                                     "type": "string"
                                 },
-                                uniqueItems: true
+                                uniqueItems: false
                             }
                         },
                         "required": ["figma_file_token", "figma_ids"]

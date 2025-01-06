@@ -10,6 +10,8 @@ import { validateFigmaDesignConfig, validateWebFigmaConfig } from '../lib/schema
 import uploadFigmaDesigns from '../tasks/uploadFigmaDesigns.js'
 import uploadWebFigma from '../tasks/uploadWebFigma.js'
 import { verifyFigmaWebConfig } from '../lib/config.js'
+import chalk from 'chalk';
+
 
 const uploadFigma = new Command();
 const uploadWebFigmaCommand = new Command();
@@ -95,7 +97,7 @@ uploadWebFigmaCommand
             //Validate the figma config
             verifyFigmaWebConfig(ctx);
         } catch (error: any) {
-            console.log(`[smartui] Error: Invalid figma-web config; ${error.message}`);
+            ctx.log.error(chalk.red(`Invalid figma-web config; ${error.message}`));
             return;
         }
 

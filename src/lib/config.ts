@@ -102,10 +102,19 @@ export function verifyFigmaWebConfig(ctx: Context) {
         throw new Error("Missing LT_ACCESS_KEY in Environment Variables");
     }
     let figma = ctx.config && ctx.config?.figma || {};
+    const screenshots = [];
     for (let c of figma?.configs) {
-        if (c.screenshotNames && c.screenshotNames.length > 0 && c.figmaIds && c.figmaIds.length != c.screenshotNames.length) {
-            throw new Error("Mismatch in Figma Ids and Screenshot Names");
+        if (c.screenshot_names && c.screenshot_names.length > 0 && c.figma_ids && c.figma_ids.length != c.screenshot_names.length) {
+            throw new Error("Mismatch in Figma Ids and Screenshot Names in figma config");
+        }
+        for (const name of c.screenshot_names) {
+            screenshots.push(name);
         }
     }
+
+    if (new Set(screenshots).size !== screenshots.length) {
+        throw new Error("Found duplicate screenshot names in figma config");
+    }
+
     return true;
 };
