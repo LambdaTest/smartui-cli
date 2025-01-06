@@ -428,12 +428,12 @@ const FigmaWebConfigSchema: JSONSchemaType<Object> = {
         "web": {
             "type": "object",
             "properties": {
-                "browsers": {
-                    "type": "array",
-                    "items": {
-                        "type": "string",
-                        "enum": ["chrome", "firefox", "safari", "edge"]
-                    }
+                browsers: {
+                    type: "array",
+                    items: { type: "string", enum: [constants.CHROME, constants.FIREFOX, constants.SAFARI, constants.EDGE] },
+                    uniqueItems: true,
+                    maxItems: 4,
+                    errorMessage: `allowed browsers - ${constants.CHROME}, ${constants.FIREFOX}, ${constants.SAFARI}, ${constants.EDGE}`
                 },
                 "viewports": {
                     "type": "array",
@@ -487,7 +487,8 @@ const FigmaWebConfigSchema: JSONSchemaType<Object> = {
                                 "type": "array",
                                 "items": {
                                     "type": "string"
-                                }
+                                },
+                                uniqueItems: true
                             }
                         },
                         "required": ["figma_file_token", "figma_ids"]
@@ -499,10 +500,14 @@ const FigmaWebConfigSchema: JSONSchemaType<Object> = {
                 }
             },
             "required": ["configs"]
+        },
+        smartIgnore: {
+            type: "boolean",
+            errorMessage: "Invalid config; smartIgnore must be true/false"
         }
     },
     "required": ["web", "figma"],
-    additionalProperties: true,
+    additionalProperties: false,
 };
 
 export const validateConfig = ajv.compile(ConfigSchema);

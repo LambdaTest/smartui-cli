@@ -1,14 +1,14 @@
 import { ListrTask, ListrRendererFactory } from 'listr2';
 import { Context } from '../types.js'
-import { captureScreenshots } from '../lib/screenshot.js'
 import chalk from 'chalk';
 import { updateLogContext } from '../lib/logger.js'
 import uploadWebFigma from '../lib/uploadWebFigma.js';
+import fetchFigmaResults from '../lib/fetchFigma.js';
 
 
 export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRendererFactory> => {
     return {
-        title: 'Uploading Web Figma',
+        title: 'Processing Web Figma',
         task: async (ctx, task): Promise<void> => {
             try {
                 ctx.task = task;
@@ -18,6 +18,16 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
                 if (results != 'success') {
                     throw new Error('Uploading Web Figma Screenshot failed');
                 }
+
+                //fetching the figma results
+                if (ctx.build.id) {
+                    task.output = chalk.gray(`Build Id: ${ctx.build.id}`);
+                    let figmaOutput = await fetchFigmaResults(ctx);
+                    const jsonObject = JSON.parse(figmaOutput);
+                    let output = JSON.stringify(jsonObject, null, 2);
+                    task.output = task.output + "\n" + chalk.green(`${output}`); 
+                }
+
                 task.title = 'Web Figma images uploaded successfully to SmartUI';
                 ctx.log.debug(`Web Figma processed: ${results}`);
             } catch (error: any) {
@@ -27,6 +37,6 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
             }
         },
         rendererOptions: { persistentOutput: true },
-        exitOnError: false
+        exitOnError: true
     }
 }

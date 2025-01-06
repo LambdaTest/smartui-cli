@@ -227,7 +227,7 @@ export default class httpClient {
         }, ctx.log)
     }
 
-    getWebFigma(requestBody: any, log: Logger) {
+    processWebFigma(requestBody: any, log: Logger) {
             return this.request({
                 url: "figma-web/upload",
                 method: "POST",
@@ -235,6 +235,17 @@ export default class httpClient {
                     "Content-Type": "application/json",
                 },
                 data: JSON.stringify(requestBody)
+            }, log);
+        }
+
+    fetchWebFigma(buildId: any, log: Logger) {
+            return this.request({
+                url: "figma-web/fetch",
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                params: { buildId }
             }, log);
         }
 }

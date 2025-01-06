@@ -1,4 +1,3 @@
-import { url } from "inspector";
 import { Context } from "../types.js";
 
 export default async (ctx: Context): Promise<string> => {
@@ -21,7 +20,7 @@ export default async (ctx: Context): Promise<string> => {
       git: ctx.git,
     };
 
-    const responseData = await ctx.client.getWebFigma(requestBody, ctx.log);
+    const responseData = await ctx.client.processWebFigma(requestBody, ctx.log);
     ctx.log.debug("responseData : "+  JSON.stringify(responseData));
 
     if (responseData.data.message == "success") {

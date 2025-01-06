@@ -1,7 +1,7 @@
 import fs from 'fs'
 import { Command } from 'commander'
 import { Context } from '../types.js'
-import { color , Listr, ListrDefaultRendererLogLevels, LoggerFormat } from 'listr2'
+import { color, Listr, ListrDefaultRendererLogLevels, LoggerFormat } from 'listr2'
 import auth from '../tasks/auth.js'
 import ctxInit from '../lib/ctx.js'
 import getGitInfo from '../tasks/getGitInfo.js'
@@ -19,8 +19,8 @@ uploadFigma
     .description('Capture screenshots of static sites')
     .argument('<file>', 'figma design config file')
     .option('--markBaseline', 'Mark the uploaded images as baseline')
-    .option('--buildName <buildName>' , 'Name of the build')
-    .action(async function(file, _, command) {
+    .option('--buildName <buildName>', 'Name of the build')
+    .action(async function (file, _, command) {
         let ctx: Context = ctxInit(command.optsWithGlobals());
 
         if (!fs.existsSync(file)) {
@@ -68,27 +68,34 @@ uploadWebFigmaCommand
     .description('Capture screenshots of static sites')
     .argument('<file>', 'figma config config file')
     .option('--markBaseline', 'Mark the uploaded images as baseline')
-    .option('--buildName <buildName>' , 'Name of the build')
-    .action(async function(file, _, command) {
+    .option('--buildName <buildName>', 'Name of the build')
+    .action(async function (file, _, command) {
         let ctx: Context = ctxInit(command.optsWithGlobals());
 
         if (!fs.existsSync(file)) {
-            console.log(`Error: Figma Config file ${file} not found.`);
+            console.log(`Error: figma-web config file ${file} not found.`);
             return;
         }
         try {
             ctx.config = JSON.parse(fs.readFileSync(file, 'utf8'));
             ctx.log.info(JSON.stringify(ctx.config));
             if (!validateWebFigmaConfig(ctx.config)) {
-                ctx.log.info(JSON.stringify(validateWebFigmaConfig.errors, null, 2));
-                const validationError = validateWebFigmaConfig.errors?.[0]?.message;
-                throw new Error(validationError || 'Invalid figma config found in file : ' + file);
+                ctx.log.debug(JSON.stringify(validateWebFigmaConfig.errors, null, 2));
+                // Iterate and add warning for "additionalProperties"
+                validateWebFigmaConfig.errors?.forEach(error => {
+                    if (error.keyword === "additionalProperties") {
+                        ctx.log.warn(`Additional property "${error.params.additionalProperty}" is not allowed.`)
+                    } else {
+                        const validationError = error.message;
+                        throw new Error(validationError || 'Invalid figma-web config found in file : ' + file);
+                    }
+                });
             }
 
             //Validate the figma config
             verifyFigmaWebConfig(ctx);
         } catch (error: any) {
-            console.log(`[smartui] Error: Invalid figma config; ${error.message}`);
+            console.log(`[smartui] Error: Invalid figma-web config; ${error.message}`);
             return;
         }
 
@@ -119,4 +126,4 @@ uploadWebFigmaCommand
 
     })
 
-export { uploadFigma, uploadWebFigmaCommand}
+export { uploadFigma, uploadWebFigmaCommand }
