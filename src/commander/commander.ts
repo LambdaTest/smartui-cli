@@ -1,10 +1,10 @@
 import { Command } from 'commander'
 import exec from './exec.js'
-import { configWeb, configStatic, configFigma} from './config.js'
+import { configWeb, configStatic, configFigma, configWebFigma} from './config.js'
 import capture from './capture.js'
 import upload from './upload.js'
 import { version } from '../../package.json'
-import uploadFigma from './uploadFigma.js'
+import { uploadFigma, uploadWebFigmaCommand  } from './uploadFigma.js'
 
 const program = new Command();
 
@@ -20,6 +20,9 @@ program
     .addCommand(upload)
     .addCommand(configFigma)
     .addCommand(uploadFigma)
+    .addCommand(configWebFigma)
+    .addCommand(uploadWebFigmaCommand)
+
     
 
 export default program;
