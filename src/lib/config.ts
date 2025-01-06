@@ -107,8 +107,10 @@ export function verifyFigmaWebConfig(ctx: Context) {
         if (c.screenshot_names && c.screenshot_names.length > 0 && c.figma_ids && c.figma_ids.length != c.screenshot_names.length) {
             throw new Error("Mismatch in Figma Ids and Screenshot Names in figma config");
         }
-        for (const name of c.screenshot_names) {
-            screenshots.push(name);
+        if (isValidArray(c.screenshot_names)) {
+            for (const name of c.screenshot_names) {
+                screenshots.push(name);
+            }
         }
     }
 
@@ -118,3 +120,7 @@ export function verifyFigmaWebConfig(ctx: Context) {
 
     return true;
 };
+
+function isValidArray(input) {
+    return Array.isArray(input) && input.length > 0;
+}
