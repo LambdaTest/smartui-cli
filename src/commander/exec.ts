@@ -20,7 +20,13 @@ command
     .argument('<command...>', 'Command supplied for running tests')
     .option('-P, --port <number>', 'Port number for the server')
     .option('--fetch-results [filename]', 'Fetch results and optionally specify an output file, e.g., <filename>.json')
+    .option('--buildName <string>', 'Specify the build name')
     .action(async function(execCommand, _, command) {
+        const options = command.optsWithGlobals();
+        if (options.buildName === '') {
+            console.log(`Error: The '--buildName' option cannot be an empty string.`);
+            process.exit(1);
+        }
         let ctx: Context = ctxInit(command.optsWithGlobals());
 
         if (!which.sync(execCommand[0], { nothrow: true })) {

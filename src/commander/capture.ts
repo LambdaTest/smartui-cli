@@ -19,7 +19,13 @@ command
     .option('-C, --parallel [number]', 'Specify the number of instances per browser', parseInt)
     .option('-F, --force', 'forcefully apply the specified parallel instances per browser')
     .option('--fetch-results [filename]', 'Fetch results and optionally specify an output file, e.g., <filename>.json')
+    .option('--buildName <string>', 'Specify the build name')
     .action(async function(file, _, command) {
+        const options = command.optsWithGlobals();
+        if (options.buildName === '') {
+            console.log(`Error: The '--buildName' option cannot be an empty string.`);
+            process.exit(1);
+        }
         let ctx: Context = ctxInit(command.optsWithGlobals());
         
         if (!fs.existsSync(file)) {
