@@ -32,9 +32,10 @@ export default class httpClient {
     }
 
     async request(config: AxiosRequestConfig, log: Logger): Promise<Record<string, any>> {
-        const requestData = typeof config.data === 'object' ? JSON.stringify(config.data) : config.data;
-        log.debug(`http request: ${config.method} ${config.url} ${requestData}`);
-
+        log.debug(`http request: ${config.method} ${config.url}`);
+        if(config && config.data) {
+            log.debug(config.data);
+        }
         return this.axiosInstance.request(config)
             .then(resp => {
                 log.debug(`http response: ${JSON.stringify({
@@ -51,7 +52,7 @@ export default class httpClient {
                         headers: error.response.headers,
                         body: error.response.data
                     })}`);
-                    throw new Error(error.response.data.error?.message || error.response.data.message);
+                    throw new Error(error.response.data.error?.message || error.response.data.message || error.response.data);
                 }
                 if (error.request) {
                     log.debug(`http request failed: ${error.toJSON()}`);
@@ -83,13 +84,14 @@ export default class httpClient {
         }
     }
     
-    createBuild(git: Git, config: any, log: Logger) {
+    createBuild(git: Git, config: any, log: Logger, buildName: string) {
         return this.request({
             url: '/build',
             method: 'POST',
             data: {
                 git,
-                config
+                config,
+                buildName
             }
         }, log)
     }
@@ -267,4 +269,26 @@ export default class httpClient {
             maxContentLength: Infinity, // prevent axios from limiting the content size
         }, ctx.log)
     }
+  
+    processWebFigma(requestBody: any, log: Logger) {
+            return this.request({
+                url: "figma-web/upload",
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                data: JSON.stringify(requestBody)
+            }, log);
+        }
+
+    fetchWebFigma(buildId: any, log: Logger) {
+            return this.request({
+                url: "figma-web/fetch",
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                params: { buildId }
+            }, log);
+        }
 }

@@ -321,6 +321,41 @@ export default {
         'iPhone XR': { os: 'ios', viewport: { width: 414, height: 896 } },
         'iPhone XS': { os: 'ios', viewport: { width: 375, height: 812 } },
         'iPhone XS Max': { os: 'ios', viewport: { width: 414, height: 896 } },
+        'Galaxy A10s': { os: 'android', viewport: { width: 360, height: 640 } },
+        'Galaxy A11': { os: 'android', viewport: { width: 412, height: 732 } },
+        'Galaxy A13': { os: 'android', viewport: { width: 412, height: 732 } },
+        'Galaxy A52s 5G': { os: 'android', viewport: { width: 384, height: 718 } },
+        'Galaxy A53 5G': { os: 'android', viewport: { width: 412, height: 915 } },
+        'Galaxy Tab A 10.1 (2019)': { os: 'android', viewport: { width: 800, height: 1280 } },
+        'Galaxy Tab S9': { os: 'android', viewport: { width: 753, height: 1069 } },
+        'Honor X9a 5G': { os: 'android', viewport: { width: 360, height: 678 } },
+        'Huawei P30 Lite': { os: 'android', viewport: { width: 360, height: 647 } },
+        'Huawei P50 Pro': { os: 'android', viewport: { width: 412, height: 915 } },
+        'iPad Pro 13 (2024)': { os: 'ios', viewport: { width: 1032, height: 1376 } },
+        'iPad Pro 11 (2024)': { os: 'ios', viewport: { width: 834, height: 1210 } },
+        'iPad Air 13 (2024)': { os: 'ios', viewport: { width: 1024, height: 1366 } },
+        'iPad Air 11 (2024)': { os: 'ios', viewport: { width: 820, height: 1180 } },
+        'iPad 10.9 (2022)': { os: 'ios', viewport: { width: 820, height: 1180 } },
+        'iPhone 16': { os: 'ios', viewport: { width: 393, height: 852 } },
+        'iPhone 16 Plus': { os: 'ios', viewport: { width: 430, height: 932 } },
+        'iPhone 16 Pro': { os: 'ios', viewport: { width: 402, height: 874 } },
+        'iPhone 16 Pro Max': { os: 'ios', viewport: { width: 440, height: 956 } },
+        'Motorola Edge 40': { os: 'android', viewport: { width: 412, height: 915 } },
+        'Motorola Edge 30': { os: 'android', viewport: { width: 432, height: 814 } },
+        'Moto G22': { os: 'android', viewport: { width: 412, height: 767 } },
+        'Moto G54 5G': { os: 'android', viewport: { width: 432, height: 810 } },
+        'Moto G71 5G': { os: 'android', viewport: { width: 412, height: 732 } },
+        'Pixel Tablet': { os: 'android', viewport: { width: 800, height: 1100 } },
+        'Pixel 6a': { os: 'android', viewport: { width: 412, height: 766 } },
+        'Pixel 7a': { os: 'android', viewport: { width: 412, height: 766 } },
+        'Pixel 9': { os: 'android', viewport: { width: 412, height: 924 } },
+        'Pixel 9 Pro': { os: 'android', viewport: { width: 412, height: 915 } },
+        'Pixel 9 Pro XL': { os: 'android', viewport: { width: 448, height: 998 } },
+        'Redmi 9A': { os: 'android', viewport: { width: 360, height: 800 } },
+        'Redmi Note 13 Pro': { os: 'android', viewport: { width: 412, height: 869 } },
+        'Aquos Sense 5G': { os: 'android', viewport: { width: 393, height: 731 } },
+        'Xperia 10 IV': { os: 'android', viewport: { width: 412, height: 832 } },
+        'Honeywell CT40': { os: 'android', viewport: { width: 360, height: 512 } },
     },
 
     FIGMA_API: 'https://api.figma.com/v1/',
@@ -335,5 +370,30 @@ export default {
                 ]
             }
         ]
+    },
+    WEB_FIGMA_CONFIG: {
+        web: {
+            browsers: [
+                'chrome',
+                'firefox',
+                'safari',
+                'edge'
+            ]
+        },
+        figma: {
+            "depth": 2,
+            "configs": [
+                {
+                  "figma_file_token": "<token>",
+                  "figma_ids": ["id-1", "id-2"],
+                  "screenshot_names": ["homepage", "about"]
+                },
+                {
+                  "figma_file_token": "<token>",
+                  "figma_ids": ["id-3", "id-4"],
+                  "screenshot_names": ["xyz", "abc"]
+                },
+              ]
+        }
     }
 }

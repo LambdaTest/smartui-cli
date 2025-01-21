@@ -294,6 +294,16 @@ const SnapshotSchema: JSONSchemaType<Snapshot> = {
                         },
                     }
                 },
+                ignoreType: {
+                    type: "array",
+                    items: {
+                        type: "string", minLength: 1,
+                        enum: ["default", "layout", "images", "text", "colors", "dimensions", "position", "structure"],
+                        errorMessage: "Invalid snapshot options;ignoreType cannot be empty"
+                    },
+                    uniqueItems: true,
+                    errorMessage: "Invalid snapshot options; ignoreType must be an array of unique values from default, layout, images, text, colors, dimensions, position, structure"
+                },
                 web: {
                     type: "object",
                     properties: {
@@ -412,7 +422,96 @@ const FigmaDesignConfigSchema: JSONSchemaType<FigmaDesignConfig> = {
     additionalProperties: false
 };
 
+const FigmaWebConfigSchema: JSONSchemaType<Object> = {
+    type: "object",
+    "properties": {
+        "web": {
+            "type": "object",
+            "properties": {
+                browsers: {
+                    type: "array",
+                    items: { type: "string", enum: [constants.CHROME, constants.FIREFOX, constants.SAFARI, constants.EDGE] },
+                    uniqueItems: true,
+                    maxItems: 4,
+                    errorMessage: `allowed browsers - ${constants.CHROME}, ${constants.FIREFOX}, ${constants.SAFARI}, ${constants.EDGE}`
+                },
+                "viewports": {
+                    "type": "array",
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer",
+                            "minimum": 1
+                        },
+                        "minItems": 1
+                    }
+                }
+            },
+            "required": ["browsers"]
+        },
+        "figma": {
+            "type": "object",
+            "properties": {
+                depth: {
+                    type: "integer",
+                    minimum: 2,
+                    errorMessage: "Depth must be an integer and greater than 1"
+                },
+                "configs": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "figma_file_token": {
+                                "type": "string",
+                                minLength: 1,
+                                errorMessage: "figma_file_token is mandatory and cannot be empty"
+
+                            },
+                            "figma_ids": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string",
+                                    minLength: 1,
+                                    errorMessage: "Each ID in figma_ids must be a non-empty string"
+                                },
+                                minItems: 1,
+                                uniqueItems: true,
+                                errorMessage: {
+                                    type: "figma_ids must be an array of strings",
+                                    minItems: "figma_ids cannot be empty",
+                                    uniqueItems: "figma_ids must contain unique values"
+                                }
+                            },
+                            "screenshot_names": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                },
+                                uniqueItems: false
+                            }
+                        },
+                        "required": ["figma_file_token", "figma_ids"]
+                    },
+                    uniqueItems: true,
+                    errorMessage: {
+                        uniqueItems: "Each entry in the figma configs must be unique"
+                    }
+                }
+            },
+            "required": ["configs"]
+        },
+        smartIgnore: {
+            type: "boolean",
+            errorMessage: "Invalid config; smartIgnore must be true/false"
+        }
+    },
+    "required": ["web", "figma"],
+    additionalProperties: false,
+};
+
 export const validateConfig = ajv.compile(ConfigSchema);
 export const validateWebStaticConfig = ajv.compile(WebStaticConfigSchema);
 export const validateSnapshot = ajv.compile(SnapshotSchema);
 export const validateFigmaDesignConfig = ajv.compile(FigmaDesignConfigSchema);
+export const validateWebFigmaConfig = ajv.compile(FigmaWebConfigSchema);
