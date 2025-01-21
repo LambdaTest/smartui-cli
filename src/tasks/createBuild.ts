@@ -1,7 +1,7 @@
-import { ListrTask, ListrRendererFactory } from 'listr2';
-import { Context } from '../types.js'
+import {ListrRendererFactory, ListrTask} from 'listr2';
+import {Context} from '../types.js'
 import chalk from 'chalk';
-import { updateLogContext } from '../lib/logger.js';
+import {updateLogContext} from '../lib/logger.js';
 
 export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRendererFactory>  =>  {
     return {
@@ -16,7 +16,9 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
                     name: resp.data.buildName,
                     url: resp.data.buildURL,
                     baseline: resp.data.baseline,
+                    useKafkaFlow: resp.data.useKafkaFlow || false,
                 }
+
                 task.output = chalk.gray(`build id: ${resp.data.buildId}`);
                 task.title = 'SmartUI build created'
             } catch (error: any) {

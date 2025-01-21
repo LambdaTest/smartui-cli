@@ -290,7 +290,7 @@ export default class Queue {
                 if (!drop) {
                     let { processedSnapshot, warnings } = await processSnapshot(snapshot, this.ctx);
 
-                    if(this.ctx.env.USE_KAFKA_FLOW) {
+                    if(this.ctx.build.useKafkaFlow) {
                         const snapshotUuid = uuidv4();
                         const presignedResponse = await this.ctx.client.getS3PresignedURLForSnapshotUpload(this.ctx, processedSnapshot.name, snapshotUuid);
                         const uploadUrl = presignedResponse.data.url;

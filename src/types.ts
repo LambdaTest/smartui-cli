@@ -70,7 +70,6 @@ export interface Env {
     BASELINE_BRANCH: string | undefined;
     CURRENT_BRANCH: string | undefined;
     PROJECT_NAME: string | undefined;
-    USE_KAFKA_FLOW: boolean;
 }
 
 export interface Snapshot {
@@ -134,6 +133,7 @@ export interface Build {
     name: string;
     url: string;
     baseline: boolean;
+    useKafkaFlow: boolean;
 }
 
 export interface WebConfig {
