@@ -115,12 +115,11 @@ export default class httpClient {
 
     uploadSnapshot(ctx: Context, snapshot: ProcessedSnapshot) {
         return this.request({
-            url: `/builds/${ctx.build.id}/snapshot?async=true`,
+            url: `/builds/${ctx.build.id}/snapshot`,
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             data: { 
                 snapshot,
-                async: false,
                 test: {
                     type: ctx.testType,
                     source: 'cli'
