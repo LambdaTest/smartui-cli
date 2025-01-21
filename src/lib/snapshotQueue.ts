@@ -1,6 +1,7 @@
 import { Snapshot, Context} from "../types.js";
 import constants from "./constants.js";
 import processSnapshot from "./processSnapshot.js"
+import { v4 as uuidv4 } from 'uuid';
 
 export default class Queue {
     private snapshots: Array<Snapshot> = [];
@@ -288,7 +289,18 @@ export default class Queue {
 
                 if (!drop) {
                     let { processedSnapshot, warnings } = await processSnapshot(snapshot, this.ctx);
-                    await this.ctx.client.uploadSnapshot(this.ctx, processedSnapshot);
+
+                    if(this.ctx.build && this.ctx.build.useKafkaFlow) {
+                        const snapshotUuid = uuidv4();
+                        const presignedResponse = await this.ctx.client.getS3PresignedURLForSnapshotUpload(this.ctx, processedSnapshot.name, snapshotUuid);
+                        const uploadUrl = presignedResponse.data.url;
+                        
+                        await this.ctx.client.uploadSnapshotToS3(this.ctx, uploadUrl, processedSnapshot)
+                        await this.ctx.client.processSnapshot(this.ctx, processedSnapshot, snapshotUuid);
+                    } else {
+                        await this.ctx.client.uploadSnapshot(this.ctx, processedSnapshot);
+                    }
+
                     this.ctx.totalSnapshots++;
                     this.processedSnapshots.push({ name: snapshot.name, warnings });
                 }

@@ -17,7 +17,7 @@ export default (): Env => {
         LT_SDK_DEBUG,
         BASELINE_BRANCH,
         CURRENT_BRANCH,
-        PROJECT_NAME
+        PROJECT_NAME,
     } = process.env
         
     return {
