@@ -61,6 +61,7 @@ export async function launchBrowsers(ctx: Context): Promise<Record<string, Brows
                     browsers[constants.FIREFOX] = await firefox.launch(launchOptions);
                     break;
                 case constants.EDGE:
+                    launchOptions.args = ['--headless=new'];
                     browsers[constants.EDGE] = await chromium.launch({channel: constants.EDGE_CHANNEL, ...launchOptions});
                     break;
             }
