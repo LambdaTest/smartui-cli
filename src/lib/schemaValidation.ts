@@ -390,6 +390,10 @@ const SnapshotSchema: JSONSchemaType<Snapshot> = {
                 loadDomContent: {
                     type: "boolean",
                     errorMessage: "Invalid snapshot options; loadDomContent must be a boolean"
+                },
+                sessionId: {
+                    type: "string",
+                    errorMessage: "Invalid snapshot options; sessionId must be a string"
                 }
             },
             additionalProperties: false

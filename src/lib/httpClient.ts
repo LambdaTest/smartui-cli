@@ -174,6 +174,29 @@ export default class httpClient {
     }
 
 
+    getSmartUICapabilities(sessionId: string, config: any, git: any, log: Logger) {
+        console.log(`get smartui caps api called with sessionId: ${sessionId}`);
+        const serializedConfig = JSON.stringify(config);
+        const serializedGit = JSON.stringify(git);
+        console.log(`Serialized Config: ${serializedConfig}`);
+        console.log(`Serialized Git: ${serializedGit}`);
+        return this.request({
+            url: '/sessions/capabilities',
+            method: 'GET',
+            params: {
+                sessionId: sessionId,
+                config: serializedConfig,
+                git: serializedGit,
+            },
+            headers: {
+                projectToken: '',
+                projectName: '',
+                username: '',
+                accessKey: ''
+            },
+        }, log);
+    }
+    
     finalizeBuild(buildId: string, totalSnapshots: number, log: Logger) {
         let params: Record<string, string | number> = { buildId };
         if (totalSnapshots > -1) params.totalSnapshots = totalSnapshots;
@@ -185,9 +208,33 @@ export default class httpClient {
         }, log)
     }
 
-    uploadSnapshot(ctx: Context, snapshot: ProcessedSnapshot) {
+    async finalizeBuildForCapsWithToken(buildId: string, totalSnapshots: number, projectToken: string, log: Logger): Promise<void> {
+        try {
+            let params: Record<string, string | number> = { buildId };
+            if (totalSnapshots > -1) params.totalSnapshots = totalSnapshots;
+    
+            await this.request({
+                url: '/build',
+                method: 'DELETE',
+                params: params,
+                headers: {
+                    projectToken: projectToken, // Use projectToken dynamically
+                },
+            }, log);
+    
+            log.debug(`Successfully finalized build ${buildId} with ${totalSnapshots} snapshots and projectToken ${projectToken}`);
+        } catch (error: any) {
+            log.debug(`Failed to finalize build ${buildId}: ${error.message}`);
+            throw error; // Re-throw error for further handling if necessary
+        }
+    }
+    
+
+    uploadSnapshot(ctx: Context, snapshot: ProcessedSnapshot, capsBuildId: string) {
+        // Use capsBuildId if provided, otherwise fallback to ctx.build.id
+        const buildId = capsBuildId !== '' ? capsBuildId : ctx.build.id;
         return this.request({
-            url: `/builds/${ctx.build.id}/snapshot`,
+            url: `/builds/${buildId}/snapshot`,
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             data: {
@@ -197,7 +244,7 @@ export default class httpClient {
                     source: 'cli'
                 }
             }
-        }, ctx.log)
+        }, ctx.log);
     }
 
     processSnapshot(ctx: Context, snapshot: ProcessedSnapshot, snapshotUuid: string) {
@@ -217,6 +264,28 @@ export default class httpClient {
             }
         }, ctx.log)
     }
+    uploadSnapshotForCaps(ctx: Context, snapshot: ProcessedSnapshot, capsBuildId: string, capsProjectToken: string) {
+        // Use capsBuildId if provided, otherwise fallback to ctx.build.id
+        const buildId = capsBuildId !== '' ? capsBuildId : ctx.build.id;
+    
+        return this.request({
+            url: `/builds/${buildId}/snapshot`,
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                projectToken: capsProjectToken !== '' ? capsProjectToken : this.projectToken // Use capsProjectToken dynamically
+            },
+            data: { 
+                snapshot,
+                test: {
+                    type: ctx.testType,
+                    source: 'cli'
+                }
+            }
+        }, ctx.log);
+    }
+    
+    
 
     uploadScreenshot(
         { id: buildId, name: buildName, baseline }: Build,

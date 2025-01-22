@@ -13,6 +13,7 @@ export interface Context {
     server?: FastifyInstance<Server, IncomingMessage, ServerResponse>;
     client: httpClient;
     browser?: Browser;
+    authenticatedInitially?: boolean;
     snapshotQueue?: snapshotQueue;
     config: {
         web?: WebConfig;
@@ -57,6 +58,10 @@ export interface Context {
     testType?: string;
     isStartExec ?: boolean;
     isSnapshotCaptured ?: boolean;
+    sessionCapabilitiesMap?: Map<string, any[]>;
+    buildToSnapshotCountMap?: Map<string, number>;
+    sessionToBuildMap?: Map<string, string>;
+    buildToProjectTokenMap?: Map<string, string>;
 }
 
 export interface Env {
@@ -113,7 +118,8 @@ export interface Snapshot {
             orientation?: string
         },
         loadDomContent?: boolean;
-        ignoreType?: string[]
+        ignoreType?: string[],
+        sessionId?: string
     }
 }
 
