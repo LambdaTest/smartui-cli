@@ -1,3 +1,4 @@
+import { access } from "fs";
 import { Snapshot, Context} from "../types.js";
 import constants from "./constants.js";
 import processSnapshot from "./processSnapshot.js"
@@ -292,6 +293,21 @@ export default class Queue {
                 }
 
                 if (!drop) {
+                    // Fetch sessionId from snapshot options if present
+                    const sessionId = snapshot?.options?.sessionId;
+                    let capsBuildId = ''
+                    let capsProjectToken = '';
+                    let useCapsBuildId = false
+
+                    // Fetch projectToken and buildId if sessionId exists in sessionCapabilitiesMap
+                    if (sessionId && this.ctx.sessionCapabilitiesMap?.has(sessionId)) {
+                        const cachedCapabilities = this.ctx.sessionCapabilitiesMap.get(sessionId);
+                        capsProjectToken = cachedCapabilities?.projectToken || '';
+                        capsBuildId = cachedCapabilities?.buildId || '';
+                        useCapsBuildId = !!capsBuildId; // Set to true if capsBuildId is not empty
+                    }
+
+                    // Process and upload snapshot
                     let { processedSnapshot, warnings } = await processSnapshot(snapshot, this.ctx);
 
                     if(this.ctx.build && this.ctx.build.useKafkaFlow) {
@@ -306,8 +322,20 @@ export default class Queue {
                     }
 
                     this.ctx.totalSnapshots++;
+                    if (useCapsBuildId) {
+                        await this.ctx.client.uploadSnapshotForCaps(this.ctx, processedSnapshot, capsBuildId, capsProjectToken);
+                        // Increment snapshot count for the specific buildId
+                        const currentCount = this.ctx.buildToSnapshotCountMap.get(capsBuildId) || 0;
+                        this.ctx.buildToSnapshotCountMap.set(capsBuildId, currentCount + 1);
+                    } else {
+                        await this.ctx.client.uploadSnapshot(this.ctx, processedSnapshot, capsBuildId);
+                        // Increment global totalSnapshots
+                        this.ctx.totalSnapshots++;
+                    }
+
                     this.processedSnapshots.push({ name: snapshot.name, warnings });
                 }
+                
             } catch (error: any) {
                 this.ctx.log.debug(`snapshot failed; ${error}`);
                 this.processedSnapshots.push({ name: snapshot.name, error: error.message });

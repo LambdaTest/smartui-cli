@@ -36,6 +36,40 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 		try {
 			let { snapshot, testType } = request.body;
 			if (!validateSnapshot(snapshot)) throw new Error(validateSnapshot.errors[0].message);
+		
+			// Fetch sessionId from snapshot options if present
+			const sessionId = snapshot?.options?.sessionId;
+			let capsBuildId = ''
+		
+			if (sessionId) {
+				// Check if sessionId exists in the map
+				if (ctx.sessionCapabilitiesMap?.has(sessionId)) {
+					// Use cached capabilities if available
+					const cachedCapabilities = ctx.sessionCapabilitiesMap.get(sessionId);
+					capsBuildId = cachedCapabilities?.buildId || ''
+					if (capsBuildId) {
+						ctx.sessionToBuildMap.set(sessionId, capsBuildId);
+						ctx.buildToProjectTokenMap.set(capsBuildId, cachedCapabilities?.projectToken || '');
+					}
+				} else {
+					// If not cached, fetch from API and cache it
+					try {
+						let fetchedCapabilitiesResp = await ctx.client.getSmartUICapabilities(sessionId, ctx.config, ctx.git, ctx.log);
+						ctx.sessionCapabilitiesMap.set(sessionId, fetchedCapabilitiesResp);
+						capsBuildId = fetchedCapabilitiesResp?.buildId || ''
+						console.log(JSON.stringify(fetchedCapabilitiesResp))
+
+						if (capsBuildId) {
+							ctx.sessionToBuildMap.set(sessionId, capsBuildId);
+							ctx.buildToProjectTokenMap.set(capsBuildId, fetchedCapabilitiesResp.data?.projectToken || '');
+						}
+					} catch (error: any) {
+						console.log(`Failed to fetch capabilities for sessionId ${sessionId}: ${error.message}`);
+					}
+				}
+			}
+			console.log("I have success in retrive")
+
 			ctx.testType = testType;
 			ctx.snapshotQueue?.enqueue(snapshot);
 			ctx.isSnapshotCaptured = true;

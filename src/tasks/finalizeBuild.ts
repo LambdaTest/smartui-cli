@@ -13,15 +13,30 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
             updateLogContext({task: 'finalizeBuild'});
 
             try {
-                await ctx.client.finalizeBuild(ctx.build.id, ctx.totalSnapshots, ctx.log);
-                task.output = chalk.gray(`build url: ${ctx.build.url}`);
-                task.title = 'Finalized build';
+                if (ctx.build.id) {
+                    await ctx.client.finalizeBuild(ctx.build.id, ctx.totalSnapshots, ctx.log);
+                }
             } catch (error: any) {
                 ctx.log.debug(error);
                 task.output = chalk.gray(error.message);
                 throw new Error('Finalize build failed');
             }
 
+            if (ctx.buildToSnapshotCountMap) {
+                for (const [buildId, totalSnapshots] of ctx.buildToSnapshotCountMap.entries()) {
+                    try {
+                        // Fetch projectToken from buildToProjectTokenMap
+                        const projectToken = ctx.buildToProjectTokenMap?.get(buildId) || '';
+                        await ctx.client.finalizeBuildForCapsWithToken(buildId, totalSnapshots, projectToken, ctx.log);
+                    } catch (error: any) {
+                        ctx.log.debug(`Error finalizing build ${buildId}: ${error.message}`);
+                    }
+                }
+            }
+
+            task.output = chalk.gray(`build url: ${ctx.build.url}`);
+            task.title = 'Finalized build';
+            
             // cleanup and upload logs
             try {
                 await ctx.browser?.close();
