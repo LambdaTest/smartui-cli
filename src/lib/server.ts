@@ -40,7 +40,7 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 			// Fetch sessionId from snapshot options if present
 			const sessionId = snapshot?.options?.sessionId;
 			let capsBuildId = ''
-		
+
 			if (sessionId) {
 				// Check if sessionId exists in the map
 				if (ctx.sessionCapabilitiesMap?.has(sessionId)) {
@@ -61,14 +61,13 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 
 						if (capsBuildId) {
 							ctx.sessionToBuildMap.set(sessionId, capsBuildId);
-							ctx.buildToProjectTokenMap.set(capsBuildId, fetchedCapabilitiesResp.data?.projectToken || '');
+							ctx.buildToProjectTokenMap.set(capsBuildId, fetchedCapabilitiesResp?.projectToken || '');
 						}
 					} catch (error: any) {
 						console.log(`Failed to fetch capabilities for sessionId ${sessionId}: ${error.message}`);
 					}
 				}
 			}
-			console.log("I have success in retrive")
 
 			ctx.testType = testType;
 			ctx.snapshotQueue?.enqueue(snapshot);

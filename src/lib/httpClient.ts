@@ -47,7 +47,9 @@ export default class httpClient {
 
 
         this.axiosInstance.interceptors.request.use((config) => {
-            config.headers['projectToken'] = this.projectToken;
+            if (!config.headers['projectToken']) {
+                config.headers['projectToken'] = this.projectToken;
+            }
             config.headers['projectName'] = this.projectName;
             config.headers['username'] = this.username;
             config.headers['accessKey'] = this.accessKey;
@@ -175,18 +177,15 @@ export default class httpClient {
 
 
     getSmartUICapabilities(sessionId: string, config: any, git: any, log: Logger) {
-        console.log(`get smartui caps api called with sessionId: ${sessionId}`);
-        const serializedConfig = JSON.stringify(config);
-        const serializedGit = JSON.stringify(git);
-        console.log(`Serialized Config: ${serializedConfig}`);
-        console.log(`Serialized Git: ${serializedGit}`);
         return this.request({
             url: '/sessions/capabilities',
             method: 'GET',
             params: {
                 sessionId: sessionId,
-                config: serializedConfig,
-                git: serializedGit,
+            },
+            data: {
+                git,
+                config
             },
             headers: {
                 projectToken: '',
@@ -208,33 +207,24 @@ export default class httpClient {
         }, log)
     }
 
-    async finalizeBuildForCapsWithToken(buildId: string, totalSnapshots: number, projectToken: string, log: Logger): Promise<void> {
-        try {
-            let params: Record<string, string | number> = { buildId };
-            if (totalSnapshots > -1) params.totalSnapshots = totalSnapshots;
-    
-            await this.request({
-                url: '/build',
-                method: 'DELETE',
-                params: params,
-                headers: {
-                    projectToken: projectToken, // Use projectToken dynamically
-                },
-            }, log);
-    
-            log.debug(`Successfully finalized build ${buildId} with ${totalSnapshots} snapshots and projectToken ${projectToken}`);
-        } catch (error: any) {
-            log.debug(`Failed to finalize build ${buildId}: ${error.message}`);
-            throw error; // Re-throw error for further handling if necessary
-        }
+    finalizeBuildForCapsWithToken(buildId: string, totalSnapshots: number, projectToken: string, log: Logger) {
+        let params: Record<string, string | number> = { buildId };
+        if (totalSnapshots > -1) params.totalSnapshots = totalSnapshots;
+        return this.request({
+            url: '/build',
+            method: 'DELETE',
+            params: params,
+            headers: {
+                projectToken: projectToken, // Use projectToken dynamically
+            },
+        }, log);
     }
     
 
-    uploadSnapshot(ctx: Context, snapshot: ProcessedSnapshot, capsBuildId: string) {
+    uploadSnapshot(ctx: Context, snapshot: ProcessedSnapshot) {
         // Use capsBuildId if provided, otherwise fallback to ctx.build.id
-        const buildId = capsBuildId !== '' ? capsBuildId : ctx.build.id;
         return this.request({
-            url: `/builds/${buildId}/snapshot`,
+            url: `/builds/${ctx.build.id}/snapshot`,
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             data: {
@@ -244,7 +234,7 @@ export default class httpClient {
                     source: 'cli'
                 }
             }
-        }, ctx.log);
+        }, ctx.log)
     }
 
     processSnapshot(ctx: Context, snapshot: ProcessedSnapshot, snapshotUuid: string) {

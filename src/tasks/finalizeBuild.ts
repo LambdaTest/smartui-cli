@@ -22,17 +22,17 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
                 throw new Error('Finalize build failed');
             }
 
-            if (ctx.buildToSnapshotCountMap) {
-                for (const [buildId, totalSnapshots] of ctx.buildToSnapshotCountMap.entries()) {
-                    try {
-                        // Fetch projectToken from buildToProjectTokenMap
-                        const projectToken = ctx.buildToProjectTokenMap?.get(buildId) || '';
-                        await ctx.client.finalizeBuildForCapsWithToken(buildId, totalSnapshots, projectToken, ctx.log);
-                    } catch (error: any) {
-                        ctx.log.debug(`Error finalizing build ${buildId}: ${error.message}`);
-                    }
+            for (const [buildId, totalSnapshots] of ctx.buildToSnapshotCountMap.entries()) {
+            
+                try {
+                    // Fetch projectToken from buildToProjectTokenMap
+                    const projectToken = ctx.buildToProjectTokenMap?.get(buildId) || '';
+                    await ctx.client.finalizeBuildForCapsWithToken(buildId, totalSnapshots, projectToken, ctx.log);
+                } catch (error: any) {
+                    ctx.log.debug(`Error finalizing build ${buildId}: ${error.message}`);
                 }
             }
+            
 
             task.output = chalk.gray(`build url: ${ctx.build.url}`);
             task.title = 'Finalized build';
