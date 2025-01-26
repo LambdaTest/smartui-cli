@@ -304,7 +304,9 @@ export default class Queue {
                         const cachedCapabilities = this.ctx.sessionCapabilitiesMap.get(sessionId);
                         capsProjectToken = cachedCapabilities?.projectToken || '';
                         capsBuildId = cachedCapabilities?.buildId || '';
-                        useCapsBuildId = !!capsBuildId; // Set to true if capsBuildId is not empty
+                        if (capsBuildId != '' && capsProjectToken != '') {
+                            useCapsBuildId = true; // Set to true if capsBuildId is not empty
+                        }
                     }
 
                     // Process and upload snapshot
@@ -328,17 +330,18 @@ export default class Queue {
                         const currentCount = this.ctx.buildToSnapshotCountMap.get(capsBuildId) || 0;
                         this.ctx.buildToSnapshotCountMap.set(capsBuildId, currentCount + 1);
                     } else {
-                        await this.ctx.client.uploadSnapshot(this.ctx, processedSnapshot, capsBuildId);
-                        // Increment global totalSnapshots
+                        if (!this.ctx.build?.id) {
+                            throw new Error('Build ID is empty');
+                        }
+                        await this.ctx.client.uploadSnapshot(this.ctx, processedSnapshot);
                         this.ctx.totalSnapshots++;
                     }
-
-                    this.processedSnapshots.push({ name: snapshot.name, warnings });
+                    this.processedSnapshots.push({ name: snapshot?.name, warnings });
                 }
                 
             } catch (error: any) {
                 this.ctx.log.debug(`snapshot failed; ${error}`);
-                this.processedSnapshots.push({ name: snapshot.name, error: error.message });
+                this.processedSnapshots.push({ name: snapshot?.name, error: error.message });
             }
             // Close open browser contexts and pages
             if (this.ctx.browser) {
