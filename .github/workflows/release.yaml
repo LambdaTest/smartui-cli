@@ -18,6 +18,9 @@ jobs:
         node-version: '18'
         registry-url: 'https://registry.npmjs.org'
 
+    - name: Remove package-lock.json
+      run: rm -rf package-lock.json
+
     - name: Install pnpm
       run: npm install -g pnpm
 
