@@ -135,6 +135,7 @@ export interface Build {
     name: string;
     url: string;
     baseline: boolean;
+    useKafkaFlow: boolean;
 }
 
 export interface WebConfig {
