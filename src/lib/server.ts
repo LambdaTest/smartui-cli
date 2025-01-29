@@ -36,6 +36,7 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 			let { snapshot, testType } = request.body;
 			if (!validateSnapshot(snapshot)) throw new Error(validateSnapshot.errors[0].message);
 			ctx.testType = testType;
+			console.log(`before enqueue ${ctx.build.id}`)
 			ctx.snapshotQueue?.enqueue(snapshot);
 			replyCode = 200;
 			replyBody = { data: { message: "success", warnings: [] }};
@@ -47,6 +48,52 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 		
 		return reply.code(replyCode).send(replyBody);
 	});
+
+	server.post('/stop', opts, async (_, reply) => {
+		let replyCode: number;
+		let replyBody: Record<string, any>;
+		try {
+			if(ctx.config.delayedUpload){
+				ctx.log.debug("started after processing because of delayedUpload")
+				ctx.snapshotQueue?.startProcessingfunc()
+			}
+			await new Promise((resolve) => {
+				const intervalId = setInterval(() => {
+					if (ctx.snapshotQueue?.isEmpty() && !ctx.snapshotQueue?.isProcessing()) {
+						clearInterval(intervalId);
+						resolve();
+					}
+				}, 1000);
+			})
+			await ctx.client.finalizeBuild(ctx.build.id, ctx.totalSnapshots, ctx.log);
+			await ctx.browser?.close();
+			console.log(`Closed browser`);
+			if (ctx.server){
+				ctx.server.close();
+			}
+			console.log(`Closed server`);
+			let resp = await ctx.client.getS3PreSignedURL(ctx);
+			console.log(`resp from presigned url ${	resp.data.url}`)
+            await ctx.client.uploadLogs(ctx, resp.data.url);
+			replyCode = 200;
+			replyBody = { data: { message: "success", type: "DELETE" } };
+		} catch (error: any) {
+			ctx.log.debug(error);
+			ctx.log.debug(`stop endpoint failed; ${error}`);
+			replyCode = 500;
+			replyBody = { error: { message: error.message } };
+		}
+	
+		// Step 5: Return the response
+		return reply.code(replyCode).send(replyBody);
+	});
+
+	// Add /ping route to check server status
+	server.get('/ping', opts, (_, reply) => {
+		reply.code(200).send({ status: 'Server is running', version: ctx.cliVersion });
+	});
+
+	
 
 	await server.listen({ port: ctx.options.port });
 	// store server's address for SDK

@@ -5,6 +5,9 @@ import capture from './capture.js'
 import upload from './upload.js'
 import { version } from '../../package.json'
 import { uploadFigma, uploadWebFigmaCommand  } from './uploadFigma.js'
+import startServer from './server.js';
+import stopServer from './stopServer.js'
+import ping from './ping.js'
 
 const program = new Command();
 
@@ -18,11 +21,14 @@ program
     .addCommand(configWeb)
     .addCommand(configStatic)
     .addCommand(upload)
+    .addCommand(startServer)
+    .addCommand(stopServer)
+    .addCommand(ping)
     .addCommand(configFigma)
     .addCommand(uploadFigma)
     .addCommand(configWebFigma)
     .addCommand(uploadWebFigmaCommand)
 
-    
 
-export default program;
+
+    export default program;

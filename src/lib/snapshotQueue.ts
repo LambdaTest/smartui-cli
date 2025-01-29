@@ -288,6 +288,7 @@ export default class Queue {
                 }
 
                 if (!drop) {
+                    console.log("before process snapshot")
                     let { processedSnapshot, warnings } = await processSnapshot(snapshot, this.ctx);
 
                     if(this.ctx.build && this.ctx.build.useKafkaFlow) {
@@ -302,6 +303,7 @@ export default class Queue {
                     }
 
                     this.ctx.totalSnapshots++;
+                    
                     this.processedSnapshots.push({ name: snapshot.name, warnings });
                 }
             } catch (error: any) {

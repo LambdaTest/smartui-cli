@@ -3,8 +3,17 @@ import { Context } from '../types.js'
 import { chromium, firefox, webkit, Browser } from '@playwright/test'
 import constants from './constants.js';
 import chalk from 'chalk';
+import axios from 'axios';
+
+import { globalAgent } from 'http';
+import { promisify } from 'util'
+const sleep = promisify(setTimeout);
 
 let isPollingActive = false;
+let globalContext: Context;
+export const setGlobalContext = (newContext: Context): void => {
+    globalContext = newContext;
+};
 
 export function delDir(dir: string): void {
     if (fs.existsSync(dir)) {
@@ -207,15 +216,31 @@ export function getRenderViewportsForOptions(options: any): Array<Record<string,
 }
 
 // Global SIGINT handler
-process.on('SIGINT', () => {
-    if (isPollingActive) {
-        console.log('Fetching results interrupted. Exiting...');
-        isPollingActive = false;
-    } else {
-        console.log('\nExiting gracefully...');
-    }
-    process.exit(0);
-});
+// process.on('SIGINT', async () => {
+//     try {
+//         if (isPollingActive) {
+//             console.log('Fetching results interrupted. Exiting...');
+//             isPollingActive = false;
+//         } else {
+//             console.log('\nExiting gracefully...');
+//         }
+//         console.log('Calling stop API to gracefully shut down the server...');
+//         const serverAddress = process.env.SMARTUI_SERVER_ADDRESS || 'http://localhost:49152';
+//         const response = await axios.post(`${serverAddress}/stop`, {}, {
+//             headers: {
+//                 'Content-Type': 'application/json'
+//             }
+//         });
+//         if (response.status === 200) {
+//             console.log('Server stopped successfully');
+//         } else {
+//             console.log('Failed to stop server');
+//         }
+//     } catch (error:any) {
+//         console.error('Error while stopping the server:', error.message);
+//     }
+//     process.exit(0);
+// });
 
 // Background polling function
 export async function startPolling(ctx: Context, task: any): Promise<void> {

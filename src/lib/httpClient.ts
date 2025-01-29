@@ -107,6 +107,8 @@ export default class httpClient {
     finalizeBuild(buildId: string, totalSnapshots: number, log: Logger) {
         let params: Record<string, string | number> = {buildId};
         if (totalSnapshots > -1) params.totalSnapshots = totalSnapshots;
+        console.log(`finalize build called with build Id ${buildId} and total snapshots is ${totalSnapshots}`)
+
 
         return this.request({
             url: '/build',
@@ -116,6 +118,7 @@ export default class httpClient {
     }
 
     uploadSnapshot(ctx: Context, snapshot: ProcessedSnapshot) {
+        console.log(`upload snapshot called with build Id ${ctx.build.id}`)
         return this.request({
             url: `/builds/${ctx.build.id}/snapshot`,
             method: 'POST',
