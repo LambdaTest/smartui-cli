@@ -7,52 +7,7 @@ import ctxInit from '../lib/ctx.js';
 import getGitInfo from '../tasks/getGitInfo.js';
 import createBuild from '../tasks/createBuild.js';
 import snapshotQueue from '../lib/snapshotQueue.js';
-import axios from 'axios';
-
-// const waitForSIGINT = {
-//     title: 'Waiting for SIGINT (Press Ctrl+C to exit)',
-//     task: async () => {
-//       console.log('Press Ctrl+C to stop...');
-      
-//       return new Promise<void>((resolve) => {
-//         const handler = async () => {
-//           console.log('\nSIGINT received! Cleaning up...');
-  
-//           // Perform cleanup tasks here with access to the ctx object
-//           // Example: if you want to log or do something with ctx:
-//           // ctx.log.info('Performing cleanup after SIGINT...');
-  
-//           // Example: Close server gracefully (if needed)
-//         //   if (ctx.server) {
-//         //     await ctx.server.close();  // Assuming the server has a `close` method
-//         //     console.log('Server closed gracefully');
-//         //   }
-  
-//           // Ensure only one listener
-//           process.off('SIGINT', handler);
-//           resolve();
-//         };
-  
-//         process.once('SIGINT', handler); // Ensure only one listener
-//       });
-//     }
-//   };
-  
-//   process.removeAllListeners('SIGINT')
-  // Attach SIGINT handler before running Listr
-//   process.on('SIGINT', async () => {
-//     setImmediate( async () => {
-//         console.log('\nSIGINT received globally. Exiting...');
-//     const response = await axios.post(`http://localhost:49152/stop`, {}, {
-//         headers: {
-//             'Content-Type': 'application/json' // Ensure the correct Content-Type header
-//         }
-//     });
-//     console.log("reponse is below")
-//     console.log(response)
-//     process.exit(0);
-//     })
-//   });
+import { startPolling } from '../lib/utils.js';
 
 const command = new Command();
 
@@ -60,8 +15,14 @@ command
     .name('exec:start')
     .description('Start SmartUI server')
     .option('-P, --port <number>', 'Port number for the server')
+    .option('--fetch-results [filename]', 'Fetch results and optionally specify an output file, e.g., <filename>.json')
+    .option('--buildName <string>', 'Specify the build name')
     .action(async function(this: Command) {
-        const options = this.opts();
+        const options = command.optsWithGlobals();
+        if (options.buildName === '') {
+            console.log(`Error: The '--buildName' option cannot be an empty string.`);
+            process.exit(1);
+        }
         let ctx: Context = ctxInit(command.optsWithGlobals());
         ctx.snapshotQueue = new snapshotQueue(ctx);
         ctx.totalSnapshots = 0
@@ -87,34 +48,15 @@ command
         );
 
         try {
-            // const sigintPromise = new Promise((resolve) => {
-            //     process.once('SIGINT', () => {
-            //         resolve("SIGINT received, exiting...")
-            //     });
-            // });
-            // await Promise.any([tasks.run(ctx), sigintPromise]);
             await tasks.run(ctx);
+            if (ctx.options.fetchResults) {
+                startPolling(ctx);
+            }
             
     
         } catch (error) {
             console.error('Error during server execution:', error);
         }
     });
-
-    //   process.removeAllListeners('SIGINT')
-  // Attach SIGINT handler before running Listr
-
-// process.on('beforeExit', async () => {
-//                 console.log('\nSIGINT received globally. Exiting...');
-//                 const response = await axios.post(`http://localhost:49152/stop`, {}, {
-//                 headers: {
-//                     'Content-Type': 'application/json' // Ensure the correct Content-Type header
-//                 }
-//             });
-//             console.log("reponse is below")
-//             console.log(response)
-//             // process.exit(0);
-            
-//           });
 
 export default command;

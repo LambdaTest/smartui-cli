@@ -262,9 +262,9 @@ export default class Queue {
         if (!this.isEmpty()) {
             let snapshot;
             if (this.ctx.config.delayedUpload){
-                snapshot = this.snapshots.pop();
+                snapshot = this.snapshots[0];
             } else {
-                snapshot = this.snapshots.shift();
+                snapshot = this.snapshots[this.snapshots.length - 1];
             }
             try {
                 this.processingSnapshot = snapshot?.name;
@@ -288,7 +288,6 @@ export default class Queue {
                 }
 
                 if (!drop) {
-                    console.log("before process snapshot")
                     let { processedSnapshot, warnings } = await processSnapshot(snapshot, this.ctx);
 
                     if(this.ctx.build && this.ctx.build.useKafkaFlow) {
@@ -303,7 +302,11 @@ export default class Queue {
                     }
 
                     this.ctx.totalSnapshots++;
-                    
+                    if (this.ctx.config.delayedUpload){
+                        this.snapshots.pop();
+                    } else {
+                        this.snapshots.shift();
+                    }
                     this.processedSnapshots.push({ name: snapshot.name, warnings });
                 }
             } catch (error: any) {

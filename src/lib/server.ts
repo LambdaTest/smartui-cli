@@ -36,7 +36,6 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 			let { snapshot, testType } = request.body;
 			if (!validateSnapshot(snapshot)) throw new Error(validateSnapshot.errors[0].message);
 			ctx.testType = testType;
-			console.log(`before enqueue ${ctx.build.id}`)
 			ctx.snapshotQueue?.enqueue(snapshot);
 			replyCode = 200;
 			replyBody = { data: { message: "success", warnings: [] }};
@@ -67,13 +66,10 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 			})
 			await ctx.client.finalizeBuild(ctx.build.id, ctx.totalSnapshots, ctx.log);
 			await ctx.browser?.close();
-			console.log(`Closed browser`);
 			if (ctx.server){
 				ctx.server.close();
 			}
-			console.log(`Closed server`);
 			let resp = await ctx.client.getS3PreSignedURL(ctx);
-			console.log(`resp from presigned url ${	resp.data.url}`)
             await ctx.client.uploadLogs(ctx, resp.data.url);
 			replyCode = 200;
 			replyBody = { data: { message: "success", type: "DELETE" } };
