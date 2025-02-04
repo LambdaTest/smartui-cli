@@ -327,11 +327,23 @@ export default class Queue {
                     if (useCapsBuildId) {
                         await this.ctx.client.uploadSnapshotForCaps(this.ctx, processedSnapshot, capsBuildId, capsProjectToken);
                         // Increment snapshot count for the specific buildId
-                        const currentCount = this.ctx.buildToSnapshotCountMap.get(capsBuildId) || 0;
-                        this.ctx.buildToSnapshotCountMap.set(capsBuildId, currentCount + 1);
+                        const cachedCapabilities = this.ctx.sessionCapabilitiesMap.get(sessionId);
+                        const currentCount = cachedCapabilities?.snapshotCount || 0; // Get the current snapshot count for sessionId
+                        cachedCapabilities.snapshotCount = currentCount + 1; // Increment snapshot count
+                        this.ctx.sessionCapabilitiesMap.set(sessionId, cachedCapabilities);
                     } else {
                         if (!this.ctx.build?.id) {
-                            throw new Error('Build ID is empty');
+                            if (this.ctx.authenticatedInitially) {
+                                let resp = await this.ctx.client.createBuild(this.ctx.git, this.ctx.config, this.ctx.log, this.ctx.build.name);
+                                this.ctx.build = {
+                                    id: resp.data.buildId,
+                                    name: resp.data.buildName,
+                                    url: resp.data.buildURL,
+                                    baseline: resp.data.baseline,
+                                }
+                            } else {
+                                throw new Error('SmartUI capabilities are missing in env variables or in driver capabilities');
+                            }
                         }
                         await this.ctx.client.uploadSnapshot(this.ctx, processedSnapshot);
                         this.ctx.totalSnapshots++;

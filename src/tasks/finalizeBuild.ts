@@ -21,20 +21,28 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
                 task.output = chalk.gray(error.message);
                 throw new Error('Finalize build failed');
             }
+            let buildUrls = `build url: ${ctx.build.url}\n`;
 
-            for (const [buildId, totalSnapshots] of ctx.buildToSnapshotCountMap.entries()) {
-            
+            for (const [sessionId, capabilities] of ctx.sessionCapabilitiesMap.entries()) {
                 try {
-                    // Fetch projectToken from buildToProjectTokenMap
-                    const projectToken = ctx.buildToProjectTokenMap?.get(buildId) || '';
-                    await ctx.client.finalizeBuildForCapsWithToken(buildId, totalSnapshots, projectToken, ctx.log);
+                    const buildId = capabilities?.buildId || '';
+                    const projectToken = capabilities?.projectToken || '';
+                    const totalSnapshots = capabilities?.snapshotCount || 0;
+                    const sessionBuildUrl = capabilities?.buildURL || '';
+                    const testId = capabilities?.id || '';
+            
+                    if (buildId && projectToken) {
+                        await ctx.client.finalizeBuildForCapsWithToken(buildId, totalSnapshots, projectToken, ctx.log);
+                    }
+
+                    if (testId) {
+                        buildUrls += `TestId ${testId}: ${sessionBuildUrl}\n`;
+                    }
                 } catch (error: any) {
-                    ctx.log.debug(`Error finalizing build ${buildId}: ${error.message}`);
+                    ctx.log.debug(`Error finalizing build for session ${sessionId}: ${error.message}`);
                 }
             }
-            
-
-            task.output = chalk.gray(`build url: ${ctx.build.url}`);
+            task.output = chalk.gray(buildUrls);
             task.title = 'Finalized build';
             
             // cleanup and upload logs

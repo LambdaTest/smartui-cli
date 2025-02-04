@@ -31,6 +31,7 @@ export interface Context {
         useGlobalCache: boolean;
         figma?: FigmaWebConfig;
         ignoreHTTPSErrors : boolean;
+        skipBuildCreation?: boolean;
     };
     uploadFilePath: string;
     webStaticConfig: WebStaticConfig;

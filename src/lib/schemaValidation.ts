@@ -168,6 +168,9 @@ const ConfigSchema = {
         useGlobalCache: {
             type: "boolean",
             errorMessage: "Invalid config; useGlobalCache must be true/false"
+        skipBuildCreation: {
+            type: "boolean",
+            errorMessage: "Invalid config; skipBuildCreation must be true/false"
         },
     },
     anyOf: [

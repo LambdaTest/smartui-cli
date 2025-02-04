@@ -55,16 +55,16 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 					// If not cached, fetch from API and cache it
 					try {
 						let fetchedCapabilitiesResp = await ctx.client.getSmartUICapabilities(sessionId, ctx.config, ctx.git, ctx.log);
-						ctx.sessionCapabilitiesMap.set(sessionId, fetchedCapabilitiesResp);
 						capsBuildId = fetchedCapabilitiesResp?.buildId || ''
 						console.log(JSON.stringify(fetchedCapabilitiesResp))
 
 						if (capsBuildId) {
+							ctx.sessionCapabilitiesMap.set(sessionId, fetchedCapabilitiesResp);
 							ctx.sessionToBuildMap.set(sessionId, capsBuildId);
 							ctx.buildToProjectTokenMap.set(capsBuildId, fetchedCapabilitiesResp?.projectToken || '');
 						}
 					} catch (error: any) {
-						console.log(`Failed to fetch capabilities for sessionId ${sessionId}: ${error.message}`);
+						// console.log(`Failed to fetch capabilities for sessionId ${sessionId}: ${error.message}`);
 					}
 				}
 			}
