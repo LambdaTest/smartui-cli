@@ -98,6 +98,7 @@ export default (options: Record<string, string>): Context => {
             delayedUpload: config.delayedUpload ?? false,
             useGlobalCache: config.useGlobalCache ?? false,
             ignoreHTTPSErrors: config.ignoreHTTPSErrors ?? false,
+            skipBuildCreation: config.skipBuildCreation ?? false
         },
         uploadFilePath: '',
         webStaticConfig: [],
