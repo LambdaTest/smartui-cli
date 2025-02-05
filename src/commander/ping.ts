@@ -29,7 +29,7 @@ command
             }
         } catch (error: any) {
             // Handle any errors during the HTTP request
-            console.error('SmartUI server is not running                                                        ', error.message);
+            console.error('SmartUI server is not running', error.message);
         }
     });
 
