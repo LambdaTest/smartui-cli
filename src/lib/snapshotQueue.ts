@@ -262,9 +262,9 @@ export default class Queue {
         if (!this.isEmpty()) {
             let snapshot;
             if (this.ctx.config.delayedUpload){
-                snapshot = this.snapshots[0];
+                snapshot = this.snapshots.pop();
             } else {
-                snapshot = this.snapshots[this.snapshots.length - 1];
+                snapshot = this.snapshots.shift();
             }
             try {
                 this.processingSnapshot = snapshot?.name;
@@ -272,6 +272,7 @@ export default class Queue {
 
                 if (!this.ctx.config.delayedUpload && snapshot && snapshot.name && this.snapshotNames.includes(snapshot.name)) {
                     drop = true;
+                    this.ctx.log.debug(`snapshot names are ${this.snapshotNames}`)
                     this.ctx.log.info(`Skipping duplicate SmartUI snapshot '${snapshot.name}'. To capture duplicate screenshots, please set the 'delayedUpload' configuration as true in your config file.`);
                 }
 
@@ -302,11 +303,6 @@ export default class Queue {
                     }
 
                     this.ctx.totalSnapshots++;
-                    if (this.ctx.config.delayedUpload){
-                        this.snapshots.pop();
-                    } else {
-                        this.snapshots.shift();
-                    }
                     this.processedSnapshots.push({ name: snapshot.name, warnings });
                 }
             } catch (error: any) {
