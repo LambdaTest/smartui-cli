@@ -22,14 +22,14 @@ command
 
             // Log the response from the server
             if (response.status === 200) {
-                console.log('Server is running');
+                console.log('SmartUI Server is running');
                 console.log(`Response: ${JSON.stringify(response.data)}`); // Log response data if needed
             } else {
                 console.log('Failed to reach the server');
             }
         } catch (error: any) {
             // Handle any errors during the HTTP request
-            console.error('Error while pinging server:', error.message);
+            console.error('SmartUI server is not running                                                        ', error.message);
         }
     });
 
