@@ -18,7 +18,7 @@ command
             console.log(chalk.yellow(`Stopping server at ${serverAddress} from terminal...`));
 
             // Send POST request to the /stop endpoint with the correct headers
-            const response = await axios.post(`${serverAddress}/stop`, {}, {
+            const response = await axios.post(`${serverAddress}/stop`, { timeout: 15000 }, {
                 headers: {
                     'Content-Type': 'application/json' // Ensure the correct Content-Type header
                 }
@@ -33,7 +33,11 @@ command
             }
         } catch (error: any) {
             // Handle any errors during the HTTP request
-            console.error(chalk.red('Error while stopping server'));
+            if (error.code === 'ECONNABORTED') {
+                console.error(chalk.red('Error: SmartUI server did not respond in 15 seconds'));
+            } else {
+                console.error(chalk.red('Error while stopping server'));
+            }
         }
     });
 

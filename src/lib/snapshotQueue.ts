@@ -270,6 +270,10 @@ export default class Queue {
                 this.processingSnapshot = snapshot?.name;
                 let drop = false;
 
+                if (this.ctx.isStartExec) {
+                    this.ctx.log.info(`Processing Snapshot: ${snapshot?.name}`);
+                }
+
                 if (!this.ctx.config.delayedUpload && snapshot && snapshot.name && this.snapshotNames.includes(snapshot.name)) {
                     drop = true;
                     this.ctx.log.info(`Skipping duplicate SmartUI snapshot '${snapshot.name}'. To capture duplicate screenshots, please set the 'delayedUpload' configuration as true in your config file.`);
