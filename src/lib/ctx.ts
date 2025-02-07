@@ -126,6 +126,7 @@ export default (options: Record<string, string>): Context => {
             fetchResultsFileName: fetchResultsFileObj,
         },
         cliVersion: version,
-        totalSnapshots: -1
+        totalSnapshots: -1,
+        isStartExec: false
     }
 }

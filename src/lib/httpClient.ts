@@ -84,14 +84,15 @@ export default class httpClient {
         }
     }
     
-    createBuild(git: Git, config: any, log: Logger, buildName: string) {
+    createBuild(git: Git, config: any, log: Logger, buildName: string, isStartExec: boolean) {
         return this.request({
             url: '/build',
             method: 'POST',
             data: {
                 git,
                 config,
-                buildName
+                buildName,
+                isStartExec
             }
         }, log)
     }
@@ -102,7 +103,18 @@ export default class httpClient {
             method: 'GET',
             params: { buildId, baseline }
         }, log);
-    }    
+    }
+    
+    ping(buildId: string, log: Logger) {
+        return this.request({
+            url: '/build/ping',
+            method: 'POST',
+            data: {
+                buildId: buildId
+            }
+        }, log);
+    }
+    
 
     finalizeBuild(buildId: string, totalSnapshots: number, log: Logger) {
         let params: Record<string, string | number> = {buildId};

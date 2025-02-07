@@ -3,8 +3,17 @@ import { Context } from '../types.js'
 import { chromium, firefox, webkit, Browser } from '@playwright/test'
 import constants from './constants.js';
 import chalk from 'chalk';
+import axios from 'axios';
+
+import { globalAgent } from 'http';
+import { promisify } from 'util'
+const sleep = promisify(setTimeout);
 
 let isPollingActive = false;
+let globalContext: Context;
+export const setGlobalContext = (newContext: Context): void => {
+    globalContext = newContext;
+};
 
 export function delDir(dir: string): void {
     if (fs.existsSync(dir)) {
@@ -207,7 +216,7 @@ export function getRenderViewportsForOptions(options: any): Array<Record<string,
 }
 
 // Global SIGINT handler
-process.on('SIGINT', () => {
+process.on('SIGINT', async () => {
     if (isPollingActive) {
         console.log('Fetching results interrupted. Exiting...');
         isPollingActive = false;
@@ -218,7 +227,7 @@ process.on('SIGINT', () => {
 });
 
 // Background polling function
-export async function startPolling(ctx: Context, task: any): Promise<void> {
+export async function startPolling(ctx: Context): Promise<void> {
     ctx.log.info('Fetching results in progress....');
     isPollingActive = true;
 
@@ -295,3 +304,24 @@ export async function startPolling(ctx: Context, task: any): Promise<void> {
         }
     }, 5000);
 }
+
+export async function startPingPolling(ctx: Context): Promise<void> {
+    try {
+        ctx.log.debug('Sending initial ping to server...');
+        await ctx.client.ping(ctx.build.id, ctx.log);
+        ctx.log.debug('Initial ping sent successfully.');
+    } catch (error: any) {
+        ctx.log.error(`Error during initial ping: ${error.message}`);
+    }
+
+    setInterval(async () => {
+        try {
+            ctx.log.debug('Sending ping to server...');
+            await ctx.client.ping(ctx.build.id, ctx.log);
+            ctx.log.debug('Ping sent successfully.');
+        } catch (error: any) {
+            ctx.log.error(`Error during ping polling: ${error.message}`);
+        }
+    }, 10 * 60 * 1000);
+}
+
