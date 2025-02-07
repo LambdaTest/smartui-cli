@@ -19,7 +19,7 @@ command
             console.log(chalk.yellow(`Pinging server at ${serverAddress} from terminal...`));
 
             // Send GET request to the /ping endpoint
-            const response = await axios.get(`${serverAddress}/ping`);
+            const response = await axios.get(`${serverAddress}/ping`, { timeout: 15000 });
 
             // Log the response from the server
             if (response.status === 200) {
@@ -30,7 +30,11 @@ command
             }
         } catch (error: any) {
             // Handle any errors during the HTTP request
-            console.error(chalk.red('SmartUI server is not running'));
+            if (error.code === 'ECONNABORTED') {
+                console.error(chalk.red('Error: SmartUI server did not respond in 15 seconds'));
+            } else {
+                console.error(chalk.red('SmartUI server is not running'));
+            }
         }
     });
 

@@ -308,3 +308,24 @@ export async function startPolling(ctx: Context): Promise<void> {
         }
     }, 5000);
 }
+
+export async function startPingPolling(ctx: Context): Promise<void> {
+    try {
+        ctx.log.debug('Sending initial ping to server...');
+        await ctx.client.ping(ctx.build.id, ctx.log);
+        ctx.log.debug('Initial ping sent successfully.');
+    } catch (error: any) {
+        ctx.log.error(`Error during initial ping: ${error.message}`);
+    }
+
+    setInterval(async () => {
+        try {
+            ctx.log.debug('Sending ping to server...');
+            await ctx.client.ping(ctx.build.id, ctx.log);
+            ctx.log.debug('Ping sent successfully.');
+        } catch (error: any) {
+            ctx.log.error(`Error during ping polling: ${error.message}`);
+        }
+    }, 10 * 60 * 1000);
+}
+

@@ -7,7 +7,7 @@ import ctxInit from '../lib/ctx.js';
 import getGitInfo from '../tasks/getGitInfo.js';
 import createBuild from '../tasks/createBuild.js';
 import snapshotQueue from '../lib/snapshotQueue.js';
-import { startPolling } from '../lib/utils.js';
+import { startPolling, startPingPolling } from '../lib/utils.js';
 
 const command = new Command();
 
@@ -26,6 +26,7 @@ command
         let ctx: Context = ctxInit(command.optsWithGlobals());
         ctx.snapshotQueue = new snapshotQueue(ctx);
         ctx.totalSnapshots = 0
+        ctx.isStartExec = true
 
         let tasks = new Listr<Context>(
             [
@@ -49,6 +50,7 @@ command
 
         try {
             await tasks.run(ctx);
+            startPingPolling(ctx);
             if (ctx.options.fetchResults) {
                 startPolling(ctx);
             }

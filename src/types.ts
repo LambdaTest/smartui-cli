@@ -52,6 +52,7 @@ export interface Context {
     totalSnapshots: number;
     figmaDesignConfig?: FigmaDesignConfig;
     testType?: string;
+    isStartExec ?: boolean;
 }
 
 export interface Env {
