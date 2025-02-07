@@ -71,6 +71,8 @@ export interface Env {
     BASELINE_BRANCH: string | undefined;
     CURRENT_BRANCH: string | undefined;
     PROJECT_NAME: string | undefined;
+    SMARTUI_API_PROXY: string | undefined;
+    SMARTUI_API_SKIP_CERTIFICATES: boolean;
 }
 
 export interface Snapshot {

@@ -5,6 +5,7 @@ import { Env, Snapshot, ProcessedSnapshot, Git, Build, Context } from '../types.
 import constants from './constants.js';
 import type { Logger } from 'winston'
 import pkgJSON from './../../package.json'
+import https from 'https';
 
 export default class httpClient {
     axiosInstance: AxiosInstance;
@@ -13,15 +14,36 @@ export default class httpClient {
     username: string;
     accessKey: string;
 
-    constructor({ SMARTUI_CLIENT_API_URL, PROJECT_TOKEN, PROJECT_NAME, LT_USERNAME, LT_ACCESS_KEY }: Env) {
+    constructor({ SMARTUI_CLIENT_API_URL, PROJECT_TOKEN, PROJECT_NAME, LT_USERNAME, LT_ACCESS_KEY, SMARTUI_API_PROXY, SMARTUI_API_SKIP_CERTIFICATES }: Env) {
         this.projectToken = PROJECT_TOKEN || '';
         this.projectName = PROJECT_NAME || '';
         this.username = LT_USERNAME || '';
         this.accessKey = LT_ACCESS_KEY || '';
 
-        this.axiosInstance = axios.create({
+        let proxyUrl = null;
+        try {
+            proxyUrl = SMARTUI_API_PROXY ? new URL(SMARTUI_API_PROXY) : null;
+        } catch (error) {
+            console.error('Invalid proxy URL:', error);
+        }
+        const axiosConfig: any = {
             baseURL: SMARTUI_CLIENT_API_URL,
-        });
+            proxy: proxyUrl ? {
+                host: proxyUrl.hostname,
+                port: proxyUrl.port ? Number(proxyUrl.port) : 80
+            } : false
+        };
+     
+        if (SMARTUI_API_SKIP_CERTIFICATES) {
+            axiosConfig.httpsAgent = new https.Agent({
+                rejectUnauthorized: false
+            });
+        }
+
+        console.log('Axios Config:', JSON.stringify(axiosConfig, null, 2));
+        this.axiosInstance = axios.create(axiosConfig);
+
+        
         this.axiosInstance.interceptors.request.use((config) => {
             config.headers['projectToken'] = this.projectToken;
             config.headers['projectName'] = this.projectName;
