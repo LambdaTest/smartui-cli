@@ -119,6 +119,7 @@ export default class httpClient {
     finalizeBuild(buildId: string, totalSnapshots: number, log: Logger) {
         let params: Record<string, string | number> = {buildId};
         if (totalSnapshots > -1) params.totalSnapshots = totalSnapshots;
+        
         return this.request({
             url: '/build',
             method: 'DELETE',

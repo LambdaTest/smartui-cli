@@ -217,15 +217,11 @@ export function getRenderViewportsForOptions(options: any): Array<Record<string,
 
 // Global SIGINT handler
 process.on('SIGINT', async () => {
-    try {
-        if (isPollingActive) {
-            console.log('Fetching results interrupted. Exiting...');
-            isPollingActive = false;
-        } else {
-            console.log('\nExiting gracefully...');
-        }
-    } catch (error:any) {
-        console.error('Error while stopping the server:', error.message);
+    if (isPollingActive) {
+        console.log('Fetching results interrupted. Exiting...');
+        isPollingActive = false;
+    } else {
+        console.log('\nExiting gracefully...');
     }
     process.exit(0);
 });
