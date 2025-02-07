@@ -22,7 +22,10 @@ export default class httpClient {
 
         let proxyUrl = null;
         try {
-            proxyUrl = SMARTUI_API_PROXY ? new URL(SMARTUI_API_PROXY) : null;
+        // Handle URL with or without protocol
+        const urlStr = SMARTUI_API_PROXY?.startsWith('http') ? 
+            SMARTUI_API_PROXY : `http://${SMARTUI_API_PROXY}`;
+            proxyUrl = SMARTUI_API_PROXY ? new URL(urlStr) : null;
         } catch (error) {
             console.error('Invalid proxy URL:', error);
         }
@@ -40,7 +43,6 @@ export default class httpClient {
             });
         }
 
-        console.log('Axios Config:', JSON.stringify(axiosConfig, null, 2));
         this.axiosInstance = axios.create(axiosConfig);
 
         
