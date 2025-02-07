@@ -305,6 +305,8 @@ export async function startPolling(ctx: Context): Promise<void> {
     }, 5000);
 }
 
+export let pingIntervalId: NodeJS.Timeout | null = null;
+
 export async function startPingPolling(ctx: Context): Promise<void> {
     try {
         ctx.log.debug('Sending initial ping to server...');
@@ -314,7 +316,8 @@ export async function startPingPolling(ctx: Context): Promise<void> {
         ctx.log.error(`Error during initial ping: ${error.message}`);
     }
 
-    setInterval(async () => {
+    // Start the polling interval
+    pingIntervalId = setInterval(async () => {
         try {
             ctx.log.debug('Sending ping to server...');
             await ctx.client.ping(ctx.build.id, ctx.log);
@@ -322,6 +325,8 @@ export async function startPingPolling(ctx: Context): Promise<void> {
         } catch (error: any) {
             ctx.log.error(`Error during ping polling: ${error.message}`);
         }
-    }, 10 * 60 * 1000);
+    }, 10 * 60 * 1000); // 10 minutes interval
 }
+
+
 

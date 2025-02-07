@@ -4,6 +4,7 @@ import fastify, { FastifyInstance, RouteShorthandOptions } from 'fastify';
 import { readFileSync } from 'fs'
 import { Context } from '../types.js'
 import { validateSnapshot } from './schemaValidation.js'
+import { pingIntervalId } from './utils.js';
 
 export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMessage, ServerResponse>> => {
 	
@@ -71,6 +72,11 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 			}
 			let resp = await ctx.client.getS3PreSignedURL(ctx);
             await ctx.client.uploadLogs(ctx, resp.data.url);
+
+			if (pingIntervalId !== null) {
+				clearInterval(pingIntervalId);
+				ctx.log.debug('Ping polling stopped immediately.');
+			}
 			replyCode = 200;
 			replyBody = { data: { message: "success", type: "DELETE" } };
 		} catch (error: any) {
