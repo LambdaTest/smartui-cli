@@ -29,4 +29,6 @@ program
     .addCommand(configWebFigma)
     .addCommand(uploadWebFigmaCommand)
 
+
+
 export default program;
