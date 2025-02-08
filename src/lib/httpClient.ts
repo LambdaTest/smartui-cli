@@ -5,6 +5,7 @@ import { Env, Snapshot, ProcessedSnapshot, Git, Build, Context } from '../types.
 import constants from './constants.js';
 import type { Logger } from 'winston'
 import pkgJSON from './../../package.json'
+import https from 'https';
 
 export default class httpClient {
     axiosInstance: AxiosInstance;
@@ -13,15 +14,38 @@ export default class httpClient {
     username: string;
     accessKey: string;
 
-    constructor({ SMARTUI_CLIENT_API_URL, PROJECT_TOKEN, PROJECT_NAME, LT_USERNAME, LT_ACCESS_KEY }: Env) {
+    constructor({ SMARTUI_CLIENT_API_URL, PROJECT_TOKEN, PROJECT_NAME, LT_USERNAME, LT_ACCESS_KEY, SMARTUI_API_PROXY, SMARTUI_API_SKIP_CERTIFICATES }: Env) {
         this.projectToken = PROJECT_TOKEN || '';
         this.projectName = PROJECT_NAME || '';
         this.username = LT_USERNAME || '';
         this.accessKey = LT_ACCESS_KEY || '';
 
-        this.axiosInstance = axios.create({
+        let proxyUrl = null;
+        try {
+        // Handle URL with or without protocol
+        const urlStr = SMARTUI_API_PROXY?.startsWith('http') ? 
+            SMARTUI_API_PROXY : `http://${SMARTUI_API_PROXY}`;
+            proxyUrl = SMARTUI_API_PROXY ? new URL(urlStr) : null;
+        } catch (error) {
+            console.error('Invalid proxy URL:', error);
+        }
+        const axiosConfig: any = {
             baseURL: SMARTUI_CLIENT_API_URL,
-        });
+            proxy: proxyUrl ? {
+                host: proxyUrl.hostname,
+                port: proxyUrl.port ? Number(proxyUrl.port) : 80
+            } : false
+        };
+     
+        if (SMARTUI_API_SKIP_CERTIFICATES) {
+            axiosConfig.httpsAgent = new https.Agent({
+                rejectUnauthorized: false
+            });
+        }
+
+        this.axiosInstance = axios.create(axiosConfig);
+
+        
         this.axiosInstance.interceptors.request.use((config) => {
             config.headers['projectToken'] = this.projectToken;
             config.headers['projectName'] = this.projectName;
@@ -84,14 +108,15 @@ export default class httpClient {
         }
     }
     
-    createBuild(git: Git, config: any, log: Logger, buildName: string) {
+    createBuild(git: Git, config: any, log: Logger, buildName: string, isStartExec: boolean) {
         return this.request({
             url: '/build',
             method: 'POST',
             data: {
                 git,
                 config,
-                buildName
+                buildName,
+                isStartExec
             }
         }, log)
     }
@@ -102,7 +127,18 @@ export default class httpClient {
             method: 'GET',
             params: { buildId, baseline }
         }, log);
-    }    
+    }
+    
+    ping(buildId: string, log: Logger) {
+        return this.request({
+            url: '/build/ping',
+            method: 'POST',
+            data: {
+                buildId: buildId
+            }
+        }, log);
+    }
+    
 
     finalizeBuild(buildId: string, totalSnapshots: number, log: Logger) {
         let params: Record<string, string | number> = {buildId};

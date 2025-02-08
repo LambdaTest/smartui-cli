@@ -18,6 +18,8 @@ export default (): Env => {
         BASELINE_BRANCH,
         CURRENT_BRANCH,
         PROJECT_NAME,
+        SMARTUI_API_PROXY,
+        SMARTUI_API_SKIP_CERTIFICATES
     } = process.env
         
     return {
@@ -36,6 +38,8 @@ export default (): Env => {
         CURRENT_BRANCH,
         LT_SDK_DEBUG: LT_SDK_DEBUG === 'true',
         SMARTUI_DO_NOT_USE_CAPTURED_COOKIES: SMARTUI_DO_NOT_USE_CAPTURED_COOKIES === 'true',
-        PROJECT_NAME
+        PROJECT_NAME,
+        SMARTUI_API_PROXY,
+        SMARTUI_API_SKIP_CERTIFICATES: SMARTUI_API_SKIP_CERTIFICATES === 'true'
     }
 }
