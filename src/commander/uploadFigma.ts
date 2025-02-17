@@ -71,6 +71,7 @@ uploadWebFigmaCommand
     .argument('<file>', 'figma config config file')
     .option('--markBaseline', 'Mark the uploaded images as baseline')
     .option('--buildName <buildName>', 'Name of the build')
+    .option('--fetch-results [filename]', 'Fetch results and optionally specify an output file, e.g., <filename>.json')
     .action(async function (file, _, command) {
         let ctx: Context = ctxInit(command.optsWithGlobals());
 
