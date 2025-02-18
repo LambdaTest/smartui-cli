@@ -4,6 +4,7 @@ import { updateLogContext } from '../lib/logger.js';
 import chalk from 'chalk';
 import { unlinkSync } from 'fs';
 import constants from '../lib/constants.js';
+import fs from 'fs';
 
 export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRendererFactory>  =>  {
     return {
@@ -29,6 +30,8 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
                 ctx.log.debug(`Closed server`);
                 let resp = await ctx.client.getS3PreSignedURL(ctx);
                 await ctx.client.uploadLogs(ctx, resp.data.url);
+                fs.unlinkSync(constants.LOG_FILE_PATH);
+                ctx.log.debug(`Log file deleted: ${constants.LOG_FILE_PATH}`);
             } catch (error: any) {
                 ctx.log.debug(error);
             }
