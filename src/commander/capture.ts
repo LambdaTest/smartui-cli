@@ -66,7 +66,7 @@ command
                 getGitInfo(ctx),
                 createBuild(ctx),
                 captureScreenshots(ctx),
-                // finalizeBuild(ctx)
+                finalizeBuild(ctx)
             ],
             {
                 rendererOptions: {
