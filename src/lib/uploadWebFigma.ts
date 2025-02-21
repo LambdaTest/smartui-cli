@@ -28,6 +28,7 @@ export default async (ctx: Context): Promise<string> => {
       ctx.build = {
         id: responseData.data.buildId,
         url: responseData.data.buildURL || "https://smartui.lambdatestinternal.com",
+        baseline: responseData.data.baseline? responseData.data.baseline : false,
       }
     }
   } else {

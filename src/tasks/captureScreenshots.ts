@@ -12,7 +12,7 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
             try {
                 ctx.task = task;
                 if (ctx.options.fetchResults) {
-                    startPolling(ctx, task);
+                    startPolling(ctx);
                 }
                 updateLogContext({task: 'capture'});
 
