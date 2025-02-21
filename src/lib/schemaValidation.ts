@@ -117,6 +117,10 @@ const ConfigSchema = {
             type: "boolean",
             errorMessage: "Invalid config; smartIgnore must be true/false"
         },
+        ignoreHTTPSErrors: {
+            type : "boolean",
+            errorMessage: "Invalid config; ignoreHttpsError must be true/false"
+        },
         scrollTime: {
             type: "number",
             minimum: 1,

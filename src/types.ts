@@ -27,6 +27,7 @@ export interface Context {
         smartIgnore: boolean;
         delayedUpload: boolean;
         figma?: FigmaWebConfig;
+        ignoreHTTPSErrors : boolean;
     };
     uploadFilePath: string;
     webStaticConfig: WebStaticConfig;
