@@ -10,10 +10,16 @@ import sharp from 'sharp';
 async function captureScreenshotsForConfig(
     ctx: Context,
     browsers: Record<string, Browser>,
-    {name, url, waitForTimeout}: Record<string, any>, 
+    urlConfig : Record<string, any>, 
     browserName: string,
     renderViewports: Array<Record<string,any>>
 ): Promise<void> {
+    ctx.log.debug(`*** urlConfig  ${JSON.stringify(urlConfig)}`);
+
+    let {name, url, waitForTimeout, execute} = urlConfig;
+    let afterNavigationScript = execute?.afterNavigation;
+    let beforeSnapshotScript = execute?.beforeSnapshot;
+
     let pageOptions = { waitUntil: process.env.SMARTUI_PAGE_WAIT_UNTIL_EVENT || 'load', timeout: ctx.config.waitForPageRender || constants.DEFAULT_PAGE_LOAD_TIMEOUT };
     let ssId = name.toLowerCase().replace(/\s/g, '_');
     let context: BrowserContext;
@@ -30,11 +36,15 @@ async function captureScreenshotsForConfig(
         page = await context?.newPage();
 
         await page?.goto(url.trim(), pageOptions);
+        await executeDocumentScripts(ctx, page, "afterNavigation", afterNavigationScript)
+
         for (let { viewport, viewportString, fullPage } of renderViewports) {
             let ssPath = `screenshots/${ssId}/${`${browserName}-${viewport.width}x${viewport.height}`}-${ssId}.png`;
             await page?.setViewportSize({ width: viewport.width, height: viewport.height || constants.MIN_VIEWPORT_HEIGHT });
             if (fullPage) await page?.evaluate(utils.scrollToBottomAndBackToTop);
             await page?.waitForTimeout(waitForTimeout || 0);
+            await executeDocumentScripts(ctx, page, "beforeSnapshot", beforeSnapshotScript)
+
             await page?.screenshot({ path: ssPath, fullPage });
 
             await ctx.client.uploadScreenshot(ctx.build, ssPath, name, browserName, viewportString, ctx.log);
@@ -126,7 +136,7 @@ export async function  captureScreenshots(ctx: Context): Promise<Record<string,a
             ctx.task.output = output;
             capturedScreenshots++;
         } catch (error) {
-            ctx.log.debug(`screenshot capture failed for ${JSON.stringify(staticConfig)}; error: ${error}`);
+            ctx.log.debug(`captureScreenshots failed for ${JSON.stringify(staticConfig)}; error: ${error}`);
             output += `${chalk.gray(staticConfig.name)} ${chalk.red('\u{2717}')}\n`;
             ctx.task.output = output;
         }
@@ -343,4 +353,21 @@ async function processChunk(ctx: Context, urlConfig: Array<Record<string, any>>)
 
     await utils.closeBrowsers(browsers);
     return { capturedScreenshots, finalOutput };
+}
+
+async function executeDocumentScripts(ctx: Context, page: Page, actionType: string, script: string) {
+    try {
+        if (!page) {
+            throw new Error("Page instance not available");
+        }
+
+        if (script !== "") {
+            await page.evaluate((script) => {
+                new Function(script)();
+            }, script);
+        }
+    } catch (error) {
+        ctx.log.error(`Error executing script for action ${actionType}: `, error);
+        throw error;  
+    }
 }
