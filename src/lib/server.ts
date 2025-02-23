@@ -1,10 +1,11 @@
 import { Server, IncomingMessage, ServerResponse } from 'http';
 import path from 'path';
 import fastify, { FastifyInstance, RouteShorthandOptions } from 'fastify';
-import { readFileSync } from 'fs'
+import { readFileSync, truncate } from 'fs'
 import { Context } from '../types.js'
 import { validateSnapshot } from './schemaValidation.js'
 import { pingIntervalId } from './utils.js';
+import { startPolling } from './utils.js';
 
 export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMessage, ServerResponse>> => {
 	
@@ -56,12 +57,20 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 					try {
 						let fetchedCapabilitiesResp = await ctx.client.getSmartUICapabilities(sessionId, ctx.config, ctx.git, ctx.log);
 						capsBuildId = fetchedCapabilitiesResp?.buildId || ''
-						console.log(JSON.stringify(fetchedCapabilitiesResp))
 
 						if (capsBuildId) {
 							ctx.sessionCapabilitiesMap.set(sessionId, fetchedCapabilitiesResp);
 							ctx.sessionToBuildMap.set(sessionId, capsBuildId);
 							ctx.buildToProjectTokenMap.set(capsBuildId, fetchedCapabilitiesResp?.projectToken || '');
+							if (ctx.options.fetchResults) {
+								let is_baseline;
+								if (fetchedCapabilitiesResp.baseline) {
+									is_baseline = true; 
+								} else {
+									is_baseline = false
+								}
+								startPolling(ctx, capsBuildId, is_baseline, fetchedCapabilitiesResp.projectToken)
+							}
 						}
 					} catch (error: any) {
 						// console.log(`Failed to fetch capabilities for sessionId ${sessionId}: ${error.message}`);
