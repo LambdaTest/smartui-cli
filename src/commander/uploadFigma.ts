@@ -24,6 +24,7 @@ uploadFigma
     .option('--buildName <buildName>', 'Name of the build')
     .action(async function (file, _, command) {
         let ctx: Context = ctxInit(command.optsWithGlobals());
+        ctx.isSnapshotCaptured = true;
 
         if (!fs.existsSync(file)) {
             console.log(`Error: Figma Config file ${file} not found.`);

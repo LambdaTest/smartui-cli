@@ -53,6 +53,7 @@ export interface Context {
     figmaDesignConfig?: FigmaDesignConfig;
     testType?: string;
     isStartExec ?: boolean;
+    isSnapshotCaptured ?: boolean;
 }
 
 export interface Env {
