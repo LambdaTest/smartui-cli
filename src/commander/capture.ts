@@ -27,6 +27,7 @@ command
             process.exit(1);
         }
         let ctx: Context = ctxInit(command.optsWithGlobals());
+        ctx.isSnapshotCaptured = true
         
         if (!fs.existsSync(file)) {
             ctx.log.error(`Web Static Config file ${file} not found.`);

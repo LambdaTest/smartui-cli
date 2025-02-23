@@ -34,6 +34,7 @@ command
             process.exit(1);
         }
         let ctx: Context = ctxInit(command.optsWithGlobals());
+        ctx.isSnapshotCaptured = true
 
         if (!fs.existsSync(directory)) {
             console.log(`Error: The provided directory ${directory} not found.`);
