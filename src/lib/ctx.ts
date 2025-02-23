@@ -53,7 +53,7 @@ export default (options: Record<string, string>): Context => {
                 process.exit(1);
             }
             fetchResultObj = true
-            fetchResultsFileObj = options.fetchResults === true ? 'results.json' : options.fetchResults;
+            fetchResultsFileObj = options.fetchResults === true ? '' : options.fetchResults;
         } else {
             fetchResultObj = false
             fetchResultsFileObj = ''

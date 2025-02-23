@@ -8,6 +8,7 @@ import axios from 'axios';
 import { globalAgent } from 'http';
 import { promisify } from 'util'
 const sleep = promisify(setTimeout);
+import { build } from 'tsup';
 
 let isPollingActive = false;
 let globalContext: Context;
@@ -227,9 +228,12 @@ process.on('SIGINT', async () => {
 });
 
 // Background polling function
-export async function startPolling(ctx: Context): Promise<void> {
-    ctx.log.info('Fetching results in progress....');
-    ctx.log.debug(ctx.build);
+export async function startPolling(ctx: Context, build_id: string, baseline: boolean, projectToken: string): Promise<void> {
+    if (build_id) {
+        ctx.log.info(`Fetching results for buildId ${build_id} in progress....`);
+    } else if (ctx.build && ctx.build.id) {
+        ctx.log.info(`Fetching results for buildId ${ctx.build.id} in progress....`);
+    }
     isPollingActive = true;
 
     const intervalId = setInterval(async () => {
@@ -239,21 +243,35 @@ export async function startPolling(ctx: Context): Promise<void> {
         }
         
         try {
-            const resp = await ctx.client.getScreenshotData(ctx.build.id, ctx.build.baseline || false, ctx.log);
+            let resp;
+            let filename;
+            if (build_id) {
+                resp = await ctx.client.getScreenshotData(build_id, baseline, ctx.log, projectToken);
+                filename = `${build_id}.json`
+            } else if (ctx.build && ctx.build.id) {
+                resp = await ctx.client.getScreenshotData(ctx.build.id, ctx.build.baseline, ctx.log, '');
+                if (ctx.options.fetchResultsFileName) {
+                    filename = ctx.options.fetchResultsFileName
+                } else {
+                    filename = `${ctx.build.id}.json`
+                }
+            } else {
+                return;
+            }
 
             if (!resp.build) {
                 ctx.log.info("Error: Build data is null.");
                 clearInterval(intervalId);
-                isPollingActive = false;
+                // isPollingActive = false;
             }
 
-            fs.writeFileSync(ctx.options.fetchResultsFileName, JSON.stringify(resp, null, 2));
-            ctx.log.debug(`Updated results in ${ctx.options.fetchResultsFileName}`);
+            fs.writeFileSync(filename, JSON.stringify(resp, null, 2));
+            ctx.log.debug(`Updated results in ${filename}`);
 
             if (resp.build.build_status_ind === constants.BUILD_COMPLETE || resp.build.build_status_ind === constants.BUILD_ERROR) {
                 clearInterval(intervalId);
-                ctx.log.info(`Fetching results completed. Final results written to ${ctx.options.fetchResultsFileName}`);
-                isPollingActive = false;
+                ctx.log.info(`Fetching results completed. Final results written to ${filename}`);
+                // isPollingActive = false;
 
 
                 // Evaluating Summary
@@ -284,7 +302,7 @@ export async function startPolling(ctx: Context): Promise<void> {
                 // Display summary
                 ctx.log.info(
                     chalk.green.bold(
-                        `\nSummary of Mismatches:\n` +
+                        `\nSummary of Mismatches for buildId: ${build_id}\n` +
                         `${chalk.yellow('Total Variants with Mismatches:')} ${chalk.white(totalVariantsWithMismatches)} out of ${chalk.white(totalVariants)}\n` +
                         `${chalk.yellow('Total Screenshots with Mismatches:')} ${chalk.white(totalScreenshotsWithMismatches)} out of ${chalk.white(totalScreenshots)}\n` +
                         `${chalk.yellow('Branch Name:')} ${chalk.white(resp.build.branch)}\n` +
@@ -301,7 +319,7 @@ export async function startPolling(ctx: Context): Promise<void> {
                 ctx.log.error(`Error fetching screenshot data: ${error.message}`);
             }
             clearInterval(intervalId);
-            isPollingActive = false;
+            // isPollingActive = false;
         }
     }, 5000);
 }

@@ -157,11 +157,12 @@ export default class httpClient {
         }, log)
     }
 
-    getScreenshotData(buildId: string, baseline: boolean, log: Logger) {
+    getScreenshotData(buildId: string, baseline: boolean, log: Logger, projectToken: string) {
         return this.request({
             url: '/screenshot',
             method: 'GET',
-            params: { buildId, baseline }
+            params: { buildId, baseline },
+            headers: {projectToken: projectToken}
         }, log);
     }
 

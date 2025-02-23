@@ -278,7 +278,7 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
         }
     }
 
-    // process for every viewport
+        // process for every viewport
     let navigated: boolean = false;
     let previousDeviceType: string | null = null;
 
