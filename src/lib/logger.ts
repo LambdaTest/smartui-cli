@@ -5,7 +5,7 @@ import getEnv from './env.js'
 import chalk from 'chalk'
 
 interface LogContext {
-  task?: string;
+	task?: string;
 }
 
 let logContext: LogContext = {};
@@ -16,26 +16,29 @@ export function updateLogContext(newContext: LogContext) {
 }
 
 const logLevel = (): string => {
-    let env: Env = getEnv();
-    return (env.LT_SDK_DEBUG) ? 'debug' : 'info';
+	let env: Env = getEnv();
+	return (env.LT_SDK_DEBUG) ? 'debug' : 'info';
 }
 
 // Create a Winston logger
 const logger = createLogger({
-    format: format.combine(
-    	format.timestamp(),
-      	format.printf(info => {
+	format: format.combine(
+		format.timestamp(),
+		format.printf(info => {
 			let contextString = Object.values(logContext).join(' | ');
-        	let message = (typeof info.message === 'object') ? JSON.stringify(info.message).trim() : info.message.trim();
+			let message = (typeof info.message === 'object') ? JSON.stringify(info.message).trim() : info.message.trim();
 			switch (info.level) {
 				case 'warn':
 					message = chalk.yellow(message);
 					break;
+				case 'error':
+					message = chalk.red(message);
+					break;
 			}
-        	return (info.level === 'info') ? message : `[${contextString}:${info.level}] ` + message;
-      	})
-    ),
-    transports: [
+			return (info.level === 'info') ? message : `[${contextString}:${info.level}] ` + message;
+		})
+	),
+	transports: [
 		new transports.Console({
 			level: logLevel()
 		}),

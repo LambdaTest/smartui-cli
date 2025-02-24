@@ -27,6 +27,7 @@ command
             process.exit(1);
         }
         let ctx: Context = ctxInit(command.optsWithGlobals());
+        ctx.isSnapshotCaptured = true
         
         if (!fs.existsSync(file)) {
             ctx.log.error(`Web Static Config file ${file} not found.`);
@@ -34,7 +35,21 @@ command
         }
         try {
             ctx.webStaticConfig = JSON.parse(fs.readFileSync(file, 'utf8'));
-            if (!validateWebStaticConfig(ctx.webStaticConfig)) throw new Error(validateWebStaticConfig.errors[0].message);
+            if (!validateWebStaticConfig(ctx.webStaticConfig)){
+
+                ctx.log.debug(JSON.stringify(validateWebStaticConfig.errors, null, 2));
+                // Iterate and add warning for "additionalProperties"
+                validateWebStaticConfig.errors?.forEach(error => {
+                    if (error.keyword === "additionalProperties") {
+                        ctx.log.warn(`Additional property "${error.params.additionalProperty}" is not allowed.`)
+                    } else {
+                        const validationError = error.message;
+                        throw new Error(validationError || 'Invalid Web Static config found in file : ' + file);
+                    }
+                });
+                throw new Error(validateWebStaticConfig.errors[0]?.message);
+            } 
+
             if(ctx.webStaticConfig && ctx.webStaticConfig.length === 0) {
                 ctx.log.error(`No URLs found in the specified config file -> ${file}`);
                 return;

@@ -189,6 +189,17 @@ const WebStaticConfigSchema: JSONSchemaType<WebStaticConfig> = {
                 maximum: 30000,
                 errorMessage: "waitForTimeout must be > 0 and <= 30000"
             },
+            execute: {
+                type: "object",
+                properties: {
+                    afterNavigation : {
+                        type: "string",
+                    },
+                    beforeSnapshot: {
+                        type: "string",
+                    }
+                }
+            },
         },
         required: ["name", "url"],
         additionalProperties: false

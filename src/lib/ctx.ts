@@ -128,6 +128,7 @@ export default (options: Record<string, string>): Context => {
         },
         cliVersion: version,
         totalSnapshots: -1,
-        isStartExec: false
+        isStartExec: false,
+        isSnapshotCaptured: false
     }
 }
