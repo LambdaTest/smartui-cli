@@ -8,6 +8,7 @@ import { uploadFigma, uploadWebFigmaCommand  } from './uploadFigma.js'
 import startServer from './server.js';
 import stopServer from './stopServer.js'
 import ping from './ping.js'
+import uploadPdf from './uploadPdf.js'
 
 const program = new Command();
 
@@ -21,6 +22,7 @@ program
     .addCommand(configWeb)
     .addCommand(configStatic)
     .addCommand(upload)
+    .addCommand(uploadPdf)
     .addCommand(startServer)
     .addCommand(stopServer)
     .addCommand(ping)
