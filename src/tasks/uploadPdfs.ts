@@ -54,5 +54,15 @@ async function uploadPdf(ctx: Context, pdfPath: string): Promise<void> {
     // Use buildName from options instead of ctx.build.name
     const buildName = ctx.options.buildName || `pdf-build-${Date.now()}`;
     
-    await ctx.client.uploadPdf(formData, buildName, ctx.log);
+    // Store the build name in context for polling
+    ctx.pdfBuildName = buildName;
+    
+    // Upload PDF and store response
+    const response = await ctx.client.uploadPdf(formData, buildName, ctx.log);
+    
+    // Store buildId from response for fetching results
+    if (response && response.data && response.data.buildId) {
+        ctx.pdfBuildId = response.data.buildId;
+        ctx.log.debug(`PDF upload successful. Build ID: ${ctx.pdfBuildId}`);
+    }
 } 

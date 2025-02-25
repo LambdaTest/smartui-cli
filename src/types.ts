@@ -54,6 +54,8 @@ export interface Context {
     testType?: string;
     isStartExec ?: boolean;
     isSnapshotCaptured ?: boolean;
+    pdfBuildName?: string;
+    pdfBuildId?: string;
 }
 
 export interface Env {

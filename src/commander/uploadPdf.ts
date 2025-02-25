@@ -5,6 +5,7 @@ import auth from '../tasks/auth.js';
 import ctxInit from '../lib/ctx.js';
 import uploadPdfs from '../tasks/uploadPdfs.js';
 import fs from 'fs';
+import { startPdfPolling } from '../lib/utils.js';
 
 const command = new Command();
 
@@ -12,6 +13,7 @@ command
     .name('upload-pdf')
     .description('Upload PDFs for visual comparison')
     .argument('<directory>', 'Path of the directory containing PDFs')
+    .option('--fetch-results [filename]', 'Fetch results and optionally specify an output file, e.g., <filename>.json')
     .option('--buildName <string>', 'Specify the build name')
     .action(async function(directory, _, command) {
         const options = command.optsWithGlobals();
@@ -47,6 +49,11 @@ command
 
         try {
             await tasks.run(ctx);
+            
+            // Start polling for results if requested
+            if (ctx.options.fetchResults) {
+                startPdfPolling(ctx);
+            }
         } catch (error) {
             console.log('\nRefer docs: https://www.lambdatest.com/support/docs/smart-visual-regression-testing/');
         }
