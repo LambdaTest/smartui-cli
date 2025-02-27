@@ -96,11 +96,7 @@ export default (options: Record<string, string>): Context => {
             basicAuthorization: basicAuthObj,
             smartIgnore: config.smartIgnore ?? false,
             delayedUpload: config.delayedUpload ?? false,
-<<<<<<< HEAD
-            ignoreHTTPSErrors: config.ignoreHTTPSErrors ?? false
-=======
             useGlobalCache: config.useGlobalCache ?? false
->>>>>>> upstream/stage
         },
         uploadFilePath: '',
         webStaticConfig: [],
