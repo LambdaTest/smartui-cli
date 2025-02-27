@@ -108,7 +108,7 @@ const ConfigSchema = {
         waitForDiscovery: {
             type: "number",
             minimum: 0,
-            maximum: 180000,
+            maximum: 1800000,
             errorMessage: "Invalid config; waitForDiscovery must be > 0 and <= 180000"
         },
         enableJavaScript: {
