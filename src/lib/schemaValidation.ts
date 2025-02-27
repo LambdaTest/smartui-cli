@@ -109,7 +109,7 @@ const ConfigSchema = {
             type: "number",
             minimum: 0,
             maximum: 1800000,
-            errorMessage: "Invalid config; waitForDiscovery must be > 0 and <= 180000"
+            errorMessage: "Invalid config; waitForDiscovery must be > 0 and <= 1800000"
         },
         enableJavaScript: {
             type: "boolean",
