@@ -122,6 +122,7 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
                 };
                 body = globalCache.get(requestUrl).body;
             } else {
+                ctx.log.debug(`Resource not found in cache or global cache ${requestUrl} fetching from server`);
                 response = await page.request.fetch(request, requestOptions);
                 body = await response.body();
             }
