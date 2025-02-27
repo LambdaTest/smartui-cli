@@ -229,6 +229,7 @@ process.on('SIGINT', async () => {
 // Background polling function
 export async function startPolling(ctx: Context): Promise<void> {
     ctx.log.info('Fetching results in progress....');
+    ctx.log.debug(ctx.build);
     isPollingActive = true;
 
     const intervalId = setInterval(async () => {
@@ -238,7 +239,7 @@ export async function startPolling(ctx: Context): Promise<void> {
         }
         
         try {
-            const resp = await ctx.client.getScreenshotData(ctx.build.id, ctx.build.baseline, ctx.log);
+            const resp = await ctx.client.getScreenshotData(ctx.build.id, ctx.build.baseline || false, ctx.log);
 
             if (!resp.build) {
                 ctx.log.info("Error: Build data is null.");

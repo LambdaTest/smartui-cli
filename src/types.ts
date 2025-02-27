@@ -19,6 +19,7 @@ export interface Context {
         mobile?: MobileConfig,
         waitForPageRender: number;
         waitForTimeout: number;
+        waitForDiscovery: number;
         enableJavaScript: boolean;
         cliEnableJavaScript: boolean;
         scrollTime: number;
@@ -26,6 +27,7 @@ export interface Context {
         basicAuthorization: basicAuth | undefined;
         smartIgnore: boolean;
         delayedUpload: boolean;
+        useGlobalCache: boolean;
         figma?: FigmaWebConfig;
         ignoreHTTPSErrors : boolean;
     };

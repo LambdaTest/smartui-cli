@@ -3,11 +3,13 @@ import { scrollToBottomAndBackToTop, getRenderViewports, getRenderViewportsForOp
 import { chromium, Locator } from "@playwright/test"
 import constants from "./constants.js";
 import { updateLogContext } from '../lib/logger.js'
+import NodeCache from 'node-cache'; 
 
+const globalCache = new NodeCache({ stdTTL: 3600, checkperiod: 600 });
 const MAX_RESOURCE_SIZE = 15 * (1024 ** 2); // 15MB
 var ALLOWED_RESOURCES = ['document', 'stylesheet', 'image', 'media', 'font', 'other'];
 const ALLOWED_STATUSES = [200, 201];
-const REQUEST_TIMEOUT = 10000;
+const REQUEST_TIMEOUT = 1800000;
 const MIN_VIEWPORT_HEIGHT = 1080;
 
 export default async function processSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record<string, any>> {
@@ -112,7 +114,16 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
                     headers: () => ({ 'content-type': cache[requestUrl].mimetype })
                 }
                 body = cache[requestUrl].body;
+            } else if (ctx.config.useGlobalCache && globalCache.has(requestUrl)) {
+                // Resource found in the global cache
+                ctx.log.debug(`Found resource ${requestUrl} in global cache`);
+                response = {
+                    status: () => 200,
+                    headers: () => ({ 'content-type': globalCache.get(requestUrl).type })
+                };
+                body = globalCache.get(requestUrl).body;
             } else {
+                ctx.log.debug(`Resource not found in cache or global cache ${requestUrl} fetching from server`);
                 response = await page.request.fetch(request, requestOptions);
                 body = await response.body();
             }
@@ -136,6 +147,14 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
                 ctx.log.debug(`Handling request ${requestUrl}\n - skipping disallowed resource type [${request.resourceType()}]`);
             } else {
                 ctx.log.debug(`Handling request ${requestUrl}\n - content-type ${response.headers()['content-type']}`);
+                
+                if (ctx.config.useGlobalCache) {
+                    globalCache.set(requestUrl, {
+                        body: body.toString('base64'),
+                        type: response.headers()['content-type']
+                    });
+                }
+            
                 cache[requestUrl] = {
                     body: body.toString('base64'),
                     type: response.headers()['content-type']
@@ -279,7 +298,7 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
         if (!navigated) {
             try {
                 // domcontentloaded event is more reliable than load event
-                await page.goto(snapshot.url, { waitUntil: "domcontentloaded" });
+                await page.goto(snapshot.url, { waitUntil: "domcontentloaded", timeout: ctx.config.waitForDiscovery });
                 // adding extra timeout since domcontentloaded event is fired pretty quickly
                 await new Promise(r => setTimeout(r, 1250));
                 if (ctx.config.waitForTimeout) await page.waitForTimeout(ctx.config.waitForTimeout);
