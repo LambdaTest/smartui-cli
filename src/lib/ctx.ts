@@ -88,13 +88,15 @@ export default (options: Record<string, string>): Context => {
             mobile: mobileConfig,
             waitForPageRender: config.waitForPageRender || 0,
             waitForTimeout: config.waitForTimeout || 0,
+            waitForDiscovery: config.waitForDiscovery || 30000,
             enableJavaScript: config.enableJavaScript ?? false,
             cliEnableJavaScript: config.cliEnableJavaScript ?? true,
             scrollTime: config.scrollTime || constants.DEFAULT_SCROLL_TIME,
             allowedHostnames: config.allowedHostnames || [],
             basicAuthorization: basicAuthObj,
             smartIgnore: config.smartIgnore ?? false,
-            delayedUpload: config.delayedUpload ?? false
+            delayedUpload: config.delayedUpload ?? false,
+            useGlobalCache: config.useGlobalCache ?? false
         },
         uploadFilePath: '',
         webStaticConfig: [],
