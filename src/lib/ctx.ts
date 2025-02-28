@@ -97,6 +97,7 @@ export default (options: Record<string, string>): Context => {
             smartIgnore: config.smartIgnore ?? false,
             delayedUpload: config.delayedUpload ?? false,
             useGlobalCache: config.useGlobalCache ?? false,
+            ignoreHTTPSErrors: config.ignoreHTTPSErrors ?? false,
         },
         uploadFilePath: '',
         webStaticConfig: [],
