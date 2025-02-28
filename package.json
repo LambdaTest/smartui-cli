@@ -8,6 +8,7 @@
   "scripts": {
     "build": "tsup",
     "release": "pnpm run build && pnpm publish --access public --no-git-checks",
+    "release:beta": "pnpm run build && pnpm publish --tag beta --access public --no-git-checks",
     "local-build": "pnpm run build && pnpm pack"
   },
   "bin": {
