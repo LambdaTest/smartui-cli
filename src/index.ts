@@ -6,12 +6,16 @@ import httpClient from './lib/httpClient.js'
 import logger from './lib/logger.js'
 import chalk from 'chalk'
 import pkgJSON from './../package.json'
+import constants from './lib/constants.js';
+import fs from 'fs';
 
 (async function() {
     let client = new httpClient(getEnv());
     let log = logger;
 
     try {
+        // Delete log file
+        fs.unlinkSync(constants.LOG_FILE_PATH);
         let { data: { latestVersion, deprecated, additionalDescription } } = await client.checkUpdate(log);
         log.info(`\nLambdaTest SmartUI CLI v${pkgJSON.version}`);
         log.info(chalk.yellow(`${additionalDescription}`));

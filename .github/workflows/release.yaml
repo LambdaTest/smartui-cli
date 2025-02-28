@@ -27,9 +27,23 @@ jobs:
     - name: Install dependencies
       run: pnpm install
 
-    - name: Release the package
-      run: pnpm run release
+    - name: Check if beta release
+      id: check-beta
+      run: |
+        if [[ ${{ github.ref_name }} =~ -beta ]]; then
+          echo "IS_BETA=true" >> $GITHUB_OUTPUT
+        else
+          echo "IS_BETA=false" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Release beta package
+      if: steps.check-beta.outputs.IS_BETA == 'true'
+      run: pnpm run release:beta
       env:
         NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-
+    - name: Release stable package
+      if: steps.check-beta.outputs.IS_BETA == 'false'
+      run: pnpm run release
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

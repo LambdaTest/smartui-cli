@@ -22,9 +22,9 @@ export default class httpClient {
 
         let proxyUrl = null;
         try {
-        // Handle URL with or without protocol
-        const urlStr = SMARTUI_API_PROXY?.startsWith('http') ? 
-            SMARTUI_API_PROXY : `http://${SMARTUI_API_PROXY}`;
+            // Handle URL with or without protocol
+            const urlStr = SMARTUI_API_PROXY?.startsWith('http') ?
+                SMARTUI_API_PROXY : `http://${SMARTUI_API_PROXY}`;
             proxyUrl = SMARTUI_API_PROXY ? new URL(urlStr) : null;
         } catch (error) {
             console.error('Invalid proxy URL:', error);
@@ -36,7 +36,7 @@ export default class httpClient {
                 port: proxyUrl.port ? Number(proxyUrl.port) : 80
             } : false
         };
-     
+
         if (SMARTUI_API_SKIP_CERTIFICATES) {
             axiosConfig.httpsAgent = new https.Agent({
                 rejectUnauthorized: false
@@ -45,7 +45,7 @@ export default class httpClient {
 
         this.axiosInstance = axios.create(axiosConfig);
 
-        
+
         this.axiosInstance.interceptors.request.use((config) => {
             config.headers['projectToken'] = this.projectToken;
             config.headers['projectName'] = this.projectName;
@@ -53,21 +53,55 @@ export default class httpClient {
             config.headers['accessKey'] = this.accessKey;
             return config;
         });
+
+        //  Add a request interceptor for retry logic
+        this.axiosInstance.interceptors.response.use(
+            (response) => response,
+            async (error) => {
+                const { config } = error;
+                if (config && config.url === '/screenshot' && config.method === 'post') {
+                    // Set default retry count and delay if not already defined
+                    if (!config.retryCount) {
+                        config.retryCount = 0;
+                        config.retry = 2;
+                        config.retryDelay = 5000;
+                    }
+
+                    // Check if we should retry the request
+                    if (config.retryCount < config.retry) {
+                        config.retryCount += 1;
+                        await new Promise(resolve => setTimeout(resolve, config.retryDelay));
+                        config.timeout = 30000;
+                        return this.axiosInstance(config);
+                    }
+
+                    // If we've reached max retries, reject with the error
+                    return Promise.reject(error);
+                }
+            }
+        );
     }
+
+
 
     async request(config: AxiosRequestConfig, log: Logger): Promise<Record<string, any>> {
         log.debug(`http request: ${config.method} ${config.url}`);
-        if(config && config.data && !config.data.name) {
+        if (config && config.data && !config.data.name) {
             log.debug(config.data);
         }
         return this.axiosInstance.request(config)
             .then(resp => {
-                log.debug(`http response: ${JSON.stringify({
-                    status: resp.status,
-                    headers: resp.headers,
-                    body: resp.data
-                })}`)
-                return resp.data;
+                if (resp) {
+                    log.debug(`http response: ${JSON.stringify({
+                        status: resp.status,
+                        headers: resp.headers,
+                        body: resp.data
+                    })}`)
+                    return resp.data;
+                } else {
+                    log.debug(`empty response: ${JSON.stringify(resp)}`)
+                    return {};
+                }
             })
             .catch(error => {
                 if (error.response) {
@@ -107,7 +141,7 @@ export default class httpClient {
             throw new Error('Authentication failed, project token not received');
         }
     }
-    
+
     createBuild(git: Git, config: any, log: Logger, buildName: string, isStartExec: boolean) {
         return this.request({
             url: '/build',
@@ -128,7 +162,7 @@ export default class httpClient {
             params: { buildId, baseline }
         }, log);
     }
-    
+
     ping(buildId: string, log: Logger) {
         return this.request({
             url: '/build/ping',
@@ -138,10 +172,10 @@ export default class httpClient {
             }
         }, log);
     }
-    
+
 
     finalizeBuild(buildId: string, totalSnapshots: number, log: Logger) {
-        let params: Record<string, string | number> = {buildId};
+        let params: Record<string, string | number> = { buildId };
         if (totalSnapshots > -1) params.totalSnapshots = totalSnapshots;
 
         return this.request({
@@ -156,7 +190,7 @@ export default class httpClient {
             url: `/builds/${ctx.build.id}/snapshot`,
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            data: { 
+            data: {
                 snapshot,
                 test: {
                     type: ctx.testType,
@@ -171,7 +205,7 @@ export default class httpClient {
             url: `/build/${ctx.build.id}/snapshot`,
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            data: { 
+            data: {
                 name: snapshot.name,
                 url: snapshot.url,
                 snapshotUuid: snapshotUuid,
@@ -185,13 +219,13 @@ export default class httpClient {
     }
 
     uploadScreenshot(
-        { id: buildId, name: buildName, baseline }: Build, 
-        ssPath: string, ssName: string, browserName :string, viewport: string, log: Logger
+        { id: buildId, name: buildName, baseline }: Build,
+        ssPath: string, ssName: string, browserName: string, viewport: string, log: Logger
     ) {
         browserName = browserName === constants.SAFARI ? constants.WEBKIT : browserName;
         const file = fs.readFileSync(ssPath);
         const form = new FormData();
-        form.append('screenshot', file, { filename: `${ssName}.png`, contentType: 'image/png'});
+        form.append('screenshot', file, { filename: `${ssName}.png`, contentType: 'image/png' });
         form.append('browser', browserName);
         form.append('viewport', viewport);
         form.append('buildId', buildId);
@@ -204,19 +238,20 @@ export default class httpClient {
             method: 'POST',
             headers: form.getHeaders(),
             data: form,
+            timeout: 30000
         })
-        .then(() => {
-            log.debug(`${ssName} for ${browserName} ${viewport} uploaded successfully`);
-        })
-        .catch(error => {
-            log.error(`Unable to upload screenshot ${JSON.stringify(error)}`)
-            if (error && error.response && error.response.data && error.response.data.error) {
-                throw new Error(error.response.data.error.message);
-            }
-            if (error) {
-                throw new Error(JSON.stringify(error));
-            }
-        })
+            .then(() => {
+                log.debug(`${ssName} for ${browserName} ${viewport} uploaded successfully`);
+            })
+            .catch(error => {
+                log.error(`Unable to upload screenshot ${JSON.stringify(error)}`)
+                if (error && error.response && error.response.data && error.response.data.error) {
+                    throw new Error(error.response.data.error.message);
+                }
+                if (error) {
+                    throw new Error(JSON.stringify(error));
+                }
+            })
     }
 
     checkUpdate(log: Logger) {
@@ -232,15 +267,15 @@ export default class httpClient {
     }
 
     getFigmaFilesAndImages(figmaFileToken: string, figmaToken: String | undefined, queryParams: string, authToken: string, depth: number, markBaseline: boolean, buildName: string, log: Logger) {
-    const requestBody = {
-        figma_file_token: figmaFileToken,
-        figma_token: figmaToken,
-        query_params: queryParams,
-        auth: authToken,
-        depth: depth,
-        mark_base_line: markBaseline,
-        build_name: buildName
-    };
+        const requestBody = {
+            figma_file_token: figmaFileToken,
+            figma_token: figmaToken,
+            query_params: queryParams,
+            auth: authToken,
+            depth: depth,
+            mark_base_line: markBaseline,
+            build_name: buildName
+        };
 
         return this.request({
             url: "/uploadfigma",
@@ -297,7 +332,7 @@ export default class httpClient {
         return this.request({
             url: uploadURL,
             method: 'PUT',
-            headers:{
+            headers: {
                 'Content-Type': 'application/json',
             },
             data: snapshot,
@@ -305,26 +340,26 @@ export default class httpClient {
             maxContentLength: Infinity, // prevent axios from limiting the content size
         }, ctx.log)
     }
-  
+
     processWebFigma(requestBody: any, log: Logger) {
-            return this.request({
-                url: "figma-web/upload",
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                data: JSON.stringify(requestBody)
-            }, log);
-        }
+        return this.request({
+            url: "figma-web/upload",
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            data: JSON.stringify(requestBody)
+        }, log);
+    }
 
     fetchWebFigma(buildId: any, log: Logger) {
-            return this.request({
-                url: "figma-web/fetch",
-                method: "GET",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                params: { buildId }
-            }, log);
-        }
+        return this.request({
+            url: "figma-web/fetch",
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            params: { buildId }
+        }, log);
+    }
 }

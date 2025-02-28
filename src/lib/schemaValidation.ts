@@ -105,6 +105,12 @@ const ConfigSchema = {
             maximum: 30000,
             errorMessage: "Invalid config; waitForTimeout must be > 0 and <= 30000"
         },
+        waitForDiscovery: {
+            type: "number",
+            minimum: 0,
+            maximum: 1800000,
+            errorMessage: "Invalid config; waitForDiscovery must be > 0 and <= 1800000"
+        },
         enableJavaScript: {
             type: "boolean",
             errorMessage: "Invalid config; enableJavaScript must be true/false"
@@ -116,6 +122,10 @@ const ConfigSchema = {
         smartIgnore: {
             type: "boolean",
             errorMessage: "Invalid config; smartIgnore must be true/false"
+        },
+        ignoreHTTPSErrors: {
+            type : "boolean",
+            errorMessage: "Invalid config; ignoreHttpsError must be true/false"
         },
         scrollTime: {
             type: "number",
@@ -154,6 +164,10 @@ const ConfigSchema = {
         delayedUpload: {
             type: "boolean",
             errorMessage: "Invalid config; delayedUpload must be true/false"
+        },
+        useGlobalCache: {
+            type: "boolean",
+            errorMessage: "Invalid config; useGlobalCache must be true/false"
         },
     },
     anyOf: [
