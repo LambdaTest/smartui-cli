@@ -24,6 +24,7 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
     let contextOptions: Record<string, any> = {
         javaScriptEnabled: ctx.config.cliEnableJavaScript,
         userAgent: constants.CHROME_USER_AGENT,
+        ignoreHTTPSErrors : ctx.config.ignoreHTTPSErrors
     }
     if (!ctx.browser?.isConnected()) {
         if (ctx.env.HTTP_PROXY || ctx.env.HTTPS_PROXY) launchOptions.proxy = { server: ctx.env.HTTP_PROXY || ctx.env.HTTPS_PROXY };

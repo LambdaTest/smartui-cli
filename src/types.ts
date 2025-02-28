@@ -29,6 +29,7 @@ export interface Context {
         delayedUpload: boolean;
         useGlobalCache: boolean;
         figma?: FigmaWebConfig;
+        ignoreHTTPSErrors : boolean;
     };
     uploadFilePath: string;
     webStaticConfig: WebStaticConfig;
