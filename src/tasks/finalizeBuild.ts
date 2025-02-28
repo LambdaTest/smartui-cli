@@ -33,8 +33,6 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
                     let resp = await ctx.client.getS3PreSignedURL(ctx);
                     await ctx.client.uploadLogs(ctx, resp.data.url);
                 }
-                fs.unlinkSync(constants.LOG_FILE_PATH);
-                ctx.log.debug(`Log file deleted: ${constants.LOG_FILE_PATH}`);
             } catch (error: any) {
                 ctx.log.debug(error);
             }
