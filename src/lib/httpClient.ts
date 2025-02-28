@@ -327,4 +327,78 @@ export default class httpClient {
                 params: { buildId }
             }, log);
         }
+
+    async uploadPdf(formData: FormData, buildName: string, log: Logger): Promise<any> {
+        // Add required parameters to form data
+        formData.append('projectToken', this.projectToken);
+        formData.append('buildName', buildName);
+        formData.append('projectType', 'pdf'); // Add project type
+
+        // Create a new axios instance for this specific request
+        const response = await axios.request({
+            url: 'https://api.lambdatest.com/pdf/upload',
+            method: 'POST',
+            headers: {
+                ...formData.getHeaders(),
+                'username': this.username,
+                'accessKey': this.accessKey
+            },
+            data: formData,
+        });
+
+        log.debug(`http response: ${JSON.stringify({
+            status: response.status,
+            headers: response.headers,
+            body: response.data
+        })}`);
+
+        return response.data;
+    }
+
+    async fetchPdfResults(buildName: string, buildId: string | undefined, log: Logger): Promise<any> {
+        // Create params object with required parameters
+        const params: Record<string, string> = {
+            projectToken: this.projectToken
+        };
+        
+        // Use buildId if available, otherwise use buildName
+        if (buildId) {
+            params.buildId = buildId;
+        } else if (buildName) {
+            params.buildName = buildName;
+        }
+        
+        // Create basic auth token
+        const auth = Buffer.from(`${this.username}:${this.accessKey}`).toString('base64');
+        
+        try {
+            // Create a new axios instance for this specific request
+            const response = await axios.request({
+                url: 'https://api.lambdatest.com/automation/smart-ui/screenshot/build/status',
+                method: 'GET',
+                params: params,
+                headers: {
+                    'accept': 'application/json',
+                    'Authorization': `Basic ${auth}`
+                }
+            });
+
+            log.debug(`http response: ${JSON.stringify({
+                status: response.status,
+                headers: response.headers,
+                body: response.data
+            })}`);
+
+            return response.data;
+        } catch (error: any) {
+            log.error(`Error fetching PDF results: ${error.message}`);
+            if (error.response) {
+                log.debug(`Response error: ${JSON.stringify({
+                    status: error.response.status,
+                    data: error.response.data
+                })}`);
+            }
+            throw error;
+        }
+    }
 }
