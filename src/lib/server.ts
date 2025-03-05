@@ -72,7 +72,7 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 								startPolling(ctx, capsBuildId, is_baseline, fetchedCapabilitiesResp.projectToken)
 							}
 						}
-						console.log(`fetch caps for sessionId: ${sessionId} are ${JSON.stringify(fetchedCapabilitiesResp)}`)
+						ctx.log.debug(`fetch caps for sessionId: ${sessionId} are ${JSON.stringify(fetchedCapabilitiesResp)}`)
 					} catch (error: any) {
 						// console.log(`Failed to fetch capabilities for sessionId ${sessionId}: ${error.message}`);
 					}
