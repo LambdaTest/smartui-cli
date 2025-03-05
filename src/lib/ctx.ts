@@ -132,7 +132,7 @@ export default (options: Record<string, string>): Context => {
         cliVersion: version,
         totalSnapshots: -1,
         isStartExec: false,
-        isSnapshotCaptured: false
+        isSnapshotCaptured: false,
         sessionCapabilitiesMap: new Map<string, any[]>(),
         sessionToBuildMap: new Map<string, string>(),
         buildToSnapshotCountMap: new Map<string, number>(),
