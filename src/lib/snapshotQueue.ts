@@ -1,8 +1,9 @@
 import { access } from "fs";
-import { Snapshot, Context} from "../types.js";
+import { Snapshot, Context } from "../types.js";
 import constants from "./constants.js";
 import processSnapshot from "./processSnapshot.js"
 import { v4 as uuidv4 } from 'uuid';
+import { startPolling } from "./utils.js";
 
 export default class Queue {
     private snapshots: Array<Snapshot> = [];
@@ -19,7 +20,7 @@ export default class Queue {
 
     enqueue(item: Snapshot): void {
         this.snapshots.push(item);
-        if(!this.ctx.config.delayedUpload){
+        if (!this.ctx.config.delayedUpload) {
             if (!this.processing) {
                 this.processing = true;
                 this.processNext();
@@ -42,21 +43,21 @@ export default class Queue {
             if (snapshot.options.mobile) {
                 this.generateMobileVariants(snapshot, snapshot.options.mobile);
             }
-        } 
-        
+        }
+
         if (!snapshot.options || (snapshot.options && !snapshot.options.web && !snapshot.options.mobile)) {
             this.generateVariants(snapshot, this.ctx.config);
         }
     }
-    
+
 
     private generateVariants(snapshot: Snapshot, config: any): void {
         // Process web configurations if they exist
-        
+
         if (config.web) {
             const browsers = config.web.browsers || [];
             const viewports = config.web.viewports || [];
-            
+
             for (const browser of browsers) {
                 for (const viewport of viewports) {
                     const width = viewport.width;
@@ -66,24 +67,24 @@ export default class Queue {
                 }
             }
         }
-    
+
         // Process mobile configurations if they exist
         if (config.mobile) {
             const devices = config.mobile.devices || [];
             const orientation = config.mobile.orientation || constants.MOBILE_ORIENTATION_PORTRAIT;
-        
+
             for (const device of devices) {
                 const variant = `${snapshot.name}_${device}_${orientation}`;
                 this.variants.push(variant);
             }
         }
     }
-    
+
 
     private generateWebVariants(snapshot: Snapshot, webConfig: any): void {
         const browsers = webConfig.browsers ?? this.ctx.config.web?.browsers ?? [constants.CHROME, constants.EDGE, constants.FIREFOX, constants.SAFARI];
         const viewports = webConfig.viewports || [];
-        
+
         for (const browser of browsers) {
             for (const viewport of viewports) {
                 const width = viewport[0];
@@ -97,13 +98,13 @@ export default class Queue {
     private generateMobileVariants(snapshot: Snapshot, mobileConfig: any): void {
         const devices = mobileConfig.devices || [];
         const orientation = mobileConfig.orientation ?? this.ctx.config.mobile?.orientation ?? constants.MOBILE_ORIENTATION_PORTRAIT;
-        
+
         for (const device of devices) {
             const variant = `${snapshot.name}_${device}_${orientation}`;
             this.variants.push(variant);
         }
     }
-    
+
 
     private filterExistingVariants(snapshot: Snapshot, config: any): boolean {
 
@@ -113,12 +114,12 @@ export default class Queue {
             const webDrop = this.filterWebVariants(snapshot, snapshot.options.web);
             if (!webDrop) drop = false;
         }
-        
+
         if (snapshot.options && snapshot.options.mobile) {
             const mobileDrop = this.filterMobileVariants(snapshot, snapshot.options.mobile);
             if (!mobileDrop) drop = false;
         }
-        
+
         // Fallback to the global config if neither web nor mobile options are present in snapshot.options
         if (!snapshot.options || (snapshot.options && !snapshot.options.web && !snapshot.options.mobile)) {
             const configDrop = this.filterVariants(snapshot, config);
@@ -129,33 +130,33 @@ export default class Queue {
 
     private filterVariants(snapshot: Snapshot, config: any): boolean {
         let allVariantsDropped = true;
-    
+
         // Process web configurations if they exist in config
         if (config.web) {
             const browsers = config.web.browsers || [];
             const viewports = config.web.viewports || [];
-    
+
             for (const browser of browsers) {
                 for (const viewport of viewports) {
                     const width = viewport.width;
                     const height = viewport.height || 0;
                     const variant = `${snapshot.name}_${browser}_viewport[${width}]_viewport[${height}]`;
-    
+
                     if (!this.variants.includes(variant)) {
                         allVariantsDropped = false; // Found a variant that needs processing
                         if (!snapshot.options) snapshot.options = {};
                         if (!snapshot.options.web) snapshot.options.web = { browsers: [], viewports: [] };
-                        
+
                         if (!snapshot.options.web.browsers.includes(browser)) {
                             snapshot.options.web.browsers.push(browser);
                         }
-    
+
                         // Check for unique viewports to avoid duplicates
-                        const viewportExists = snapshot.options.web.viewports.some(existingViewport => 
+                        const viewportExists = snapshot.options.web.viewports.some(existingViewport =>
                             existingViewport[0] === width &&
                             (existingViewport.length < 2 || existingViewport[1] === height)
                         );
-    
+
                         if (!viewportExists) {
                             if (height > 0) {
                                 snapshot.options.web.viewports.push([width, height]);
@@ -167,21 +168,21 @@ export default class Queue {
                 }
             }
         }
-    
+
         // Process mobile configurations if they exist in config
         if (config.mobile) {
             const devices = config.mobile.devices || [];
             const orientation = config.mobile.orientation || constants.MOBILE_ORIENTATION_PORTRAIT;
             const fullPage = config.mobile.fullPage ?? true;
-        
+
             for (const device of devices) {
                 const variant = `${snapshot.name}_${device}_${orientation}`;
-        
+
                 if (!this.variants.includes(variant)) {
                     allVariantsDropped = false; // Found a variant that needs processing
                     if (!snapshot.options) snapshot.options = {};
                     if (!snapshot.options.mobile) snapshot.options.mobile = { devices: [], orientation: constants.MOBILE_ORIENTATION_PORTRAIT, fullPage: fullPage };
-                    
+
                     if (!snapshot.options.mobile.devices.includes(device)) {
                         snapshot.options.mobile.devices.push(device);
                     }
@@ -189,38 +190,38 @@ export default class Queue {
                 }
             }
         }
-        
-    
+
+
         return allVariantsDropped;
-    }    
-    
+    }
+
     private filterWebVariants(snapshot: Snapshot, webConfig: any): boolean {
         const browsers = webConfig.browsers ?? this.ctx.config.web?.browsers ?? [constants.CHROME, constants.EDGE, constants.FIREFOX, constants.SAFARI];
         const viewports = webConfig.viewports || [];
         let allVariantsDropped = true;
-    
+
         if (!snapshot.options) {
             snapshot.options = {};
         }
-    
+
         snapshot.options.web = { browsers: [], viewports: [] };
-        
+
         for (const browser of browsers) {
             for (const viewport of viewports) {
                 const width = viewport[0];
                 const height = viewport[1] || 0;
                 const variant = `${snapshot.name}_${browser}_viewport[${width}]_viewport[${height}]`;
-    
+
                 if (!this.variants.includes(variant)) {
                     allVariantsDropped = false; // Found a variant that needs processing
                     if (!snapshot.options.web.browsers.includes(browser)) {
                         snapshot.options.web.browsers.push(browser);
                     }
                     // Only add unique viewports to avoid duplicates
-                    const viewportExists = snapshot.options.web.viewports.some(existingViewport => 
+                    const viewportExists = snapshot.options.web.viewports.some(existingViewport =>
                         existingViewport[0] === width &&
                         (existingViewport.length < 2 || existingViewport[1] === height)
-                    );                 
+                    );
                     if (!viewportExists) {
                         if (height > 0) {
                             snapshot.options.web.viewports.push([width, height]);
@@ -233,23 +234,23 @@ export default class Queue {
         }
         return allVariantsDropped;
     }
-    
-    
+
+
     private filterMobileVariants(snapshot: Snapshot, mobileConfig: any): boolean {
         if (!snapshot.options) {
             snapshot.options = {};
         }
-    
+
         const devices = mobileConfig.devices || [];
         const orientation = mobileConfig.orientation ?? this.ctx.config.mobile?.orientation ?? constants.MOBILE_ORIENTATION_PORTRAIT;
         const fullPage = mobileConfig.fullPage ?? this.ctx.config.mobile?.fullPage ?? true;
         let allVariantsDropped = true;
 
         snapshot.options.mobile = { devices: [], orientation: constants.MOBILE_ORIENTATION_PORTRAIT, fullPage: fullPage };
-        
+
         for (const device of devices) {
             const variant = `${snapshot.name}_${device}_${orientation}`;
-    
+
             if (!this.variants.includes(variant)) {
                 allVariantsDropped = false; // Found a variant that needs processing
                 snapshot.options.mobile.devices.push(device);
@@ -262,7 +263,7 @@ export default class Queue {
     private async processNext(): Promise<void> {
         if (!this.isEmpty()) {
             let snapshot;
-            if (this.ctx.config.delayedUpload){
+            if (this.ctx.config.delayedUpload) {
                 snapshot = this.snapshots.pop();
             } else {
                 snapshot = this.snapshots.shift();
@@ -298,12 +299,14 @@ export default class Queue {
                     let capsBuildId = ''
                     let capsProjectToken = '';
                     let useCapsBuildId = false
+                    let useKafkaFlowCaps = false
 
                     // Fetch projectToken and buildId if sessionId exists in sessionCapabilitiesMap
                     if (sessionId && this.ctx.sessionCapabilitiesMap?.has(sessionId)) {
                         const cachedCapabilities = this.ctx.sessionCapabilitiesMap.get(sessionId);
                         capsProjectToken = cachedCapabilities?.projectToken || '';
                         capsBuildId = cachedCapabilities?.buildId || '';
+                        useKafkaFlowCaps = cachedCapabilities?.useKafkaFlow || false;
                         if (capsBuildId != '' && capsProjectToken != '') {
                             useCapsBuildId = true; // Set to true if capsBuildId is not empty
                         }
@@ -312,20 +315,18 @@ export default class Queue {
                     // Process and upload snapshot
                     let { processedSnapshot, warnings } = await processSnapshot(snapshot, this.ctx);
 
-                    if(this.ctx.build && this.ctx.build.useKafkaFlow) {
-                        const snapshotUuid = uuidv4();
-                        const presignedResponse = await this.ctx.client.getS3PresignedURLForSnapshotUpload(this.ctx, processedSnapshot.name, snapshotUuid);
-                        const uploadUrl = presignedResponse.data.url;
-                        
-                        await this.ctx.client.uploadSnapshotToS3(this.ctx, uploadUrl, processedSnapshot)
-                        await this.ctx.client.processSnapshot(this.ctx, processedSnapshot, snapshotUuid);
-                    } else {
-                        await this.ctx.client.uploadSnapshot(this.ctx, processedSnapshot);
-                    }
-
-                    this.ctx.totalSnapshots++;
                     if (useCapsBuildId) {
-                        await this.ctx.client.uploadSnapshotForCaps(this.ctx, processedSnapshot, capsBuildId, capsProjectToken);
+                        if (useKafkaFlowCaps) {
+                            const snapshotUuid = uuidv4();
+                            const presignedResponse = await this.ctx.client.getS3PresignedURLForSnapshotUploadCaps(this.ctx, processedSnapshot.name, snapshotUuid, capsBuildId, capsProjectToken);
+                            const uploadUrl = presignedResponse.data.url;
+
+                            await this.ctx.client.uploadSnapshotToS3Caps(this.ctx, uploadUrl, processedSnapshot, capsProjectToken)
+                            await this.ctx.client.processSnapshotCaps(this.ctx, processedSnapshot, snapshotUuid, capsBuildId, capsProjectToken);
+                        } else {
+                            await this.ctx.client.uploadSnapshotForCaps(this.ctx, processedSnapshot, capsBuildId, capsProjectToken);
+                        }
+
                         // Increment snapshot count for the specific buildId
                         const cachedCapabilities = this.ctx.sessionCapabilitiesMap.get(sessionId);
                         const currentCount = cachedCapabilities?.snapshotCount || 0; // Get the current snapshot count for sessionId
@@ -340,17 +341,32 @@ export default class Queue {
                                     name: resp.data.buildName,
                                     url: resp.data.buildURL,
                                     baseline: resp.data.baseline,
+                                    useKafkaFlow: resp.data.useKafkaFlow || false,
                                 }
                             } else {
                                 throw new Error('SmartUI capabilities are missing in env variables or in driver capabilities');
                             }
+                            if (this.ctx.options.fetchResults) {
+                                if (this.ctx.build && this.ctx.build.id) {
+                                    startPolling(this.ctx, '', false, '');
+                                }
+                            }
                         }
-                        await this.ctx.client.uploadSnapshot(this.ctx, processedSnapshot);
+                        if (this.ctx.build && this.ctx.build.useKafkaFlow) {
+                            const snapshotUuid = uuidv4();
+                            const presignedResponse = await this.ctx.client.getS3PresignedURLForSnapshotUpload(this.ctx, processedSnapshot.name, snapshotUuid);
+                            const uploadUrl = presignedResponse.data.url;
+
+                            await this.ctx.client.uploadSnapshotToS3(this.ctx, uploadUrl, processedSnapshot)
+                            await this.ctx.client.processSnapshot(this.ctx, processedSnapshot, snapshotUuid);
+                        } else {
+                            await this.ctx.client.uploadSnapshot(this.ctx, processedSnapshot);
+                        }
                         this.ctx.totalSnapshots++;
                     }
                     this.processedSnapshots.push({ name: snapshot?.name, warnings });
                 }
-                
+
             } catch (error: any) {
                 this.ctx.log.debug(`snapshot failed; ${error}`);
                 this.processedSnapshots.push({ name: snapshot?.name, error: error.message });
