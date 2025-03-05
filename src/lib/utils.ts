@@ -10,7 +10,7 @@ import { promisify } from 'util'
 const sleep = promisify(setTimeout);
 import { build } from 'tsup';
 
-let isPollingActive = false;
+// let isPollingActive = false;
 let globalContext: Context;
 export const setGlobalContext = (newContext: Context): void => {
     globalContext = newContext;
@@ -217,24 +217,31 @@ export function getRenderViewportsForOptions(options: any): Array<Record<string,
 }
 
 // Global SIGINT handler
-process.on('SIGINT', async () => {
-    if (isPollingActive) {
-        console.log('Fetching results interrupted. Exiting...');
-        isPollingActive = false;
-    } else {
-        console.log('\nExiting gracefully...');
-    }
-    process.exit(0);
-});
+// process.on('SIGINT', async () => {
+//     if (isPollingActive) {
+//         console.log('Fetching results interrupted. Exiting...');
+//         isPollingActive = false;
+//     } else {
+//         console.log('\nExiting gracefully...');
+//     }
+//     process.exit(0);
+// });
 
 // Background polling function
 export async function startPolling(ctx: Context, build_id: string, baseline: boolean, projectToken: string): Promise<void> {
+    let filename = '';
+    let isPollingActive = true;
     if (build_id) {
+        filename = `${build_id}.json`
         ctx.log.info(`Fetching results for buildId ${build_id} in progress....`);
     } else if (ctx.build && ctx.build.id) {
+        if (ctx.options.fetchResultsFileName) {
+            filename = ctx.options.fetchResultsFileName
+        } else {
+            filename = `${ctx.build.id}.json`
+        }
         ctx.log.info(`Fetching results for buildId ${ctx.build.id} in progress....`);
     }
-    isPollingActive = true;
 
     const intervalId = setInterval(async () => {
         if (!isPollingActive) {
@@ -244,17 +251,10 @@ export async function startPolling(ctx: Context, build_id: string, baseline: boo
         
         try {
             let resp;
-            let filename;
             if (build_id) {
                 resp = await ctx.client.getScreenshotData(build_id, baseline, ctx.log, projectToken);
-                filename = `${build_id}.json`
             } else if (ctx.build && ctx.build.id) {
                 resp = await ctx.client.getScreenshotData(ctx.build.id, ctx.build.baseline, ctx.log, '');
-                if (ctx.options.fetchResultsFileName) {
-                    filename = ctx.options.fetchResultsFileName
-                } else {
-                    filename = `${ctx.build.id}.json`
-                }
             } else {
                 return;
             }
