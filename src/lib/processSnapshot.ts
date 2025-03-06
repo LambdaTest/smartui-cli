@@ -191,6 +191,17 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
             processedOptions.loadDomContent = true;
         }
 
+        if (options.sessionId) {
+            const sessionId = options.sessionId;
+            processedOptions.sessionId = sessionId
+            if (ctx.sessionCapabilitiesMap && ctx.sessionCapabilitiesMap.has(sessionId)) {
+                const sessionCapabilities = ctx.sessionCapabilitiesMap.get(sessionId);
+                if (sessionCapabilities && sessionCapabilities.id) {
+                    processedOptions.testId = sessionCapabilities.id;
+                }
+            }
+        }
+
         if (options.web && Object.keys(options.web).length) {
             processedOptions.web = {};
         
@@ -267,7 +278,7 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
         }
     }
 
-    // process for every viewport
+        // process for every viewport
     let navigated: boolean = false;
     let previousDeviceType: string | null = null;
 

@@ -11,7 +11,9 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
         task: async (ctx, task): Promise<void> => {
 
             if (ctx.options.fetchResults) {
-                startPolling(ctx);
+                if (ctx.build && ctx.build.id) {
+                    startPolling(ctx, '', false, '');
+                }
             }
 
             updateLogContext({task: 'exec'});

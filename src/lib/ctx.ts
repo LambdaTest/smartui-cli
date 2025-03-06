@@ -53,7 +53,7 @@ export default (options: Record<string, string>): Context => {
                 process.exit(1);
             }
             fetchResultObj = true
-            fetchResultsFileObj = options.fetchResults === true ? 'results.json' : options.fetchResults;
+            fetchResultsFileObj = options.fetchResults === true ? '' : options.fetchResults;
         } else {
             fetchResultObj = false
             fetchResultsFileObj = ''
@@ -98,6 +98,7 @@ export default (options: Record<string, string>): Context => {
             delayedUpload: config.delayedUpload ?? false,
             useGlobalCache: config.useGlobalCache ?? false,
             ignoreHTTPSErrors: config.ignoreHTTPSErrors ?? false,
+            skipBuildCreation: config.skipBuildCreation ?? false
         },
         uploadFilePath: '',
         webStaticConfig: [],
@@ -131,6 +132,9 @@ export default (options: Record<string, string>): Context => {
         cliVersion: version,
         totalSnapshots: -1,
         isStartExec: false,
-        isSnapshotCaptured: false
+        isSnapshotCaptured: false,
+        sessionCapabilitiesMap: new Map<string, any[]>(),
+        buildToSnapshotCountMap: new Map<string, number>(),
+        fetchResultsForBuild: new Array<string>
     }
 }

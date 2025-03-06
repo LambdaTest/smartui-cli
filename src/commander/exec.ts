@@ -3,10 +3,10 @@ import which from 'which'
 import { Context } from '../types.js'
 import { color, Listr, ListrDefaultRendererLogLevels } from 'listr2'
 import startServer from '../tasks/startServer.js'
-import auth from '../tasks/auth.js'
+import authExec from '../tasks/authExec.js'
 import ctxInit from '../lib/ctx.js'
 import getGitInfo from '../tasks/getGitInfo.js'
-import createBuild from '../tasks/createBuild.js'
+import createBuildExec from '../tasks/createBuildExec.js'
 import exec from '../tasks/exec.js'
 import processSnapshots from '../tasks/processSnapshot.js'
 import finalizeBuild from '../tasks/finalizeBuild.js'
@@ -39,10 +39,10 @@ command
 
         let tasks = new Listr<Context>(
             [
-                auth(ctx),
+                authExec(ctx),
                 startServer(ctx),
                 getGitInfo(ctx),
-                createBuild(ctx),
+                createBuildExec(ctx),
                 exec(ctx),
                 processSnapshots(ctx),
                 finalizeBuild(ctx)

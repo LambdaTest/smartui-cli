@@ -47,7 +47,9 @@ export default class httpClient {
 
 
         this.axiosInstance.interceptors.request.use((config) => {
-            config.headers['projectToken'] = this.projectToken;
+            if (!config.headers['projectToken']) {
+                config.headers['projectToken'] = this.projectToken;
+            }
             config.headers['projectName'] = this.projectName;
             config.headers['username'] = this.username;
             config.headers['accessKey'] = this.accessKey;
@@ -155,11 +157,12 @@ export default class httpClient {
         }, log)
     }
 
-    getScreenshotData(buildId: string, baseline: boolean, log: Logger) {
+    getScreenshotData(buildId: string, baseline: boolean, log: Logger, projectToken: string) {
         return this.request({
             url: '/screenshot',
             method: 'GET',
-            params: { buildId, baseline }
+            params: { buildId, baseline },
+            headers: {projectToken: projectToken}
         }, log);
     }
 
@@ -174,6 +177,26 @@ export default class httpClient {
     }
 
 
+    getSmartUICapabilities(sessionId: string, config: any, git: any, log: Logger) {
+        return this.request({
+            url: '/sessions/capabilities',
+            method: 'GET',
+            params: {
+                sessionId: sessionId,
+            },
+            data: {
+                git,
+                config
+            },
+            headers: {
+                projectToken: '',
+                projectName: '',
+                username: '',
+                accessKey: ''
+            },
+        }, log);
+    }
+    
     finalizeBuild(buildId: string, totalSnapshots: number, log: Logger) {
         let params: Record<string, string | number> = { buildId };
         if (totalSnapshots > -1) params.totalSnapshots = totalSnapshots;
@@ -185,7 +208,22 @@ export default class httpClient {
         }, log)
     }
 
+    finalizeBuildForCapsWithToken(buildId: string, totalSnapshots: number, projectToken: string, log: Logger) {
+        let params: Record<string, string | number> = { buildId };
+        if (totalSnapshots > -1) params.totalSnapshots = totalSnapshots;
+        return this.request({
+            url: '/build',
+            method: 'DELETE',
+            params: params,
+            headers: {
+                projectToken: projectToken, // Use projectToken dynamically
+            },
+        }, log);
+    }
+    
+
     uploadSnapshot(ctx: Context, snapshot: ProcessedSnapshot) {
+        // Use capsBuildId if provided, otherwise fallback to ctx.build.id
         return this.request({
             url: `/builds/${ctx.build.id}/snapshot`,
             method: 'POST',
@@ -217,6 +255,50 @@ export default class httpClient {
             }
         }, ctx.log)
     }
+
+    processSnapshotCaps(ctx: Context, snapshot: ProcessedSnapshot, snapshotUuid: string, capsBuildId: string, capsProjectToken: string) {
+        return this.request({
+            url: `/build/${capsBuildId}/snapshot`,
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                projectToken: capsProjectToken !== '' ? capsProjectToken : this.projectToken
+            },
+            data: {
+                name: snapshot.name,
+                url: snapshot.url,
+                snapshotUuid: snapshotUuid,
+                test: {
+                    type: ctx.testType,
+                    source: 'cli'
+                },
+                async: false,
+            }
+        }, ctx.log)
+    }
+
+    uploadSnapshotForCaps(ctx: Context, snapshot: ProcessedSnapshot, capsBuildId: string, capsProjectToken: string) {
+        // Use capsBuildId if provided, otherwise fallback to ctx.build.id
+        const buildId = capsBuildId !== '' ? capsBuildId : ctx.build.id;
+    
+        return this.request({
+            url: `/builds/${buildId}/snapshot`,
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                projectToken: capsProjectToken !== '' ? capsProjectToken : this.projectToken // Use capsProjectToken dynamically
+            },
+            data: { 
+                snapshot,
+                test: {
+                    type: ctx.testType,
+                    source: 'cli'
+                }
+            }
+        }, ctx.log);
+    }
+    
+    
 
     uploadScreenshot(
         { id: buildId, name: buildName, baseline }: Build,
@@ -311,6 +393,22 @@ export default class httpClient {
         }, ctx.log)
     }
 
+    getS3PresignedURLForSnapshotUploadCaps(ctx: Context, snapshotName: string, snapshotUuid: string, capsBuildId: string, capsProjectToken: string) {
+        return this.request({
+            url: `/snapshotuploadurl`,
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                projectToken: capsProjectToken !== '' ? capsProjectToken : this.projectToken
+            },
+            data: {
+                buildId: capsBuildId,
+                snapshotName: snapshotName,
+                snapshotUuid: snapshotUuid
+            }
+        }, ctx.log)
+    }
+
     uploadLogs(ctx: Context, uploadURL: string) {
         const fileStream = fs.createReadStream(constants.LOG_FILE_PATH);
         const { size } = fs.statSync(constants.LOG_FILE_PATH);
@@ -334,6 +432,20 @@ export default class httpClient {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
+            },
+            data: snapshot,
+            maxBodyLength: Infinity, // prevent axios from limiting the body size
+            maxContentLength: Infinity, // prevent axios from limiting the content size
+        }, ctx.log)
+    }
+
+    uploadSnapshotToS3Caps(ctx: Context, uploadURL: string, snapshot: Snapshot, capsProjectToken: string) {
+        return this.request({
+            url: uploadURL,
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                projectToken: capsProjectToken !== '' ? capsProjectToken : this.projectToken
             },
             data: snapshot,
             maxBodyLength: Infinity, // prevent axios from limiting the body size

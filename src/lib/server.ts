@@ -1,10 +1,11 @@
 import { Server, IncomingMessage, ServerResponse } from 'http';
 import path from 'path';
 import fastify, { FastifyInstance, RouteShorthandOptions } from 'fastify';
-import { readFileSync } from 'fs'
+import { readFileSync, truncate } from 'fs'
 import { Context } from '../types.js'
 import { validateSnapshot } from './schemaValidation.js'
 import { pingIntervalId } from './utils.js';
+import { startPolling } from './utils.js';
 
 export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMessage, ServerResponse>> => {
 	
@@ -36,6 +37,35 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 		try {
 			let { snapshot, testType } = request.body;
 			if (!validateSnapshot(snapshot)) throw new Error(validateSnapshot.errors[0].message);
+		
+			// Fetch sessionId from snapshot options if present
+			const sessionId = snapshot?.options?.sessionId;
+			let capsBuildId = ''
+
+			if (sessionId) {
+				// Check if sessionId exists in the map
+				if (ctx.sessionCapabilitiesMap?.has(sessionId)) {
+					// Use cached capabilities if available
+					const cachedCapabilities = ctx.sessionCapabilitiesMap.get(sessionId);
+					capsBuildId = cachedCapabilities?.buildId || ''
+				} else {
+					// If not cached, fetch from API and cache it
+					try {
+						let fetchedCapabilitiesResp = await ctx.client.getSmartUICapabilities(sessionId, ctx.config, ctx.git, ctx.log);
+						capsBuildId = fetchedCapabilitiesResp?.buildId || ''
+						ctx.log.debug(`fetch caps for sessionId: ${sessionId} are ${JSON.stringify(fetchedCapabilitiesResp)}`)
+						if (capsBuildId) {
+							ctx.sessionCapabilitiesMap.set(sessionId, fetchedCapabilitiesResp);
+						} else if (fetchedCapabilitiesResp && fetchedCapabilitiesResp?.sessionId) {
+							ctx.sessionCapabilitiesMap.set(sessionId, fetchedCapabilitiesResp);
+						}
+					} catch (error: any) {
+						ctx.log.debug(`Failed to fetch capabilities for sessionId ${sessionId}: ${error.message}`);
+						console.log(`Failed to fetch capabilities for sessionId ${sessionId}: ${error.message}`);
+					}
+				}
+			}
+
 			ctx.testType = testType;
 			ctx.snapshotQueue?.enqueue(snapshot);
 			ctx.isSnapshotCaptured = true;
