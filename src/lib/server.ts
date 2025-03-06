@@ -48,9 +48,6 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 					// Use cached capabilities if available
 					const cachedCapabilities = ctx.sessionCapabilitiesMap.get(sessionId);
 					capsBuildId = cachedCapabilities?.buildId || ''
-					if (capsBuildId) {
-						ctx.buildToProjectTokenMap.set(capsBuildId, cachedCapabilities?.projectToken || '');
-					}
 				} else {
 					// If not cached, fetch from API and cache it
 					try {
@@ -59,7 +56,6 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 						ctx.log.debug(`fetch caps for sessionId: ${sessionId} are ${JSON.stringify(fetchedCapabilitiesResp)}`)
 						if (capsBuildId) {
 							ctx.sessionCapabilitiesMap.set(sessionId, fetchedCapabilitiesResp);
-							ctx.buildToProjectTokenMap.set(capsBuildId, fetchedCapabilitiesResp?.projectToken || '');
 						} else if (fetchedCapabilitiesResp && fetchedCapabilitiesResp?.sessionId) {
 							ctx.sessionCapabilitiesMap.set(sessionId, fetchedCapabilitiesResp);
 						}
