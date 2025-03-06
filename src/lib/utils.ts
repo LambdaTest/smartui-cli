@@ -3,7 +3,7 @@ import { chromium, firefox, webkit, Browser } from '@playwright/test'
 import constants from './constants.js';
 import chalk from 'chalk';
 import axios from 'axios';
-import fs from 'fs/promises';
+import fs from 'fs';
 
 import { globalAgent } from 'http';
 import { promisify } from 'util'
