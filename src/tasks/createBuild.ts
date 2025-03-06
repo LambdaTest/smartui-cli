@@ -21,12 +21,7 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
                     }
                     task.output = chalk.gray(`build id: ${resp.data.buildId}`);
                     task.title = 'SmartUI build created'
-                } else {
-                    task.output = chalk.gray(`Empty PROJECT_TOKEN and PROJECT_NAME. Skipping Creation of Build!`)
-                    task.title = 'Skipped SmartUI build creation'
                 }
-                task.output = chalk.gray(`build id: ${resp.data.buildId}`);
-                task.title = 'SmartUI build created'
             } catch (error: any) {
                 ctx.log.debug(error);
                 task.output = chalk.gray(error.message);
