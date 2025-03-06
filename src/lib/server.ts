@@ -62,15 +62,6 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 							ctx.sessionCapabilitiesMap.set(sessionId, fetchedCapabilitiesResp);
 							ctx.sessionToBuildMap.set(sessionId, capsBuildId);
 							ctx.buildToProjectTokenMap.set(capsBuildId, fetchedCapabilitiesResp?.projectToken || '');
-							if (ctx.options.fetchResults) {
-								let is_baseline;
-								if (fetchedCapabilitiesResp.baseline) {
-									is_baseline = true; 
-								} else {
-									is_baseline = false
-								}
-								startPolling(ctx, capsBuildId, is_baseline, fetchedCapabilitiesResp.projectToken)
-							}
 						}
 						ctx.log.debug(`fetch caps for sessionId: ${sessionId} are ${JSON.stringify(fetchedCapabilitiesResp)}`)
 					} catch (error: any) {

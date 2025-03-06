@@ -1,9 +1,9 @@
-import fs from 'fs'
 import { Context } from '../types.js'
 import { chromium, firefox, webkit, Browser } from '@playwright/test'
 import constants from './constants.js';
 import chalk from 'chalk';
 import axios from 'axios';
+import fs from 'fs/promises';
 
 import { globalAgent } from 'http';
 import { promisify } from 'util'
@@ -229,17 +229,10 @@ export function getRenderViewportsForOptions(options: any): Array<Record<string,
 
 // Background polling function
 export async function startPolling(ctx: Context, build_id: string, baseline: boolean, projectToken: string): Promise<void> {
-    let filename = '';
     let isPollingActive = true;
     if (build_id) {
-        filename = `${build_id}.json`
         ctx.log.info(`Fetching results for buildId ${build_id} in progress....`);
     } else if (ctx.build && ctx.build.id) {
-        if (ctx.options.fetchResultsFileName) {
-            filename = ctx.options.fetchResultsFileName
-        } else {
-            filename = `${ctx.build.id}.json`
-        }
         ctx.log.info(`Fetching results for buildId ${ctx.build.id} in progress....`);
     }
 
@@ -262,16 +255,19 @@ export async function startPolling(ctx: Context, build_id: string, baseline: boo
             if (!resp.build) {
                 ctx.log.info("Error: Build data is null.");
                 clearInterval(intervalId);
-                // isPollingActive = false;
+                return;
             }
 
-            fs.writeFileSync(filename, JSON.stringify(resp, null, 2));
-            ctx.log.debug(`Updated results in ${filename}`);
+            let fileName = `${resp.build.build_id}.json`
+            if (ctx.options.fetchResults && ctx.options.fetchResultsFileName && ctx.build && ctx.build.id && resp.build.build_id === ctx.build.id) {
+                fileName = `${ctx.options.fetchResultsFileName}`
+            }
+            await fs.writeFile(`${fileName}`, JSON.stringify(resp, null, 2));
+            ctx.log.debug(`Updated results in ${fileName}`);
 
             if (resp.build.build_status_ind === constants.BUILD_COMPLETE || resp.build.build_status_ind === constants.BUILD_ERROR) {
                 clearInterval(intervalId);
-                ctx.log.info(`Fetching results completed. Final results written to ${filename}`);
-                // isPollingActive = false;
+                ctx.log.info(`Fetching results completed. Final results written to ${fileName}`);
 
 
                 // Evaluating Summary
@@ -309,7 +305,7 @@ export async function startPolling(ctx: Context, build_id: string, baseline: boo
                         `${chalk.yellow('Project Name:')} ${chalk.white(resp.project.name)}\n` +
                         `${chalk.yellow('Build ID:')} ${chalk.white(resp.build.build_id)}\n`
                     )
-                );                            
+                );
             }
         } catch (error: any) {
             if (error.message.includes('ENOTFOUND')) {
@@ -319,7 +315,6 @@ export async function startPolling(ctx: Context, build_id: string, baseline: boo
                 ctx.log.error(`Error fetching screenshot data: ${error.message}`);
             }
             clearInterval(intervalId);
-            // isPollingActive = false;
         }
     }, 5000);
 }
