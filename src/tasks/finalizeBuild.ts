@@ -51,7 +51,7 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
                         await ctx.client.finalizeBuildForCapsWithToken(buildId, totalSnapshots, projectToken, ctx.log);
                     }
 
-                    if (testId) {
+                    if (testId && buildId) {
                         buildUrls += `TestId ${testId}: ${sessionBuildUrl}\n`;
                     }
                 } catch (error: any) {

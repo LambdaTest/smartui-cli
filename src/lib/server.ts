@@ -57,15 +57,17 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 					try {
 						let fetchedCapabilitiesResp = await ctx.client.getSmartUICapabilities(sessionId, ctx.config, ctx.git, ctx.log);
 						capsBuildId = fetchedCapabilitiesResp?.buildId || ''
-
+						ctx.log.debug(`fetch caps for sessionId: ${sessionId} are ${JSON.stringify(fetchedCapabilitiesResp)}`)
 						if (capsBuildId) {
 							ctx.sessionCapabilitiesMap.set(sessionId, fetchedCapabilitiesResp);
 							ctx.sessionToBuildMap.set(sessionId, capsBuildId);
 							ctx.buildToProjectTokenMap.set(capsBuildId, fetchedCapabilitiesResp?.projectToken || '');
+						} else if (fetchedCapabilitiesResp && fetchedCapabilitiesResp?.sessionId) {
+							ctx.sessionCapabilitiesMap.set(sessionId, fetchedCapabilitiesResp);
 						}
-						ctx.log.debug(`fetch caps for sessionId: ${sessionId} are ${JSON.stringify(fetchedCapabilitiesResp)}`)
 					} catch (error: any) {
-						// console.log(`Failed to fetch capabilities for sessionId ${sessionId}: ${error.message}`);
+						ctx.log.debug(`Failed to fetch capabilities for sessionId ${sessionId}: ${error.message}`);
+						console.log(`Failed to fetch capabilities for sessionId ${sessionId}: ${error.message}`);
 					}
 				}
 			}
