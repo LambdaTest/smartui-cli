@@ -10,18 +10,16 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
             updateLogContext({task: 'createBuild'});
 
             try {
-                if (ctx.authenticatedInitially) {
-                    let resp = await ctx.client.createBuild(ctx.git, ctx.config, ctx.log, ctx.build.name, ctx.isStartExec);
-                    ctx.build = {
-                        id: resp.data.buildId,
-                        name: resp.data.buildName,
-                        url: resp.data.buildURL,
-                        baseline: resp.data.baseline,
-                        useKafkaFlow: resp.data.useKafkaFlow || false,
-                    }
-                    task.output = chalk.gray(`build id: ${resp.data.buildId}`);
-                    task.title = 'SmartUI build created'
+                let resp = await ctx.client.createBuild(ctx.git, ctx.config, ctx.log, ctx.build.name, ctx.isStartExec);
+                ctx.build = {
+                    id: resp.data.buildId,
+                    name: resp.data.buildName,
+                    url: resp.data.buildURL,
+                    baseline: resp.data.baseline,
+                    useKafkaFlow: resp.data.useKafkaFlow || false,
                 }
+                task.output = chalk.gray(`build id: ${resp.data.buildId}`);
+                task.title = 'SmartUI build created'
             } catch (error: any) {
                 ctx.log.debug(error);
                 task.output = chalk.gray(error.message);
