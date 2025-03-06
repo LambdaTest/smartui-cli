@@ -49,7 +49,6 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 					const cachedCapabilities = ctx.sessionCapabilitiesMap.get(sessionId);
 					capsBuildId = cachedCapabilities?.buildId || ''
 					if (capsBuildId) {
-						ctx.sessionToBuildMap.set(sessionId, capsBuildId);
 						ctx.buildToProjectTokenMap.set(capsBuildId, cachedCapabilities?.projectToken || '');
 					}
 				} else {
@@ -60,7 +59,6 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 						ctx.log.debug(`fetch caps for sessionId: ${sessionId} are ${JSON.stringify(fetchedCapabilitiesResp)}`)
 						if (capsBuildId) {
 							ctx.sessionCapabilitiesMap.set(sessionId, fetchedCapabilitiesResp);
-							ctx.sessionToBuildMap.set(sessionId, capsBuildId);
 							ctx.buildToProjectTokenMap.set(capsBuildId, fetchedCapabilitiesResp?.projectToken || '');
 						} else if (fetchedCapabilitiesResp && fetchedCapabilitiesResp?.sessionId) {
 							ctx.sessionCapabilitiesMap.set(sessionId, fetchedCapabilitiesResp);
