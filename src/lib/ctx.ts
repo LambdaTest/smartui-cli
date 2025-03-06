@@ -135,7 +135,6 @@ export default (options: Record<string, string>): Context => {
         isSnapshotCaptured: false,
         sessionCapabilitiesMap: new Map<string, any[]>(),
         buildToSnapshotCountMap: new Map<string, number>(),
-        buildToProjectTokenMap: new Map<string, string>(),
         fetchResultsForBuild: new Array<string>
     }
 }

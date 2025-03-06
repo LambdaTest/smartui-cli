@@ -61,7 +61,6 @@ export interface Context {
     isSnapshotCaptured ?: boolean;
     sessionCapabilitiesMap?: Map<string, any[]>;
     buildToSnapshotCountMap?: Map<string, number>;
-    buildToProjectTokenMap?: Map<string, string>;
     fetchResultsForBuild?: Array<string>
 }
 
