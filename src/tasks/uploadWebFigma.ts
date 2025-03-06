@@ -29,7 +29,7 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
                     task.output = task.output + "\n" + chalk.green(`${output}`); 
                 }
                 if (ctx.options.fetchResults) {
-                    startPolling(ctx);
+                    startPolling(ctx, '', false, '')
                 }
 
                 task.title = 'Web Figma images uploaded successfully to SmartUI';
