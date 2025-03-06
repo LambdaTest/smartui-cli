@@ -308,7 +308,7 @@ export default class Queue {
                         capsBuildId = cachedCapabilities?.buildId || '';
                         useKafkaFlowCaps = cachedCapabilities?.useKafkaFlow || false;
                         if (capsBuildId != '' && capsProjectToken != '') {
-                            useCapsBuildId = true; // Set to true if capsBuildId is not empty
+                            useCapsBuildId = true;
                         }
                     }
 

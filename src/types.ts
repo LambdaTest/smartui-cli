@@ -63,6 +63,7 @@ export interface Context {
     buildToSnapshotCountMap?: Map<string, number>;
     sessionToBuildMap?: Map<string, string>;
     buildToProjectTokenMap?: Map<string, string>;
+    fetchResultsForBuild?: Array<string>
 }
 
 export interface Env {

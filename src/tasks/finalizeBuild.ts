@@ -2,6 +2,7 @@ import { ListrTask, ListrRendererFactory } from 'listr2';
 import { Context } from '../types.js'
 import { updateLogContext } from '../lib/logger.js';
 import chalk from 'chalk';
+import { startPolling } from '../lib/utils.js';
 import { unlinkSync } from 'fs';
 import constants from '../lib/constants.js';
 import fs from 'fs';
@@ -30,6 +31,21 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
                     const totalSnapshots = capabilities?.snapshotCount || 0;
                     const sessionBuildUrl = capabilities?.buildURL || '';
                     const testId = capabilities?.id || '';
+
+                    if (ctx.options.fetchResults && ctx.fetchResultsForBuild) {
+                        if (!ctx.fetchResultsForBuild.includes(buildId)) {
+                            let is_baseline;
+                            if (capabilities.baseline) {
+                                is_baseline = true;
+                            } else {
+                                is_baseline = false;
+                            }
+                            console.log(`start polling was called at finalize build for buildId: ${buildId}`)
+                            startPolling(ctx, buildId, is_baseline, capabilities.projectToken);
+                            await new Promise(resolve => setTimeout(resolve, 7000));
+                            ctx.fetchResultsForBuild.push(buildId);
+                        }
+                    }
             
                     if (buildId && projectToken) {
                         await ctx.client.finalizeBuildForCapsWithToken(buildId, totalSnapshots, projectToken, ctx.log);
