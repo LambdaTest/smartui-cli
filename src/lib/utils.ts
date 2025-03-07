@@ -262,7 +262,7 @@ export async function startPolling(ctx: Context, build_id: string, baseline: boo
             if (ctx.options.fetchResults && ctx.options.fetchResultsFileName && ctx.build && ctx.build.id && resp.build.build_id === ctx.build.id) {
                 fileName = `${ctx.options.fetchResultsFileName}`
             }
-            await fs.writeFile(`${fileName}`, JSON.stringify(resp, null, 2));
+            fs.writeFileSync(`${fileName}`, JSON.stringify(resp, null, 2));
             ctx.log.debug(`Updated results in ${fileName}`);
 
             if (resp.build.build_status_ind === constants.BUILD_COMPLETE || resp.build.build_status_ind === constants.BUILD_ERROR) {
