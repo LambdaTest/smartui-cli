@@ -18,7 +18,6 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
                     baseline: resp.data.baseline,
                     useKafkaFlow: resp.data.useKafkaFlow || false,
                 }
-
                 task.output = chalk.gray(`build id: ${resp.data.buildId}`);
                 task.title = 'SmartUI build created'
             } catch (error: any) {

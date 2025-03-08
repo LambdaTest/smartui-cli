@@ -52,7 +52,7 @@ command
             await tasks.run(ctx);
             startPingPolling(ctx);
             if (ctx.options.fetchResults) {
-                startPolling(ctx);
+                startPolling(ctx, '', false, '')
             }
             
     

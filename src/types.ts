@@ -13,6 +13,7 @@ export interface Context {
     server?: FastifyInstance<Server, IncomingMessage, ServerResponse>;
     client: httpClient;
     browser?: Browser;
+    authenticatedInitially?: boolean;
     snapshotQueue?: snapshotQueue;
     config: {
         web?: WebConfig;
@@ -30,6 +31,7 @@ export interface Context {
         useGlobalCache: boolean;
         figma?: FigmaWebConfig;
         ignoreHTTPSErrors : boolean;
+        skipBuildCreation?: boolean;
     };
     uploadFilePath: string;
     webStaticConfig: WebStaticConfig;
@@ -57,6 +59,9 @@ export interface Context {
     testType?: string;
     isStartExec ?: boolean;
     isSnapshotCaptured ?: boolean;
+    sessionCapabilitiesMap?: Map<string, any[]>;
+    buildToSnapshotCountMap?: Map<string, number>;
+    fetchResultsForBuild?: Array<string>
 }
 
 export interface Env {
@@ -113,7 +118,8 @@ export interface Snapshot {
             orientation?: string
         },
         loadDomContent?: boolean;
-        ignoreType?: string[]
+        ignoreType?: string[],
+        sessionId?: string
     }
 }
 

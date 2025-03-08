@@ -1,15 +1,16 @@
-import fs from 'fs'
 import { Context } from '../types.js'
 import { chromium, firefox, webkit, Browser } from '@playwright/test'
 import constants from './constants.js';
 import chalk from 'chalk';
 import axios from 'axios';
+import fs from 'fs';
 
 import { globalAgent } from 'http';
 import { promisify } from 'util'
 const sleep = promisify(setTimeout);
+import { build } from 'tsup';
 
-let isPollingActive = false;
+// let isPollingActive = false;
 let globalContext: Context;
 export const setGlobalContext = (newContext: Context): void => {
     globalContext = newContext;
@@ -216,21 +217,24 @@ export function getRenderViewportsForOptions(options: any): Array<Record<string,
 }
 
 // Global SIGINT handler
-process.on('SIGINT', async () => {
-    if (isPollingActive) {
-        console.log('Fetching results interrupted. Exiting...');
-        isPollingActive = false;
-    } else {
-        console.log('\nExiting gracefully...');
-    }
-    process.exit(0);
-});
+// process.on('SIGINT', async () => {
+//     if (isPollingActive) {
+//         console.log('Fetching results interrupted. Exiting...');
+//         isPollingActive = false;
+//     } else {
+//         console.log('\nExiting gracefully...');
+//     }
+//     process.exit(0);
+// });
 
 // Background polling function
-export async function startPolling(ctx: Context): Promise<void> {
-    ctx.log.info('Fetching results in progress....');
-    ctx.log.debug(ctx.build);
-    isPollingActive = true;
+export async function startPolling(ctx: Context, build_id: string, baseline: boolean, projectToken: string): Promise<void> {
+    let isPollingActive = true;
+    if (build_id) {
+        ctx.log.info(`Fetching results for buildId ${build_id} in progress....`);
+    } else if (ctx.build && ctx.build.id) {
+        ctx.log.info(`Fetching results for buildId ${ctx.build.id} in progress....`);
+    }
 
     const intervalId = setInterval(async () => {
         if (!isPollingActive) {
@@ -239,21 +243,31 @@ export async function startPolling(ctx: Context): Promise<void> {
         }
         
         try {
-            const resp = await ctx.client.getScreenshotData(ctx.build.id, ctx.build.baseline || false, ctx.log);
+            let resp;
+            if (build_id) {
+                resp = await ctx.client.getScreenshotData(build_id, baseline, ctx.log, projectToken);
+            } else if (ctx.build && ctx.build.id) {
+                resp = await ctx.client.getScreenshotData(ctx.build.id, ctx.build.baseline, ctx.log, '');
+            } else {
+                return;
+            }
 
             if (!resp.build) {
                 ctx.log.info("Error: Build data is null.");
                 clearInterval(intervalId);
-                isPollingActive = false;
+                return;
             }
 
-            fs.writeFileSync(ctx.options.fetchResultsFileName, JSON.stringify(resp, null, 2));
-            ctx.log.debug(`Updated results in ${ctx.options.fetchResultsFileName}`);
+            let fileName = `${resp.build.build_id}.json`
+            if (ctx.options.fetchResults && ctx.options.fetchResultsFileName && ctx.build && ctx.build.id && resp.build.build_id === ctx.build.id) {
+                fileName = `${ctx.options.fetchResultsFileName}`
+            }
+            fs.writeFileSync(`${fileName}`, JSON.stringify(resp, null, 2));
+            ctx.log.debug(`Updated results in ${fileName}`);
 
             if (resp.build.build_status_ind === constants.BUILD_COMPLETE || resp.build.build_status_ind === constants.BUILD_ERROR) {
                 clearInterval(intervalId);
-                ctx.log.info(`Fetching results completed. Final results written to ${ctx.options.fetchResultsFileName}`);
-                isPollingActive = false;
+                ctx.log.info(`Fetching results completed. Final results written to ${fileName}`);
 
 
                 // Evaluating Summary
@@ -284,14 +298,14 @@ export async function startPolling(ctx: Context): Promise<void> {
                 // Display summary
                 ctx.log.info(
                     chalk.green.bold(
-                        `\nSummary of Mismatches:\n` +
+                        `\nSummary of Mismatches for buildId: ${build_id}\n` +
                         `${chalk.yellow('Total Variants with Mismatches:')} ${chalk.white(totalVariantsWithMismatches)} out of ${chalk.white(totalVariants)}\n` +
                         `${chalk.yellow('Total Screenshots with Mismatches:')} ${chalk.white(totalScreenshotsWithMismatches)} out of ${chalk.white(totalScreenshots)}\n` +
                         `${chalk.yellow('Branch Name:')} ${chalk.white(resp.build.branch)}\n` +
                         `${chalk.yellow('Project Name:')} ${chalk.white(resp.project.name)}\n` +
                         `${chalk.yellow('Build ID:')} ${chalk.white(resp.build.build_id)}\n`
                     )
-                );                            
+                );
             }
         } catch (error: any) {
             if (error.message.includes('ENOTFOUND')) {
@@ -301,7 +315,6 @@ export async function startPolling(ctx: Context): Promise<void> {
                 ctx.log.error(`Error fetching screenshot data: ${error.message}`);
             }
             clearInterval(intervalId);
-            isPollingActive = false;
         }
     }, 5000);
 }
