@@ -1,7 +1,7 @@
 import fs from 'fs';
 import FormData from 'form-data';
 import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
-import { Env, Snapshot, ProcessedSnapshot, Git, Build, Context } from '../types.js';
+import { Env, Snapshot, ProcessedSnapshot, Git, Build, Context, DiscoveryErrors } from '../types.js';
 import constants from './constants.js';
 import type { Logger } from 'winston'
 import pkgJSON from './../../package.json'
@@ -89,6 +89,9 @@ export default class httpClient {
     async request(config: AxiosRequestConfig, log: Logger): Promise<Record<string, any>> {
         log.debug(`http request: ${config.method} ${config.url}`);
         if (config && config.data && !config.data.name) {
+            log.debug(config.data);
+        }
+        if (config && config.data && config.data.snapshotUuid) {
             log.debug(config.data);
         }
         return this.axiosInstance.request(config)
@@ -222,7 +225,7 @@ export default class httpClient {
     }
     
 
-    uploadSnapshot(ctx: Context, snapshot: ProcessedSnapshot) {
+    uploadSnapshot(ctx: Context, snapshot: ProcessedSnapshot,  discoveryErrors: DiscoveryErrors) {
         // Use capsBuildId if provided, otherwise fallback to ctx.build.id
         return this.request({
             url: `/builds/${ctx.build.id}/snapshot`,
@@ -233,12 +236,13 @@ export default class httpClient {
                 test: {
                     type: ctx.testType,
                     source: 'cli'
-                }
+                },
+                discoveryErrors: discoveryErrors,
             }
         }, ctx.log)
     }
 
-    processSnapshot(ctx: Context, snapshot: ProcessedSnapshot, snapshotUuid: string) {
+    processSnapshot(ctx: Context, snapshot: ProcessedSnapshot, snapshotUuid: string,  discoveryErrors: DiscoveryErrors) {
         return this.request({
             url: `/build/${ctx.build.id}/snapshot`,
             method: 'POST',
@@ -252,11 +256,12 @@ export default class httpClient {
                     source: 'cli'
                 },
                 async: false,
+                discoveryErrors: discoveryErrors,
             }
         }, ctx.log)
     }
 
-    processSnapshotCaps(ctx: Context, snapshot: ProcessedSnapshot, snapshotUuid: string, capsBuildId: string, capsProjectToken: string) {
+    processSnapshotCaps(ctx: Context, snapshot: ProcessedSnapshot, snapshotUuid: string, capsBuildId: string, capsProjectToken: string, discoveryErrors: DiscoveryErrors) {
         return this.request({
             url: `/build/${capsBuildId}/snapshot`,
             method: 'POST',
@@ -273,11 +278,12 @@ export default class httpClient {
                     source: 'cli'
                 },
                 async: false,
+                discoveryErrors: discoveryErrors,
             }
         }, ctx.log)
     }
 
-    uploadSnapshotForCaps(ctx: Context, snapshot: ProcessedSnapshot, capsBuildId: string, capsProjectToken: string) {
+    uploadSnapshotForCaps(ctx: Context, snapshot: ProcessedSnapshot, capsBuildId: string, capsProjectToken: string, discoveryErrors: DiscoveryErrors) {
         // Use capsBuildId if provided, otherwise fallback to ctx.build.id
         const buildId = capsBuildId !== '' ? capsBuildId : ctx.build.id;
     
@@ -293,7 +299,8 @@ export default class httpClient {
                 test: {
                     type: ctx.testType,
                     source: 'cli'
-                }
+                },
+                discoveryErrors: discoveryErrors,
             }
         }, ctx.log);
     }
