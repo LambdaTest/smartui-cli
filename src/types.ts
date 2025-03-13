@@ -149,6 +149,7 @@ export interface Build {
     url: string;
     baseline: boolean;
     useKafkaFlow: boolean;
+    hasDiscoveryError: boolean;
 }
 
 export interface WebConfig {
