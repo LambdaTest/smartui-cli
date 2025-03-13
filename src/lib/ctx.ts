@@ -98,7 +98,9 @@ export default (options: Record<string, string>): Context => {
             delayedUpload: config.delayedUpload ?? false,
             useGlobalCache: config.useGlobalCache ?? false,
             ignoreHTTPSErrors: config.ignoreHTTPSErrors ?? false,
-            skipBuildCreation: config.skipBuildCreation ?? false
+            skipBuildCreation: config.skipBuildCreation ?? false,
+            tunnel: config.tunnel ?? false,
+            tunnelName: config.tunnelName || ''
         },
         uploadFilePath: '',
         webStaticConfig: [],
@@ -116,6 +118,11 @@ export default (options: Record<string, string>): Context => {
             url: ''
         },
         args: {},
+        tunnelDetails: {
+            tunnelPort: -1,
+            tunnelHost: '',
+            tunnelName: ''
+        },
         options: {
             parallel: parallelObj,
             force: options.force ? true : false,

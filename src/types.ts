@@ -32,6 +32,8 @@ export interface Context {
         figma?: FigmaWebConfig;
         ignoreHTTPSErrors : boolean;
         skipBuildCreation?: boolean;
+        tunnel?: boolean;
+        tunnelName?: string;
     };
     uploadFilePath: string;
     webStaticConfig: WebStaticConfig;
@@ -39,6 +41,11 @@ export interface Context {
     git: Git;
     args: {
         execCommand?: Array<string>
+    }
+    tunnelDetails: {
+        tunnelPort: number;
+        tunnelHost: string;
+        tunnelName: string;
     }
     options: {
         parallel?: number,

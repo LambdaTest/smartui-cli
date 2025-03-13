@@ -25,6 +25,27 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
                     task.output = chalk.gray(`Empty PROJECT_TOKEN and PROJECT_NAME. Skipping Creation of Build!`)
                     task.title = 'Skipped SmartUI build creation'
                 }
+
+                if (ctx.config.tunnel) {
+                    let tunnelResp = await ctx.client.getTunnelDetails(ctx.config.tunnelName, ctx.log);
+                    ctx.log.debug(`Tunnel Response: ${JSON.stringify(tunnelResp)}`)
+                    if (tunnelResp && tunnelResp.data && tunnelResp.data.host && tunnelResp.data.port && tunnelResp.data.tunnel_name) {
+                        ctx.tunnelDetails = {
+                            tunnelHost: tunnelResp.data.host,
+                            tunnelPort: tunnelResp.data.port,
+                            tunnelName: tunnelResp.data.tunnel_name
+                        }
+                        ctx.log.debug(`Tunnel Details: ${JSON.stringify(ctx.tunnelDetails)}`)
+                    } else if (tunnelResp && tunnelResp.error) {
+                        if (tunnelResp.error.message) {
+                            if (tunnelResp.error.code && tunnelResp.error.code === 400) {
+                                ctx.log.info(chalk.yellow(tunnelResp.error.message))
+                            } else {
+                                ctx.log.info(chalk.yellow(`Error while fetch tunnel details; Either tunnel is not running or tunnel parameters are different`))
+                            }
+                        }
+                    }
+                }
             } catch (error: any) {
                 ctx.log.debug(error);
                 task.output = chalk.gray(error.message);

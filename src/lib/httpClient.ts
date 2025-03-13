@@ -169,6 +169,17 @@ export default class httpClient {
         }, log);
     }
 
+    getTunnelDetails(tunnelName: string, log: Logger) {
+        return this.request({
+            url: '/tunnel',
+            method: 'POST',
+            data: { 
+                tunnelName: tunnelName
+            }
+        }, log)
+    }
+    
+
     ping(buildId: string, log: Logger) {
         return this.request({
             url: '/build/ping',

@@ -306,7 +306,15 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
         }
     }
 
-        // process for every viewport
+    if (ctx.config.tunnel) {
+        if (ctx.tunnelDetails && ctx.tunnelDetails.tunnelPort != -1 && ctx.tunnelDetails.tunnelHost != '') {
+            const tunnelAddress = `http://${ctx.tunnelDetails.tunnelHost}:${ctx.tunnelDetails.tunnelPort}`;
+            processedOptions.tunnelAddress = tunnelAddress;
+            ctx.log.debug(`Tunnel address added to processedOptions: ${tunnelAddress}`);
+        }
+    }
+
+    // process for every viewport
     let navigated: boolean = false;
     let previousDeviceType: string | null = null;
 
@@ -354,7 +362,19 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
                 ctx.log.debug(`Navigated to ${snapshot.url}`);
             } catch (error: any) {
                 ctx.log.debug(`Navigation to discovery page failed; ${error}`)
-                throw new Error(error.message)
+                if (error && error.name && error.name === 'TimeoutError') {
+                    ctx.log.debug(`Payload uploaded tough navigation to discovery page failed; ${error}`)
+                    return {
+                        processedSnapshot: {
+                            name: snapshot.name,
+                            url: snapshot.url,
+                            dom: Buffer.from(snapshot.dom.html).toString('base64'),
+                            resources: cache,
+                            options: processedOptions
+                        },
+                        warnings: [...optionWarnings, ...snapshot.dom.warnings]
+                    };
+                }
             }
 
         }
