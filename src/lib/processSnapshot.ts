@@ -21,12 +21,11 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
         url: "",
         timestamp: "",
         snapshotUUID: "",
-        browsers: {
-          chrome: {}
-        }
+        browsers: {}
       };
 
     let globalViewport = ""
+    let globalBrowser = constants.CHROME
     let launchOptions: Record<string, any> = {
         headless: isHeadless,
         args: constants.LAUNCH_ARGS
@@ -160,13 +159,19 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
                     url: requestUrl,
                     resourceType: request.resourceType(),
                 } 
-                if (!discoveryErrors.browsers.chrome) {
-                    discoveryErrors.browsers.chrome = {};
+
+                if (!discoveryErrors.browsers[globalBrowser]){
+                    discoveryErrors.browsers[globalBrowser] = {};                }
+
+                // Check if the discoveryErrors.browsers[globalBrowser] exists, and if not, initialize it
+                if (discoveryErrors.browsers[globalBrowser] && !discoveryErrors.browsers[globalBrowser][globalViewport]) {
+                    discoveryErrors.browsers[globalBrowser][globalViewport] = [];
                 }
-                if (!discoveryErrors.browsers.chrome[globalViewport]) {
-                    discoveryErrors.browsers.chrome[globalViewport] = [];
+
+                // Dynamically push the data into the correct browser and viewport
+                if (discoveryErrors.browsers[globalBrowser]) {
+                    discoveryErrors.browsers[globalBrowser][globalViewport]?.push(data);
                 }
-                discoveryErrors.browsers.chrome[globalViewport]?.push(data);
 
             } else {
                 ctx.log.debug(`Handling request ${requestUrl}\n - content-type ${response.headers()['content-type']}`);
@@ -329,6 +334,11 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
         ctx.log.debug(`Page resized to ${viewport.width}x${viewport.height || MIN_VIEWPORT_HEIGHT}`);
         globalViewport = viewportString;
         ctx.log.debug(`globalViewport : ${globalViewport}`);
+        if (globalViewport.toLowerCase().includes("iphone") || globalViewport.toLowerCase().includes("ipad")) {
+            globalBrowser = constants.WEBKIT;
+        } else {
+            globalBrowser = constants.CHROME;
+        }
 
         // navigate to snapshot url once
         if (!navigated) {
@@ -426,8 +436,24 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
         ctx.log.debug(`Processed options: ${JSON.stringify(processedOptions)}`);
     }
 
-    discoveryErrors.timestamp = new Date().toISOString();
+    
+    let hasBrowserErrors = false;
+    for (let browser in discoveryErrors.browsers) {
+        if (discoveryErrors.browsers[browser]) {
+            for (let viewport in discoveryErrors.browsers[browser]) {
+                if (discoveryErrors.browsers[browser][viewport].length > 0) {
+                    hasBrowserErrors = true;
+                    ctx.build.hasDiscoveryError=true
+                    break; 
+                }
+            }
+        }
+    }
 
+    if (hasBrowserErrors) {
+        discoveryErrors.timestamp = new Date().toISOString();
+        // ctx.log.warn(discoveryErrors);
+    }
     return {
         processedSnapshot: {
             name: snapshot.name,
