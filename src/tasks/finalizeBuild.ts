@@ -17,6 +17,9 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
                 if (ctx.build.id) {
                     await ctx.client.finalizeBuild(ctx.build.id, ctx.totalSnapshots, ctx.log);
                 }
+                if (ctx.build.hasDiscoveryError){
+                    ctx.log.warn(`We found some network errors while capturing DOM snapshots. These network errors may cause visual differences in your screenshots. Please go to ${ctx.build.url} for more details`);
+                }
             } catch (error: any) {
                 ctx.log.debug(error);
                 task.output = chalk.gray(error.message);
@@ -60,7 +63,7 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
             }
             task.output = chalk.gray(buildUrls);
             task.title = 'Finalized build';
-            
+           
             // cleanup and upload logs
             try {
                 await ctx.browser?.close();

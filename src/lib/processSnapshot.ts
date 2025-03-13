@@ -443,6 +443,7 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
             for (let viewport in discoveryErrors.browsers[browser]) {
                 if (discoveryErrors.browsers[browser][viewport].length > 0) {
                     hasBrowserErrors = true;
+                    ctx.build.hasDiscoveryError=true
                     break; 
                 }
             }
@@ -451,7 +452,7 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
 
     if (hasBrowserErrors) {
         discoveryErrors.timestamp = new Date().toISOString();
-        ctx.log.error(discoveryErrors);
+        // ctx.log.warn(discoveryErrors);
     }
     return {
         processedSnapshot: {
