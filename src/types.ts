@@ -187,3 +187,22 @@ export interface FigmaWebConfig {
     autoDetectViewports: Array<string>;
     configs: Array<{ figma_file_token: string, figma_ids: Array<string>, screenshot_names:Array<string> }>;
 }
+
+
+export interface ViewportErrors {
+    statusCode: "aborted" | "404" | string;
+    url: string;
+    resourceType: string;
+  }
+  
+export interface DiscoveryErrors {
+    name: string;
+    url: string;
+    timestamp: string;
+    snapshotUUID: string;
+    browsers: {
+      [browserName: string]: {
+        [viewport: string]: ViewportErrors[];
+      };
+    };
+  }

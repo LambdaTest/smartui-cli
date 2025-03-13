@@ -313,7 +313,7 @@ export default class Queue {
                     }
 
                     // Process and upload snapshot
-                    let { processedSnapshot, warnings } = await processSnapshot(snapshot, this.ctx);
+                    let { processedSnapshot, warnings, discoveryErrors } = await processSnapshot(snapshot, this.ctx);
 
                     if (useCapsBuildId) {
                         if (useKafkaFlowCaps) {
@@ -322,9 +322,9 @@ export default class Queue {
                             const uploadUrl = presignedResponse.data.url;
 
                             await this.ctx.client.uploadSnapshotToS3Caps(this.ctx, uploadUrl, processedSnapshot, capsProjectToken)
-                            await this.ctx.client.processSnapshotCaps(this.ctx, processedSnapshot, snapshotUuid, capsBuildId, capsProjectToken);
+                            await this.ctx.client.processSnapshotCaps(this.ctx, processedSnapshot, snapshotUuid, capsBuildId, capsProjectToken, discoveryErrors);
                         } else {
-                            await this.ctx.client.uploadSnapshotForCaps(this.ctx, processedSnapshot, capsBuildId, capsProjectToken);
+                            await this.ctx.client.uploadSnapshotForCaps(this.ctx, processedSnapshot, capsBuildId, capsProjectToken, discoveryErrors);
                         }
 
                         // Increment snapshot count for the specific buildId
@@ -358,9 +358,9 @@ export default class Queue {
                             const uploadUrl = presignedResponse.data.url;
 
                             await this.ctx.client.uploadSnapshotToS3(this.ctx, uploadUrl, processedSnapshot)
-                            await this.ctx.client.processSnapshot(this.ctx, processedSnapshot, snapshotUuid);
+                            await this.ctx.client.processSnapshot(this.ctx, processedSnapshot, snapshotUuid, discoveryErrors);
                         } else {
-                            await this.ctx.client.uploadSnapshot(this.ctx, processedSnapshot);
+                            await this.ctx.client.uploadSnapshot(this.ctx, processedSnapshot,  discoveryErrors);
                         }
                         this.ctx.totalSnapshots++;
                     }

@@ -1,4 +1,4 @@
-import { Snapshot, Context, ProcessedSnapshot } from "../types.js";
+import { Snapshot, Context, DiscoveryErrors } from "../types.js";
 import { scrollToBottomAndBackToTop, getRenderViewports, getRenderViewportsForOptions } from "./utils.js"
 import { chromium, Locator } from "@playwright/test"
 import constants from "./constants.js";
@@ -16,7 +16,16 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
     updateLogContext({ task: 'discovery' });
     ctx.log.debug(`Processing snapshot ${snapshot.name} ${snapshot.url}`);
     const isHeadless = process.env.HEADLESS?.toLowerCase() === 'false' ? false : true;
+    let discoveryErrors: DiscoveryErrors = {
+        name: "",
+        url: "",
+        timestamp: "",
+        snapshotUUID: "",
+        browsers: {}
+      };
 
+    let globalViewport = ""
+    let globalBrowser = constants.CHROME
     let launchOptions: Record<string, any> = {
         headless: isHeadless,
         args: constants.LAUNCH_ARGS
@@ -84,7 +93,7 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
                 ...constants.REQUEST_HEADERS
             }
         }
-
+        
         try {
             // abort audio/video media requests
             if (/\.(mp3|mp4|wav|ogg|webm)$/i.test(request.url())) {
@@ -141,10 +150,29 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
                 ctx.log.debug(`Handling request ${requestUrl}\n - skipping already cached resource`);
             } else if (body.length > MAX_RESOURCE_SIZE) {
                 ctx.log.debug(`Handling request ${requestUrl}\n - skipping resource larger than 15MB`);
-            } else if (!ALLOWED_STATUSES.includes(response.status())) {
-                ctx.log.debug(`Handling request ${requestUrl}\n - skipping disallowed status [${response.status()}]`);
             } else if (!ALLOWED_RESOURCES.includes(request.resourceType())) {
                 ctx.log.debug(`Handling request ${requestUrl}\n - skipping disallowed resource type [${request.resourceType()}]`);
+            }  else if (!ALLOWED_STATUSES.includes(response.status())) {
+                ctx.log.debug(`${globalViewport} Handling request ${requestUrl}\n - skipping disallowed status [${response.status()}]`);
+                let data = {
+                    statusCode: `${response.status()}`,
+                    url: requestUrl,
+                    resourceType: request.resourceType(),
+                } 
+
+                if (!discoveryErrors.browsers[globalBrowser]){
+                    discoveryErrors.browsers[globalBrowser] = {};                }
+
+                // Check if the discoveryErrors.browsers[globalBrowser] exists, and if not, initialize it
+                if (discoveryErrors.browsers[globalBrowser] && !discoveryErrors.browsers[globalBrowser][globalViewport]) {
+                    discoveryErrors.browsers[globalBrowser][globalViewport] = [];
+                }
+
+                // Dynamically push the data into the correct browser and viewport
+                if (discoveryErrors.browsers[globalBrowser]) {
+                    discoveryErrors.browsers[globalBrowser][globalViewport]?.push(data);
+                }
+
             } else {
                 ctx.log.debug(`Handling request ${requestUrl}\n - content-type ${response.headers()['content-type']}`);
                 
@@ -304,10 +332,19 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
 
         await page.setViewportSize({ width: viewport.width, height: viewport.height || MIN_VIEWPORT_HEIGHT });
         ctx.log.debug(`Page resized to ${viewport.width}x${viewport.height || MIN_VIEWPORT_HEIGHT}`);
+        globalViewport = viewportString;
+        ctx.log.debug(`globalViewport : ${globalViewport}`);
+        if (globalViewport.toLowerCase().includes("iphone") || globalViewport.toLowerCase().includes("ipad")) {
+            globalBrowser = constants.WEBKIT;
+        } else {
+            globalBrowser = constants.CHROME;
+        }
 
         // navigate to snapshot url once
         if (!navigated) {
             try {
+                discoveryErrors.url = snapshot.url;
+                discoveryErrors.name = snapshot.name;
                 // domcontentloaded event is more reliable than load event
                 await page.goto(snapshot.url, { waitUntil: "domcontentloaded", timeout: ctx.config.waitForDiscovery });
                 // adding extra timeout since domcontentloaded event is fired pretty quickly
@@ -399,6 +436,23 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
         ctx.log.debug(`Processed options: ${JSON.stringify(processedOptions)}`);
     }
 
+    
+    let hasBrowserErrors = false;
+    for (let browser in discoveryErrors.browsers) {
+        if (discoveryErrors.browsers[browser]) {
+            for (let viewport in discoveryErrors.browsers[browser]) {
+                if (discoveryErrors.browsers[browser][viewport].length > 0) {
+                    hasBrowserErrors = true;
+                    break; 
+                }
+            }
+        }
+    }
+
+    if (hasBrowserErrors) {
+        discoveryErrors.timestamp = new Date().toISOString();
+        ctx.log.error(discoveryErrors);
+    }
     return {
         processedSnapshot: {
             name: snapshot.name,
@@ -407,6 +461,7 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
             resources: cache,
             options: processedOptions
         },
-        warnings: [...optionWarnings, ...snapshot.dom.warnings]
+        warnings: [...optionWarnings, ...snapshot.dom.warnings],
+        discoveryErrors: discoveryErrors
     }
 }
