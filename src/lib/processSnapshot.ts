@@ -436,8 +436,23 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
         ctx.log.debug(`Processed options: ${JSON.stringify(processedOptions)}`);
     }
 
-    discoveryErrors.timestamp = new Date().toISOString();
-    ctx.log.error(discoveryErrors);
+    
+    let hasBrowserErrors = false;
+    for (let browser in discoveryErrors.browsers) {
+        if (discoveryErrors.browsers[browser]) {
+            for (let viewport in discoveryErrors.browsers[browser]) {
+                if (discoveryErrors.browsers[browser][viewport].length > 0) {
+                    hasBrowserErrors = true;
+                    break; 
+                }
+            }
+        }
+    }
+
+    if (hasBrowserErrors) {
+        discoveryErrors.timestamp = new Date().toISOString();
+        ctx.log.error(discoveryErrors);
+    }
     return {
         processedSnapshot: {
             name: snapshot.name,
