@@ -19,6 +19,11 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
                         baseline: resp.data.baseline,
                         useKafkaFlow: resp.data.useKafkaFlow || false,
                     }
+                    if (ctx.build.id === '') {
+                        ctx.log.debug('Build creation failed: Build ID is empty');
+                        task.output = chalk.gray('Build creation failed: Build ID is empty');
+                        throw new Error('SmartUI build creation failed');
+                    }
                     task.output = chalk.gray(`build id: ${resp.data.buildId}`);
                     task.title = 'SmartUI build created'
                 } else {

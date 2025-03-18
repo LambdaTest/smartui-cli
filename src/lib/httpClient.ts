@@ -155,7 +155,8 @@ export default class httpClient {
                 git,
                 config,
                 buildName,
-                isStartExec
+                isStartExec,
+                packageVersion: pkgJSON.version
             }
         }, log)
     }
