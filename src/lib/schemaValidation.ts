@@ -173,6 +173,14 @@ const ConfigSchema = {
             type: "boolean",
             errorMessage: "Invalid config; skipBuildCreation must be true/false"
         },
+        tunnel: {
+            type: "boolean",
+            errorMessage: "Invalid config; tunnel must be true/false"
+        },
+        tunnelName: {
+            type: "string",
+            errorMessage: "Invalid config; tunnelName must be string"
+        },
     },
     anyOf: [
         { required: ["web"] },

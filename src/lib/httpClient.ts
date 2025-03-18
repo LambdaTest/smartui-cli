@@ -102,7 +102,11 @@ export default class httpClient {
                         headers: resp.headers,
                         body: resp.data
                     })}`)
-                    return resp.data;
+                    if (resp.data !== ""){
+                        return resp.data;
+                    } else {
+                        return resp;
+                    }
                 } else {
                     log.debug(`empty response: ${JSON.stringify(resp)}`)
                     return {};
@@ -155,7 +159,8 @@ export default class httpClient {
                 git,
                 config,
                 buildName,
-                isStartExec
+                isStartExec,
+                packageVersion: pkgJSON.version
             }
         }, log)
     }
@@ -168,6 +173,17 @@ export default class httpClient {
             headers: {projectToken: projectToken}
         }, log);
     }
+
+    getTunnelDetails(tunnelName: string, log: Logger) {
+        return this.request({
+            url: '/tunnel',
+            method: 'POST',
+            data: { 
+                tunnelName: tunnelName
+            }
+        }, log)
+    }
+    
 
     ping(buildId: string, log: Logger) {
         return this.request({

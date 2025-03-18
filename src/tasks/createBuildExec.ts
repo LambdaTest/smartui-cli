@@ -19,11 +19,37 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
                         baseline: resp.data.baseline,
                         useKafkaFlow: resp.data.useKafkaFlow || false,
                     }
+                    if (ctx.build.id === '') {
+                        ctx.log.debug('Build creation failed: Build ID is empty');
+                        task.output = chalk.red('Build creation failed: Build ID is empty');
+                        throw new Error('SmartUI build creation failed');
+                    }
                     task.output = chalk.gray(`build id: ${resp.data.buildId}`);
                     task.title = 'SmartUI build created'
                 } else {
                     task.output = chalk.gray(`Empty PROJECT_TOKEN and PROJECT_NAME. Skipping Creation of Build!`)
                     task.title = 'Skipped SmartUI build creation'
+                }
+
+                if (ctx.config.tunnel) {
+                    let tunnelResp = await ctx.client.getTunnelDetails(ctx.config.tunnelName, ctx.log);
+                    ctx.log.debug(`Tunnel Response: ${JSON.stringify(tunnelResp)}`)
+                    if (tunnelResp && tunnelResp.data && tunnelResp.data.host && tunnelResp.data.port && tunnelResp.data.tunnel_name) {
+                        ctx.tunnelDetails = {
+                            tunnelHost: tunnelResp.data.host,
+                            tunnelPort: tunnelResp.data.port,
+                            tunnelName: tunnelResp.data.tunnel_name
+                        }
+                        ctx.log.debug(`Tunnel Details: ${JSON.stringify(ctx.tunnelDetails)}`)
+                    } else if (tunnelResp && tunnelResp.error) {
+                        if (tunnelResp.error.message) {
+                            if (tunnelResp.error.code && tunnelResp.error.code === 400) {
+                                ctx.log.warn(tunnelResp.error.message)
+                            } else {
+                                ctx.log.warn(`Error while fetch tunnel details; Either tunnel is not running or tunnel parameters are different`)
+                            }
+                        }
+                    }
                 }
             } catch (error: any) {
                 ctx.log.debug(error);
