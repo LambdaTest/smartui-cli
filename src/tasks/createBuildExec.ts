@@ -21,7 +21,7 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
                     }
                     if (ctx.build.id === '') {
                         ctx.log.debug('Build creation failed: Build ID is empty');
-                        task.output = chalk.gray('Build creation failed: Build ID is empty');
+                        task.output = chalk.red('Build creation failed: Build ID is empty');
                         throw new Error('SmartUI build creation failed');
                     }
                     task.output = chalk.gray(`build id: ${resp.data.buildId}`);
@@ -44,9 +44,9 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
                     } else if (tunnelResp && tunnelResp.error) {
                         if (tunnelResp.error.message) {
                             if (tunnelResp.error.code && tunnelResp.error.code === 400) {
-                                ctx.log.info(chalk.yellow(tunnelResp.error.message))
+                                ctx.log.warn(tunnelResp.error.message)
                             } else {
-                                ctx.log.info(chalk.yellow(`Error while fetch tunnel details; Either tunnel is not running or tunnel parameters are different`))
+                                ctx.log.warn(`Error while fetch tunnel details; Either tunnel is not running or tunnel parameters are different`)
                             }
                         }
                     }

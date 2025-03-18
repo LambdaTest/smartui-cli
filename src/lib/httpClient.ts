@@ -102,7 +102,11 @@ export default class httpClient {
                         headers: resp.headers,
                         body: resp.data
                     })}`)
-                    return resp.data;
+                    if (resp.data !== ""){
+                        return resp.data;
+                    } else {
+                        return resp;
+                    }
                 } else {
                     log.debug(`empty response: ${JSON.stringify(resp)}`)
                     return {};

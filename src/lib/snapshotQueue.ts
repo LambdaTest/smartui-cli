@@ -357,8 +357,24 @@ export default class Queue {
                             const presignedResponse = await this.ctx.client.getS3PresignedURLForSnapshotUpload(this.ctx, processedSnapshot.name, snapshotUuid);
                             const uploadUrl = presignedResponse.data.url;
 
-                            await this.ctx.client.uploadSnapshotToS3(this.ctx, uploadUrl, processedSnapshot)
-                            await this.ctx.client.processSnapshot(this.ctx, processedSnapshot, snapshotUuid, discoveryErrors);
+                            let snapshotUploadResponse = await this.ctx.client.uploadSnapshotToS3(this.ctx, uploadUrl, processedSnapshot);
+                            if (!snapshotUploadResponse || Object.keys(snapshotUploadResponse).length === 0) {
+                                this.ctx.log.debug(`snapshot failed; Unable to upload dom to S3`);
+                                this.processedSnapshots.push({ name: snapshot?.name, error: `snapshot failed; Unable to upload dom to S3` });
+                                if (this.ctx.browser) {
+                                    for (let context of this.ctx.browser.contexts()) {
+                                        for (let page of context.pages()) {
+                                            await page.close();
+                                            this.ctx.log.debug(`Closed browser page for snapshot ${snapshot.name}`);
+                                        }
+                                        await context.close();
+                                        this.ctx.log.debug(`Closed browser context for snapshot ${snapshot.name}`);
+                                    }
+                                }
+                                this.processNext();
+                            } else {
+                                await this.ctx.client.processSnapshot(this.ctx, processedSnapshot, snapshotUuid, discoveryErrors);
+                            }
                         } else {
                             await this.ctx.client.uploadSnapshot(this.ctx, processedSnapshot,  discoveryErrors);
                         }
