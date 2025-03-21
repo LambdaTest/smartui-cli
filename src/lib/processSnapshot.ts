@@ -453,6 +453,8 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
                 }
             }
         }
+        processedOptions.ignoreDOM = options?.ignoreDOM;
+        processedOptions.selectDOM = options?.selectDOM;
         ctx.log.debug(`Processed options: ${JSON.stringify(processedOptions)}`);
     }
 
