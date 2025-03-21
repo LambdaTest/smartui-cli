@@ -16,11 +16,13 @@ async function captureScreenshotsForConfig(
 ): Promise<void> {
     ctx.log.debug(`*** urlConfig  ${JSON.stringify(urlConfig)}`);
 
-    let {name, url, waitForTimeout, execute} = urlConfig;
+    let {name, url, waitForTimeout, execute, pageEvent} = urlConfig;
     let afterNavigationScript = execute?.afterNavigation;
     let beforeSnapshotScript = execute?.beforeSnapshot;
+    let waitUntilEvent = pageEvent || process.env.SMARTUI_PAGE_WAIT_UNTIL_EVENT || 'load';
 
-    let pageOptions = { waitUntil: process.env.SMARTUI_PAGE_WAIT_UNTIL_EVENT || 'load', timeout: ctx.config.waitForPageRender || constants.DEFAULT_PAGE_LOAD_TIMEOUT };
+    let pageOptions = { waitUntil: waitUntilEvent, timeout: ctx.config.waitForPageRender || constants.DEFAULT_PAGE_LOAD_TIMEOUT };
+    ctx.log.debug(`url:  ${url}  pageOptions: ${JSON.stringify(pageOptions)}`);
     let ssId = name.toLowerCase().replace(/\s/g, '_');
     let context: BrowserContext;
     let contextOptions: Record<string, any> = {};
