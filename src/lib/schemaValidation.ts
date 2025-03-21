@@ -222,6 +222,10 @@ const WebStaticConfigSchema: JSONSchemaType<WebStaticConfig> = {
                     }
                 }
             },
+            pageEvent: {
+                type: "string",
+                errorMessage: "pageEvent can be load, domcontentloaded"
+            },
         },
         required: ["name", "url"],
         additionalProperties: false
