@@ -90,6 +90,7 @@ export interface Env {
     PROJECT_NAME: string | undefined;
     SMARTUI_API_PROXY: string | undefined;
     SMARTUI_API_SKIP_CERTIFICATES: boolean;
+    SMARTUI_PAGE_WAIT_UNTIL_EVENT: string | undefined;
 }
 
 export interface Snapshot {
