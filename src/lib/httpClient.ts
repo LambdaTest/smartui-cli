@@ -477,6 +477,7 @@ export default class httpClient {
     }
 
     processWebFigma(requestBody: any, log: Logger) {
+        requestBody.packageVersion = pkgJSON.version;
         return this.request({
             url: "figma-web/upload",
             method: "POST",
