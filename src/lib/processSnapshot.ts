@@ -476,6 +476,18 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
         discoveryErrors.timestamp = new Date().toISOString();
         // ctx.log.warn(discoveryErrors);
     }
+
+    if (ctx.config.useGlobalCache) {
+        const keys = globalCache.keys();
+        keys.forEach((key) => {
+            if (!(key in cache)) {
+                const globalCacheData = globalCache.get(key);
+                if (globalCacheData) {
+                    cache[key] = globalCacheData;
+                }
+            }
+        });
+    }
     return {
         processedSnapshot: {
             name: snapshot.name,
