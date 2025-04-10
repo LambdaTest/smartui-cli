@@ -348,15 +348,31 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
             globalBrowser = constants.CHROME;
         }
 
+        type WaitUntilOption = 'load' | 'domcontentloaded';
+
+        const envWaitUntil = ctx.env.SMARTUI_PAGE_WAIT_UNTIL_EVENT;
+
+        // Check if the environment value is valid
+        const waitUntil: WaitUntilOption =
+            (envWaitUntil === 'load' || envWaitUntil === 'domcontentloaded')
+                ? (envWaitUntil as WaitUntilOption)
+                : 'domcontentloaded';
+
+
+        ctx.log.debug(`Wait until: ${waitUntil}`);
+
         // navigate to snapshot url once
         if (!navigated) {
             try {
                 discoveryErrors.url = snapshot.url;
                 discoveryErrors.name = snapshot.name;
                 // domcontentloaded event is more reliable than load event
-                await page.goto(snapshot.url, { waitUntil: "domcontentloaded", timeout: ctx.config.waitForDiscovery });
-                // adding extra timeout since domcontentloaded event is fired pretty quickly
-                await new Promise(r => setTimeout(r, 1250));
+                await page.goto(snapshot.url, {waitUntil: waitUntil, timeout: ctx.config.waitForDiscovery});
+                if (waitUntil === 'domcontentloaded') {
+                    // adding extra timeout since domcontentloaded event is fired pretty quickly
+                    ctx.log.debug(`Waiting for 1250 ms since waiting for ${waitUntil}`);
+                    await new Promise(r => setTimeout(r, 1250));
+                }
                 if (ctx.config.waitForTimeout) await page.waitForTimeout(ctx.config.waitForTimeout);
                 navigated = true;
                 ctx.log.debug(`Navigated to ${snapshot.url}`);
