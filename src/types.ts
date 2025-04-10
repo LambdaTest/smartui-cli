@@ -25,6 +25,7 @@ export interface Context {
         cliEnableJavaScript: boolean;
         scrollTime: number;
         allowedHostnames: Array<string>;
+        allowedAssets: Array<string>;
         basicAuthorization: basicAuth | undefined;
         smartIgnore: boolean;
         delayedUpload: boolean;
