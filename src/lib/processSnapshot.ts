@@ -387,6 +387,38 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
             ctx.log.debug(`Network idle failed due to ${error}`);
         }
 
+        if (ctx.config.allowedAssets && ctx.config.allowedAssets.length) {
+            for (let assetUrl of ctx.config.allowedAssets) {
+                if (!cache[assetUrl]) {
+                    ctx.log.debug(`Fetching asset ${assetUrl} from allowedAssets array`);
+                    try {
+                        const response = await page.request.fetch(assetUrl, {
+                            timeout: 25000,
+                            headers: {
+                                ...constants.REQUEST_HEADERS
+                            }
+                        });
+                        
+                        const body = await response.body();
+                        
+                        if (body && body.length) {
+                            ctx.log.debug(`Caching asset ${assetUrl}`);
+                            cache[assetUrl] = {
+                                body: body.toString('base64'),
+                                type: response.headers()['content-type']
+                            };
+                        } else {
+                            ctx.log.debug(`Asset ${assetUrl} returned empty or invalid body`);
+                        }
+                    } catch (error) {
+                        ctx.log.debug(`Error fetching asset ${assetUrl}: ${JSON.stringify(error)}`);
+                    }
+                } else {
+                    ctx.log.debug(`Asset ${assetUrl} already cached`);
+                }
+            }
+        }
+
         // snapshot options
         if (processedOptions.element) {
             let l = await page.locator(processedOptions.element).all()

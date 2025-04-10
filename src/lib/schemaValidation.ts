@@ -148,6 +148,21 @@ const ConfigSchema = {
             }
 
         },
+        allowedAssets: {
+            type: "array",
+            items: {
+                type: "string",
+                minLength: 1,
+                errorMessage: {
+                    minLength: "Invalid config; allowedAssets cannot be empty"
+                }
+            },
+            uniqueItems: true,
+            errorMessage: {
+                uniqueItems: "Invalid config; duplicates in allowedAssets"
+            }
+
+        },
         basicAuthorization: {
             type: "object",
             properties: {
