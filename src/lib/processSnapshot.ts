@@ -411,6 +411,9 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
                             ctx.log.debug(`Asset ${assetUrl} returned empty or invalid body`);
                         }
                     } catch (error) {
+                        if (error && error.message) {
+                            ctx.log.debug(`Error fetching asset with error message ${assetUrl}: ${error.message}`);
+                        }
                         ctx.log.debug(`Error fetching asset ${assetUrl}: ${JSON.stringify(error)}`);
                     }
                 } else {
