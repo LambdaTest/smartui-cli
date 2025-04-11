@@ -178,20 +178,21 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
                     discoveryErrors.browsers[globalBrowser][globalViewport]?.push(data);
                 }
 
-                let responseOfRetry
+                let responseOfRetry, bodyOfRetry
                 ctx.log.debug(`Resource had a disallowed status ${requestUrl} fetching from server again`);
                 responseOfRetry = await page.request.fetch(request, requestOptions);
-                body = await responseOfRetry.body();
+                bodyOfRetry = await responseOfRetry.body();
 
                 if (responseOfRetry && responseOfRetry.status() && ALLOWED_STATUSES.includes(responseOfRetry.status())) {
+                    ctx.log.debug(`Handling request after retry ${requestUrl}\n - content-type ${responseOfRetry.headers()['content-type']}`);
                     cache[requestUrl] = {
-                        body: body.toString('base64'),
+                        body: bodyOfRetry.toString('base64'),
                         type: responseOfRetry.headers()['content-type']
                     }
                     route.fulfill({
                         status: responseOfRetry.status(),
                         headers: responseOfRetry.headers(),
-                        body: body,
+                        body: bodyOfRetry,
                     });
                 } else {
                     ctx.log.debug(`Resource had a disallowed status for retry as well  ${requestUrl} disallowed status [${responseOfRetry.status()}]`);
