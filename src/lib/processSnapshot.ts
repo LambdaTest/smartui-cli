@@ -155,7 +155,7 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
             }  else if (!ALLOWED_STATUSES.includes(response.status())) {
                 ctx.log.debug(`${globalViewport} Handling request ${requestUrl}\n - skipping disallowed status [${response.status()}]`);
 
-                if (response.headers()) {
+                if (response && response.headers()) {
                     const responseHeaders = response.headers();
                     ctx.log.debug(`Response headers for ${requestUrl}: ${JSON.stringify(responseHeaders, null, 2)}`);
                 }
