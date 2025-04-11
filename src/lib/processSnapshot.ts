@@ -154,6 +154,11 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
                 ctx.log.debug(`Handling request ${requestUrl}\n - skipping disallowed resource type [${request.resourceType()}]`);
             }  else if (!ALLOWED_STATUSES.includes(response.status())) {
                 ctx.log.debug(`${globalViewport} Handling request ${requestUrl}\n - skipping disallowed status [${response.status()}]`);
+
+                if (response && response.headers()) {
+                    const responseHeaders = response.headers();
+                    ctx.log.debug(`Response headers for ${requestUrl}: ${JSON.stringify(responseHeaders, null, 2)}`);
+                }
                 let data = {
                     statusCode: `${response.status()}`,
                     url: requestUrl,
