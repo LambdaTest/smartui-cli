@@ -88,7 +88,7 @@ export default class httpClient {
 
     async request(config: AxiosRequestConfig, log: Logger): Promise<Record<string, any>> {
         log.debug(`http request: ${config.method} ${config.url}`);
-        if (config && config.data && !config.data.name) {
+        if (config && config.data && !config.data.name && !config.data.snapshot) {
             log.debug(config.data);
         }
         if (config && config.data && config.data.snapshotUuid) {
@@ -477,6 +477,7 @@ export default class httpClient {
     }
 
     processWebFigma(requestBody: any, log: Logger) {
+        requestBody.packageVersion = pkgJSON.version;
         return this.request({
             url: "figma-web/upload",
             method: "POST",

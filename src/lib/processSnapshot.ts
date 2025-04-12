@@ -154,7 +154,6 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
                 ctx.log.debug(`Handling request ${requestUrl}\n - skipping disallowed resource type [${request.resourceType()}]`);
             }  else if (!ALLOWED_STATUSES.includes(response.status())) {
                 ctx.log.debug(`${globalViewport} Handling request ${requestUrl}\n - skipping disallowed status [${response.status()}]`);
-
                 if (response && response.headers()) {
                     const responseHeaders = response.headers();
                     ctx.log.debug(`Response headers for ${requestUrl}: ${JSON.stringify(responseHeaders, null, 2)}`);
@@ -180,7 +179,7 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
                     ctx.log.debug(`Resource had a disallowed status for retry as well  ${requestUrl} disallowed status [${responseOfRetry.status()}]`);
                     if (responseOfRetry && responseOfRetry.headers()) {
                         const responseHeadersRetry = responseOfRetry.headers();
-                        ctx.log.debug(`Response headers for retry ${requestUrl}: ${JSON.stringify(responseHeadersRetry, null, 2)}`);
+                        ctx.log.debug(`Response headers for ${requestUrl}: ${JSON.stringify(responseHeadersRetry, null, 2)}`);
                     }
 
                     let data = {
@@ -417,6 +416,41 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
             ctx.log.debug(`Network idle failed due to ${error}`);
         }
 
+        if (ctx.config.allowedAssets && ctx.config.allowedAssets.length) {
+            for (let assetUrl of ctx.config.allowedAssets) {
+                if (!cache[assetUrl]) {
+                    ctx.log.debug(`Fetching asset ${assetUrl} from allowedAssets array`);
+                    try {
+                        const response = await page.request.fetch(assetUrl, {
+                            timeout: 25000,
+                            headers: {
+                                ...constants.REQUEST_HEADERS
+                            }
+                        });
+                        
+                        const body = await response.body();
+                        
+                        if (body && body.length) {
+                            ctx.log.debug(`Caching asset ${assetUrl}`);
+                            cache[assetUrl] = {
+                                body: body.toString('base64'),
+                                type: response.headers()['content-type']
+                            };
+                        } else {
+                            ctx.log.debug(`Asset ${assetUrl} returned empty or invalid body`);
+                        }
+                    } catch (error) {
+                        if (error && error.message) {
+                            ctx.log.debug(`Error fetching asset with error message ${assetUrl}: ${error.message}`);
+                        }
+                        ctx.log.debug(`Error fetching asset ${assetUrl}: ${JSON.stringify(error)}`);
+                    }
+                } else {
+                    ctx.log.debug(`Asset ${assetUrl} already cached`);
+                }
+            }
+        }
+
         // snapshot options
         if (processedOptions.element) {
             let l = await page.locator(processedOptions.element).all()
@@ -505,6 +539,18 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
     if (hasBrowserErrors) {
         discoveryErrors.timestamp = new Date().toISOString();
         // ctx.log.warn(discoveryErrors);
+    }
+
+    if (ctx.config.useGlobalCache) {
+        const keys = globalCache.keys();
+        keys.forEach((key) => {
+            if (!(key in cache)) {
+                const globalCacheData = globalCache.get(key);
+                if (globalCacheData) {
+                    cache[key] = globalCacheData;
+                }
+            }
+        });
     }
     return {
         processedSnapshot: {

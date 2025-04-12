@@ -93,6 +93,7 @@ export default (options: Record<string, string>): Context => {
             cliEnableJavaScript: config.cliEnableJavaScript ?? true,
             scrollTime: config.scrollTime || constants.DEFAULT_SCROLL_TIME,
             allowedHostnames: config.allowedHostnames || [],
+            allowedAssets: config.allowedAssets || [],
             basicAuthorization: basicAuthObj,
             smartIgnore: config.smartIgnore ?? false,
             delayedUpload: config.delayedUpload ?? false,
