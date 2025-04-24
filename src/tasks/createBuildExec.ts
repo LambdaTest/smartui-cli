@@ -12,6 +12,13 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
             try {
                 if (ctx.authenticatedInitially && !ctx.config.skipBuildCreation) {
                     let resp = await ctx.client.createBuild(ctx.git, ctx.config, ctx.log, ctx.build.name, ctx.isStartExec);
+                    if (!resp.data) {
+                        // If there's an error, log it and stop the build creation process
+                        const errorMessage = resp.error.message || 'Unknown error occurred';
+                        ctx.log.debug(`Build creation failed: ${errorMessage}`);
+                        task.output = chalk.red(`Build creation failed: ${errorMessage}`);
+                        throw new Error(`SmartUI build creation failed: ${errorMessage}`);
+                    }
                     ctx.build = {
                         id: resp.data.buildId,
                         name: resp.data.buildName,
