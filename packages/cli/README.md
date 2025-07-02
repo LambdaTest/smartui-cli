@@ -1,4 +1,4 @@
-# SmartUI-CLI
+# SmartUI
 
 <img height="400" src="https://user-images.githubusercontent.com/126776938/232535511-8d51cf1b-1a33-48fc-825c-b13e7a9ec388.png">
 
