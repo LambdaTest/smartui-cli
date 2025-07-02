@@ -13,7 +13,7 @@
   &nbsp; &#8901; &nbsp;
   <a href="https://www.lambdatest.com/certifications/?utm_source=github&utm_medium=repo&utm_campaign=playwright-sample" target="_bank">Certifications</a>
   &nbsp; &#8901; &nbsp;
-  <a href="https://www.youtube.com/c/LambdaTest" target="_bank">YouTube</a>
+  <a href="https://www.youtube.com/c/LambdaTest" target="_bank">YouTube</a> 
 </p>
 &emsp;
 &emsp;
