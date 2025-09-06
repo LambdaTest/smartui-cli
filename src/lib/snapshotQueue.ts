@@ -451,7 +451,7 @@ export default class Queue {
                 //upload error
                 try {
                     this.ctx.log.debug(`Uploading snapshot failure for ${snapshot?.name}`);
-                    let errorMessageString = `snapshot failed; ${error.message}`;
+                    let errorMessageString = `snapshot failed ${snapshot?.name}; ${error.message}`;
                     if (errorMessageString.length > 255) {
                         errorMessageString = errorMessageString.substring(0, 255); // Truncate to first 255 characters
                     }
