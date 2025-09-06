@@ -644,4 +644,18 @@ export default class httpClient {
             }
         }, ctx.log);
     }
+
+    uploadSnapshotFailure(failure: string, ctx: Context): Promise<Record<string, any>> {
+        return this.request({
+            url: `/upload/failed/snapshot`,
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            data: {
+                buildId: ctx.build.id,
+                snapshotError: failure
+            }
+        }, ctx.log);
+    }
 }

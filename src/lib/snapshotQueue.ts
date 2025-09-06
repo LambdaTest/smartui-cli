@@ -448,6 +448,18 @@ export default class Queue {
                 if (snapshot?.options?.contextId && this.ctx.contextToSnapshotMap) {
                     this.ctx.contextToSnapshotMap.set(snapshot.options.contextId, 2);
                 }
+                //upload error
+                try {
+                    this.ctx.log.debug(`Uploading snapshot failure for ${snapshot?.name}`);
+                    let errorMessageString = `snapshot failed; ${error.message}`;
+                    if (errorMessageString.length > 255) {
+                        errorMessageString = errorMessageString.substring(0, 255); // Truncate to first 255 characters
+                    }
+                    let resp = await this.ctx.client.uploadSnapshotFailure(errorMessageString, this.ctx);
+                    this.ctx.log.debug(`Uploading snapshot failure response for ${snapshot?.name}; ${JSON.stringify(resp)}`);
+                } catch (error: any) {
+                    this.ctx.log.debug(`Uploading snapshot failure also failed for ${snapshot?.name}; ${error}`);
+                }
             }
             // Close open browser contexts and pages
             if (this.ctx.browser) {
