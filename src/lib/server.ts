@@ -107,7 +107,7 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 		let replyBody: Record<string, any>;
 		try {
 			if(ctx.config.delayedUpload){
-				ctx.log.debug("started after processing because of delayedUpload")
+				ctx.log_stop.debug("started after processing because of delayedUpload")
 				ctx.snapshotQueue?.startProcessingfunc()
 			}
 			await new Promise((resolve) => {
@@ -135,7 +135,7 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
                         buildUrls += `TestId ${testId}: ${sessionBuildUrl}\n`;
                     }
                 } catch (error: any) {
-                    ctx.log.debug(`Error finalizing build for session ${sessionId}: ${error.message}`);
+                    ctx.log_stop.debug(`Error finalizing build for session ${sessionId}: ${error.message}`);
                 }
             }
 

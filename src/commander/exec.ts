@@ -12,6 +12,8 @@ import processSnapshots from '../tasks/processSnapshot.js'
 import finalizeBuild from '../tasks/finalizeBuild.js'
 import snapshotQueue from '../lib/snapshotQueue.js'
 import startTunnel from '../tasks/startTunnel.js'
+import fs from 'fs';
+import constants from '../lib/constants.js';
 
 const command = new Command();
 
@@ -31,6 +33,19 @@ command
             console.log(`Error: The '--buildName' option cannot be an empty string.`);
             process.exit(1);
         }
+
+        try {
+            if (fs.existsSync(constants.LOG_FILE_PATH)) {
+                fs.unlinkSync(constants.LOG_FILE_PATH);
+            }
+        } catch (err) {}
+
+        try {
+            if (fs.existsSync(constants.LOG_FILE_PATH_STOP)) {
+                fs.unlinkSync(constants.LOG_FILE_PATH_STOP);
+            }
+        } catch (err) {}
+        
         let ctx: Context = ctxInit(command.optsWithGlobals());
 
         if (!which.sync(execCommand[0], { nothrow: true })) {

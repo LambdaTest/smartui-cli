@@ -9,6 +9,7 @@ import createBuild from '../tasks/createBuild.js'
 import captureScreenshots from '../tasks/captureScreenshots.js'
 import finalizeBuild from '../tasks/finalizeBuild.js'
 import { validateWebStaticConfig } from '../lib/schemaValidation.js'
+import constants from '../lib/constants.js';
 
 const command = new Command();
 
@@ -29,6 +30,19 @@ command
             console.log(`Error: The '--buildName' option cannot be an empty string.`);
             process.exit(1);
         }
+
+        try {
+            if (fs.existsSync(constants.LOG_FILE_PATH)) {
+                fs.unlinkSync(constants.LOG_FILE_PATH);
+            }
+        } catch (err) {}
+
+        try {
+            if (fs.existsSync(constants.LOG_FILE_PATH_STOP)) {
+                fs.unlinkSync(constants.LOG_FILE_PATH_STOP);
+            }
+        } catch (err) {}
+        
         let ctx: Context = ctxInit(command.optsWithGlobals());
         ctx.isSnapshotCaptured = true
         

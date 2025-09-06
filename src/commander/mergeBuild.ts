@@ -6,6 +6,8 @@ import ctxInit from '../lib/ctx.js';
 import fetchBuildInfo from '../tasks/fetchBuildInfo.js'
 import mergeBuilds from '../tasks/mergeBuilds.js'
 import getGitInfo from '../tasks/getGitInfo.js'
+import constants from '../lib/constants.js';
+import fs from 'fs';
 
 const command = new Command();
 
@@ -16,6 +18,17 @@ command
     .requiredOption('--target <string>', 'Target build to merge into')
     .action(async function(this: Command, options: { source: string, target: string }) {
         const { source, target } = options;
+
+        try {
+            if (fs.existsSync(constants.LOG_FILE_PATH)) {
+                fs.unlinkSync(constants.LOG_FILE_PATH);
+            }
+        } catch (err) {}
+        try {
+            if (fs.existsSync(constants.LOG_FILE_PATH_STOP)) {
+                fs.unlinkSync(constants.LOG_FILE_PATH_STOP);
+            }
+        } catch (err) {}
         let ctx: Context = ctxInit(command.optsWithGlobals());
 
         if (!source || source.trim() === '') {

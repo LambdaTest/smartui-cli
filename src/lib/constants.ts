@@ -131,6 +131,7 @@ export default {
 
     // log file path
     LOG_FILE_PATH: '.smartui.log',
+    LOG_FILE_PATH_STOP: '.smartui_stop.log',
 
     // Disallowed file extension
     FILE_EXTENSION_ZIP: '.zip',

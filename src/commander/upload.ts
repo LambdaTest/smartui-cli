@@ -30,6 +30,18 @@ command
     .option('--userName <string>', 'Specify the LT username')
     .option('--accessKey <string>', 'Specify the LT accesskey')
     .action(async function(directory, _, command) {
+
+        try {
+            if (fs.existsSync(constants.LOG_FILE_PATH)) {
+                fs.unlinkSync(constants.LOG_FILE_PATH);
+            }
+        } catch (err) {}
+        try {
+            if (fs.existsSync(constants.LOG_FILE_PATH_STOP)) {
+                fs.unlinkSync(constants.LOG_FILE_PATH_STOP);
+            }
+        } catch (err) {}
+
         const options = command.optsWithGlobals();
         if (options.buildName === '') {
             console.log(`Error: The '--buildName' option cannot be an empty string.`);

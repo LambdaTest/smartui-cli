@@ -12,6 +12,7 @@ import uploadWebFigma from '../tasks/uploadWebFigma.js'
 import uploadAppFigma from '../tasks/uploadAppFigma.js'     
 import { verifyFigmaWebConfig } from '../lib/config.js'
 import chalk from 'chalk';
+import constants from '../lib/constants.js';
 
 
 const uploadFigma = new Command();
@@ -26,6 +27,18 @@ uploadFigma
     .option('--markBaseline', 'Mark the uploaded images as baseline')
     .option('--buildName <buildName>', 'Name of the build')
     .action(async function (file, _, command) {
+
+        try {
+            if (fs.existsSync(constants.LOG_FILE_PATH)) {
+                fs.unlinkSync(constants.LOG_FILE_PATH);
+            }
+        } catch (err) {}
+        try {
+            if (fs.existsSync(constants.LOG_FILE_PATH_STOP)) {
+                fs.unlinkSync(constants.LOG_FILE_PATH_STOP);
+            }
+        } catch (err) {}
+
         let ctx: Context = ctxInit(command.optsWithGlobals());
         ctx.isSnapshotCaptured = true;
 
@@ -77,6 +90,19 @@ uploadWebFigmaCommand
     .option('--buildName <buildName>', 'Name of the build')
     .option('--fetch-results [filename]', 'Fetch results and optionally specify an output file, e.g., <filename>.json')
     .action(async function (file, _, command) {
+
+        try {
+            if (fs.existsSync(constants.LOG_FILE_PATH)) {
+                fs.unlinkSync(constants.LOG_FILE_PATH);
+            }
+        } catch (err) {}
+
+        try {
+            if (fs.existsSync(constants.LOG_FILE_PATH_STOP)) {
+                fs.unlinkSync(constants.LOG_FILE_PATH_STOP);
+            }
+        } catch (err) {}
+
         let ctx: Context = ctxInit(command.optsWithGlobals());
 
         if (!fs.existsSync(file)) {
@@ -144,6 +170,17 @@ uploadWebFigmaCommand
     .option('--buildName <buildName>', 'Name of the build')
     .option('--fetch-results [filename]', 'Fetch results and optionally specify an output file, e.g., <filename>.json')
     .action(async function (file, _, command) {
+
+        try {
+            if (fs.existsSync(constants.LOG_FILE_PATH)) {
+                fs.unlinkSync(constants.LOG_FILE_PATH);
+            }
+        } catch (err) {}
+        try {
+            if (fs.existsSync(constants.LOG_FILE_PATH_STOP)) {
+                fs.unlinkSync(constants.LOG_FILE_PATH_STOP);
+            }
+        } catch (err) {}
         let ctx: Context = ctxInit(command.optsWithGlobals());
 
         if (!fs.existsSync(file)) {
