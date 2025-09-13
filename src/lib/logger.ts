@@ -49,4 +49,32 @@ const logger = createLogger({
 		})]
 });
 
+const logger_stop = createLogger({
+	format: format.combine(
+		format.timestamp(),
+		format.printf(info => {
+			let contextString = Object.values(logContext).join(' | ');
+			let message = (typeof info.message === 'object') ? stringify(info.message) : info.message.trim();
+			switch (info.level) {
+				case 'warn':
+					message = chalk.yellow(message);
+					break;
+				case 'error':
+					message = chalk.red(message);
+					break;
+			}
+			return (info.level === 'info') ? message : `[${contextString}:${info.level}] ` + message;
+		})
+	),
+	transports: [
+		new transports.Console({
+			level: logLevel()
+		}),
+		new transports.File({
+			level: 'debug',
+			filename: constants.LOG_FILE_PATH_STOP
+		})]
+});
+
 export default logger
+export { logger_stop }

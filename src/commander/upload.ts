@@ -10,6 +10,8 @@ import createBuild from '../tasks/createBuild.js';
 import uploadScreenshots from '../tasks/uploadScreenshots.js';
 import finalizeBuild from '../tasks/finalizeBuild.js';
 import constants from '../lib/constants.js';
+import pkgJSON from '../../package.json'
+import chalk from 'chalk'
 
 const command = new Command();
 
@@ -30,12 +32,39 @@ command
     .option('--userName <string>', 'Specify the LT username')
     .option('--accessKey <string>', 'Specify the LT accesskey')
     .action(async function(directory, _, command) {
+
+        try {
+            if (fs.existsSync(constants.LOG_FILE_PATH)) {
+                fs.unlinkSync(constants.LOG_FILE_PATH);
+            }
+        } catch (err) {}
+        try {
+            if (fs.existsSync(constants.LOG_FILE_PATH_STOP)) {
+                fs.unlinkSync(constants.LOG_FILE_PATH_STOP);
+            }
+        } catch (err) {}
+
         const options = command.optsWithGlobals();
         if (options.buildName === '') {
             console.log(`Error: The '--buildName' option cannot be an empty string.`);
             process.exit(1);
         }
-        let ctx: Context = ctxInit(command.optsWithGlobals());
+        let ctx: Context = ctxInit(command.optsWithGlobals()); 
+        try {
+            let { data: { latestVersion, deprecated, additionalDescription } } = await ctx.client.checkUpdate(ctx.log);
+            console.log(`\nLambdaTest SmartUI CLI v${pkgJSON.version}`);
+            console.log(chalk.yellow(`${additionalDescription}`));
+            if (deprecated){ 
+                console.warn(`This version is deprecated. A new version ${latestVersion} is available!`);
+            }
+            else if (pkgJSON.version !== latestVersion){ 
+                console.log(chalk.green(`A new version ${latestVersion} is available!`));
+            }
+            else console.log(chalk.gray('https://www.npmjs.com/package/@lambdatest/smartui-cli\n'));
+        } catch (error) {
+            // console.error(error);
+            console.log(chalk.gray('https://www.npmjs.com/package/@lambdatest/smartui-cli\n'));
+        }
         ctx.isSnapshotCaptured = true
 
         if (!fs.existsSync(directory)) {

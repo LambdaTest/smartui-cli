@@ -9,6 +9,7 @@ import snapshotQueue from './lib/snapshotQueue.js';
 export interface Context {
     env: Env;
     log: Logger;
+    log_stop: Logger;
     task?: ListrTaskWrapper<Context, typeof ListrRenderer, typeof ListrRenderer>;
     server?: FastifyInstance<Server, IncomingMessage, ServerResponse>;
     client: httpClient;

@@ -2,7 +2,7 @@ import { Context, Env, WebConfig, MobileConfig, basicAuth, tunnelConfig } from '
 import constants from './constants.js'
 import { version } from '../../package.json'
 import { validateConfig, validateConfigForScheduled } from './schemaValidation.js'
-import logger from './logger.js'
+import logger, { logger_stop } from './logger.js'
 import getEnv from './env.js'
 import httpClient from './httpClient.js'
 import fs from 'fs'
@@ -102,13 +102,14 @@ export default (options: Record<string, string>): Context => {
     }
 
     //if config.waitForPageRender has value and if its less than 30000 then make it to 30000 default
-    if (config.waitForPageRender && config.waitForPageRender < 30000) {
-        config.waitForPageRender = 30000;
-    }
+    // if (config.waitForPageRender && config.waitForPageRender < 30000) {
+    //     config.waitForPageRender = 30000;
+    // }
 
     return {
         env: env,
         log: logger,
+        log_stop: logger_stop,
         client: new httpClient(env),
         config: {
             web: webConfig,
