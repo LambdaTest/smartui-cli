@@ -10,6 +10,8 @@ import captureScreenshots from '../tasks/captureScreenshots.js'
 import finalizeBuild from '../tasks/finalizeBuild.js'
 import { validateWebStaticConfig } from '../lib/schemaValidation.js'
 import constants from '../lib/constants.js';
+import pkgJSON from '../../package.json'
+import chalk from 'chalk'
 
 const command = new Command();
 
@@ -43,7 +45,23 @@ command
             }
         } catch (err) {}
         
-        let ctx: Context = ctxInit(command.optsWithGlobals());
+        let ctx: Context = ctxInit(command.optsWithGlobals()); 
+        try {
+            let { data: { latestVersion, deprecated, additionalDescription } } = await ctx.client.checkUpdate(ctx.log);
+            console.log(`\nLambdaTest SmartUI CLI v${pkgJSON.version}`);
+            console.log(chalk.yellow(`${additionalDescription}`));
+            if (deprecated){ 
+                console.warn(`This version is deprecated. A new version ${latestVersion} is available!`);
+            }
+            else if (pkgJSON.version !== latestVersion){ 
+                console.log(chalk.green(`A new version ${latestVersion} is available!`));
+            }
+            else console.log(chalk.gray('https://www.npmjs.com/package/@lambdatest/smartui-cli\n'));
+        } catch (error) {
+            // console.error(error);
+            console.log(chalk.gray('https://www.npmjs.com/package/@lambdatest/smartui-cli\n'));
+        }
+
         ctx.isSnapshotCaptured = true
         
         if (!fs.existsSync(file)) {

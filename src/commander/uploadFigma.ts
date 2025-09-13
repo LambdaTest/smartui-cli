@@ -13,6 +13,7 @@ import uploadAppFigma from '../tasks/uploadAppFigma.js'
 import { verifyFigmaWebConfig } from '../lib/config.js'
 import chalk from 'chalk';
 import constants from '../lib/constants.js';
+import pkgJSON from '../../package.json'
 
 
 const uploadFigma = new Command();
@@ -39,7 +40,22 @@ uploadFigma
             }
         } catch (err) {}
 
-        let ctx: Context = ctxInit(command.optsWithGlobals());
+        let ctx: Context = ctxInit(command.optsWithGlobals()); 
+        try {
+            let { data: { latestVersion, deprecated, additionalDescription } } = await ctx.client.checkUpdate(ctx.log);
+            console.log(`\nLambdaTest SmartUI CLI v${pkgJSON.version}`);
+            console.log(chalk.yellow(`${additionalDescription}`));
+            if (deprecated){ 
+                console.warn(`This version is deprecated. A new version ${latestVersion} is available!`);
+            }
+            else if (pkgJSON.version !== latestVersion){ 
+                console.log(chalk.green(`A new version ${latestVersion} is available!`));
+            }
+            else console.log(chalk.gray('https://www.npmjs.com/package/@lambdatest/smartui-cli\n'));
+        } catch (error) {
+            // console.error(error);
+            console.log(chalk.gray('https://www.npmjs.com/package/@lambdatest/smartui-cli\n'));
+        }
         ctx.isSnapshotCaptured = true;
 
         if (!fs.existsSync(file)) {
@@ -103,7 +119,22 @@ uploadWebFigmaCommand
             }
         } catch (err) {}
 
-        let ctx: Context = ctxInit(command.optsWithGlobals());
+        let ctx: Context = ctxInit(command.optsWithGlobals()); 
+        try {
+            let { data: { latestVersion, deprecated, additionalDescription } } = await ctx.client.checkUpdate(ctx.log);
+            console.log(`\nLambdaTest SmartUI CLI v${pkgJSON.version}`);
+            console.log(chalk.yellow(`${additionalDescription}`));
+            if (deprecated){ 
+                console.warn(`This version is deprecated. A new version ${latestVersion} is available!`);
+            }
+            else if (pkgJSON.version !== latestVersion){ 
+                console.log(chalk.green(`A new version ${latestVersion} is available!`));
+            }
+            else console.log(chalk.gray('https://www.npmjs.com/package/@lambdatest/smartui-cli\n'));
+        } catch (error) {
+            // console.error(error);
+            console.log(chalk.gray('https://www.npmjs.com/package/@lambdatest/smartui-cli\n'));
+        }
 
         if (!fs.existsSync(file)) {
             console.log(`Error: figma-web config file ${file} not found.`);
@@ -182,7 +213,21 @@ uploadWebFigmaCommand
             }
         } catch (err) {}
         let ctx: Context = ctxInit(command.optsWithGlobals());
-
+        try {
+            let { data: { latestVersion, deprecated, additionalDescription } } = await ctx.client.checkUpdate(ctx.log);
+            console.log(`\nLambdaTest SmartUI CLI v${pkgJSON.version}`);
+            console.log(chalk.yellow(`${additionalDescription}`));
+            if (deprecated){ 
+                console.warn(`This version is deprecated. A new version ${latestVersion} is available!`);
+            }
+            else if (pkgJSON.version !== latestVersion){ 
+                console.log(chalk.green(`A new version ${latestVersion} is available!`));
+            }
+            else console.log(chalk.gray('https://www.npmjs.com/package/@lambdatest/smartui-cli\n'));
+        } catch (error) {
+            // console.error(error);
+            console.log(chalk.gray('https://www.npmjs.com/package/@lambdatest/smartui-cli\n'));
+        }
         if (!fs.existsSync(file)) {
             console.log(`Error: figma-app config file ${file} not found.`);
             return;
