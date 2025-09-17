@@ -475,10 +475,21 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
         }
 
         if (options.element && Object.keys(options.element).length) {
-            if (options.element.id) processedOptions.element = '#' + options.element.id;
-            else if (options.element.class) processedOptions.element = '.' + options.element.class;
-            else if (options.element.cssSelector) processedOptions.element = options.element.cssSelector;
-            else if (options.element.xpath) processedOptions.element = 'xpath=' + options.element.xpath;
+            if (options.element.id) {
+                processedOptions.element = options.element.id.startsWith('#') 
+                    ? options.element.id 
+                    : '#' + options.element.id;
+            } else if (options.element.class) {
+                processedOptions.element = options.element.class.startsWith('.') 
+                    ? options.element.class 
+                    : '.' + options.element.class;
+            } else if (options.element.cssSelector) {
+                processedOptions.element = options.element.cssSelector;
+            } else if (options.element.xpath) {
+                processedOptions.element = options.element.xpath.startsWith('xpath=') 
+                    ? options.element.xpath 
+                    : 'xpath=' + options.element.xpath;
+            }
         } else if (options.ignoreDOM && Object.keys(options.ignoreDOM).length && isNotAllEmpty(options.ignoreDOM)) {
             processedOptions.ignoreBoxes = {};
             ignoreOrSelectDOM = 'ignoreDOM';
@@ -492,19 +503,19 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
             for (const [key, value] of Object.entries(options[ignoreOrSelectDOM])) {
                 switch (key) {
                     case 'id':
-                        selectors.push(...value.map(e => '#' + e));
+                        selectors.push(...value.map(e => e.startsWith('#') ? e : '#' + e));
                         break;
                     case 'class':
-                        selectors.push(...value.map(e => '.' + e));
+                        selectors.push(...value.map(e => e.startsWith('.') ? e : '.' + e));
                         break;
                     case 'xpath':
-                        selectors.push(...value.map(e => 'xpath=' + e));
+                        selectors.push(...value.map(e => e.startsWith('xpath=') ? e : 'xpath=' + e));
                         break;
                     case 'cssSelector':
                         selectors.push(...value);
                         break;
                     case 'coordinates':
-                        selectors.push(...value.map(e => `coordinates=${e}`));
+                        selectors.push(...value.map(e => e.startsWith('coordinates=') ? e : `coordinates=${e}`));
                         break;
                 }
             }
@@ -640,6 +651,7 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
                 throw new Error(`for snapshot ${snapshot.name} viewport ${viewportString}, multiple elements found for selector ${processedOptions.element}`);
             }
         } else if (selectors.length) {
+            ctx.log.debug(`Processing selectors for viewport ${viewportString}: ${JSON.stringify(selectors)}`);
             let height = 0;
             height = await page.evaluate(() => {
                 const DEFAULT_HEIGHT = 16384;

@@ -317,6 +317,18 @@ const WebStaticConfigSchema: JSONSchemaType<WebStaticConfig> = {
                 enum: ['load', 'domcontentloaded'],
                 errorMessage: "pageEvent can be load, domcontentloaded"
             },
+            requestHeaders: {
+                type: "array",
+                items: {
+                    type: "object",
+                    minProperties: 1,
+                    additionalProperties: { type: "string" }
+                },
+                uniqueItems: true,
+                errorMessage: {
+                    uniqueItems: "Invalid config; duplicates in requestHeaders"
+                }
+            },
         },
         required: ["name", "url"],
         additionalProperties: false

@@ -45,6 +45,27 @@ async function captureScreenshotsForConfig(
         context = await browser?.newContext(contextOptions);
         page = await context?.newPage();
 
+        const headersObject: Record<string, string> = {};
+        if (ctx.config.requestHeaders && Array.isArray(ctx.config.requestHeaders)) {
+            ctx.config.requestHeaders.forEach((headerObj) => {
+                Object.entries(headerObj).forEach(([key, value]) => {
+                    headersObject[key] = value;
+                });
+            });
+        }
+        if (urlConfig.requestHeaders && Array.isArray(urlConfig.requestHeaders)) {
+            urlConfig.requestHeaders.forEach((headerObj) => {
+                Object.entries(headerObj).forEach(([key, value]) => {
+                    headersObject[key] = value;
+                });
+            });
+        }
+        
+        ctx.log.debug(`Combined headers: ${JSON.stringify(headersObject)}`);
+        if (Object.keys(headersObject).length > 0) {
+            await page.setExtraHTTPHeaders(headersObject);
+        }
+        
         await page?.goto(url.trim(), pageOptions);
         await executeDocumentScripts(ctx, page, "afterNavigation", afterNavigationScript)
 

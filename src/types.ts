@@ -77,6 +77,7 @@ export interface Context {
     sessionCapabilitiesMap?: Map<string, any[]>;
     buildToSnapshotCountMap?: Map<string, number>;
     fetchResultsForBuild?: Array<string>;
+    sessionIdToSnapshotNameMap?: Map<string, string[]>;
     orgId?: number;
     userId?: number;
     mergeBranchSource?: string;

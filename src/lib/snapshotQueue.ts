@@ -291,10 +291,26 @@ export default class Queue {
                 }
 
                 if (!this.ctx.config.delayedUpload && snapshot && snapshot.name && this.snapshotNames.includes(snapshot.name) && !this.ctx.config.allowDuplicateSnapshotNames) {
-                    drop = true;
-                    this.ctx.log.info(`Skipping duplicate SmartUI snapshot '${snapshot.name}'. To capture duplicate screenshots, please set the 'allowDuplicateSnapshotNames' or 'delayedUpload' configuration as true in your config file.`);
+                    // check if sessionIdToSnapshotNameMap has snapshot name for the sessionId
+                    if (this.ctx.sessionIdToSnapshotNameMap && snapshot.options && snapshot.options.sessionId) {
+                        if (this.ctx.sessionIdToSnapshotNameMap.has(snapshot.options.sessionId)) {
+                            console.log(`snapshot.options.sessionId`,snapshot.options.sessionId, `this.ctx.sessionIdToSnapshotNameMap`,JSON.stringify([...this.ctx.sessionIdToSnapshotNameMap]));
+                            const existingNames = this.ctx.sessionIdToSnapshotNameMap.get(snapshot.options.sessionId) || [];
+                            if (existingNames.includes(snapshot.name)) {
+                                drop = true;
+                                this.ctx.log.info(`Skipping123 duplicate SmartUI snapshot '${snapshot.name}'. To capture duplicate screenshots, please set the 'allowDuplicateSnapshotNames' or 'delayedUpload' configuration as true in your config file.`);
+                            } else {
+                                existingNames.push(snapshot.name);
+                                this.ctx.sessionIdToSnapshotNameMap.set(snapshot.options.sessionId, existingNames);
+                            }
+                        } else {
+                            this.ctx.sessionIdToSnapshotNameMap.set(snapshot.options.sessionId, [snapshot.name]);
+                        }
+                    } else {
+                        drop = true;
+                        this.ctx.log.info(`Skipping duplicate SmartUI snapshot '${snapshot.name}'. To capture duplicate screenshots, please set the 'allowDuplicateSnapshotNames' or 'delayedUpload' configuration as true in your config file.`);
+                    }
                 }
-
                 if (this.ctx.config.delayedUpload && snapshot && snapshot.name && this.snapshotNames.includes(snapshot.name)) {
                     drop = this.filterExistingVariants(snapshot, this.ctx.config);
                 }
