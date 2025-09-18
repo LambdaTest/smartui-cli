@@ -712,7 +712,14 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
                     continue;
                 }
                 
-                let l = await page.locator(selector).all()
+                let l = [];
+                try {
+                    l = await page.locator(selector).all()
+                } catch (error) {
+                    optionWarnings.add(`for snapshot ${snapshot.name} viewport ${viewportString}, invalid selector ${selector}`);
+                    ctx.log.debug(`Error finding locator for selector ${selector} in snapshot ${snapshot.name} viewport ${viewportString}: ${error}`);
+                    continue;
+                }
                 if (l.length === 0) {
                     optionWarnings.add(`for snapshot ${snapshot.name} viewport ${viewportString}, no element found for selector ${selector}`);
                     continue;
