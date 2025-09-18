@@ -36,6 +36,9 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
                     }
                     task.output = chalk.gray(`build id: ${resp.data.buildId}`);
                     task.title = 'SmartUI build created'
+                    if (ctx.env.USE_REMOTE_DISCOVERY){
+                        task.output += chalk.gray(`\n Using remote discovery for this build`);
+                    }
                 } else {
                     task.output = chalk.gray(`Empty PROJECT_TOKEN and PROJECT_NAME. Skipping Creation of Build!`)
                     task.title = 'Skipped SmartUI build creation'
@@ -45,9 +48,10 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
                 }
 
                 if (ctx.config.tunnel && ctx.config.tunnel?.type === 'auto') {
-                    startPingPolling(ctx);
                     if (ctx.build && ctx.build.id) {
                         startPollingForTunnel(ctx, '', false, '');
+                    } else {
+                        startPingPolling(ctx, "tunnel-process");
                     }
                 }
 
@@ -61,6 +65,14 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
                             tunnelName: tunnelResp.data.tunnel_name
                         }
                         ctx.log.debug(`Tunnel Details: ${JSON.stringify(ctx.tunnelDetails)}`)
+                        //USE_REMOTE_DISCOVERY as default if Tunnel is true 
+                        if (process.env.USE_REMOTE_DISCOVERY === undefined) {
+                            ctx.env.USE_REMOTE_DISCOVERY = true;
+                            process.env.USE_REMOTE_DISCOVERY = 'true';
+                            task.output += chalk.gray(`\n Using remote discovery by deafult for this build`);
+                        }
+                        ctx.log.debug(`USE_REMOTE_DISCOVERY is set to ${ctx.env.USE_REMOTE_DISCOVERY}`);
+
                     } else if (tunnelResp && tunnelResp.error) {
                         if (tunnelResp.error.message) {
                             if (tunnelResp.error.code && tunnelResp.error.code === 400) {

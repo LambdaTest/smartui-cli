@@ -239,6 +239,11 @@ const ConfigSchema = {
                     type: "string",
                     errorMessage: "Invalid config; logFile should be a string value"
                 },
+                environment: {
+                    type: "string",
+                    enum: ["stage", "prod"],
+                    errorMessage: "Invalid config; environment should be a string value either stage or prod"
+                }
             },
             required: ["type"],
             additionalProperties: false
@@ -274,6 +279,18 @@ const ConfigSchema = {
         loadDomContent: {
             type: "boolean",
             errorMessage: "Invalid config; loadDomContent must be true/false"
+        },
+        approvalThreshold: {
+            type: "number",
+            minimum: 0,
+            maximum: 100,
+            errorMessage: "Invalid config; approvalThreshold must be a number"
+        },
+        rejectionThreshold: {
+            type: "number",
+            minimum: 0,
+            maximum: 100,
+            errorMessage: "Invalid config; rejectionThreshold must be a number"
         }
     },
     anyOf: [
@@ -537,6 +554,18 @@ const SnapshotSchema: JSONSchemaType<Snapshot> = {
                 useExtendedViewport: {
                     type: "boolean",
                     errorMessage: "Invalid snapshot options; useExtendedViewport must be a boolean"
+                },
+                approvalThreshold: {
+                    type: "number",
+                    minimum: 0,
+                    maximum: 100,
+                    errorMessage: "Invalid snapshot options; approvalThreshold must be a number between 0 and 100"
+                },
+                rejectionThreshold: {
+                    type: "number",
+                    minimum: 0,
+                    maximum: 100,
+                    errorMessage: "Invalid snapshot options; rejectionThreshold must be a number between 0 and 100"
                 }
             },
             additionalProperties: false

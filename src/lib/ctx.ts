@@ -39,6 +39,12 @@ export default (options: Record<string, string>): Context => {
                 delete config.web.resolutions;
             }
 
+            if(config.approvalThreshold && config.rejectionThreshold) {
+                if(config.rejectionThreshold <= config.approvalThreshold) {
+                    throw new Error('Invalid config; rejectionThreshold must be greater than approvalThreshold');
+                }
+            }
+
             let validateConfigFn = options.scheduled ? validateConfigForScheduled : validateConfig;
 
             // validate config
@@ -142,6 +148,8 @@ export default (options: Record<string, string>): Context => {
             useLambdaInternal: useLambdaInternal,
             useExtendedViewport: useExtendedViewport,
             loadDomContent: loadDomContent,
+            approvalThreshold: config.approvalThreshold,
+            rejectionThreshold: config.rejectionThreshold,
         },
         uploadFilePath: '',
         webStaticConfig: [],

@@ -8,6 +8,7 @@ import getGitInfo from '../tasks/getGitInfo.js';
 import createBuildExec from '../tasks/createBuildExec.js';
 import snapshotQueue from '../lib/snapshotQueue.js';
 import { startPolling, startPingPolling } from '../lib/utils.js';
+import startTunnel from '../tasks/startTunnel.js'
 
 const command = new Command();
 
@@ -27,12 +28,13 @@ command
         ctx.snapshotQueue = new snapshotQueue(ctx);
         ctx.totalSnapshots = 0
         ctx.isStartExec = true
-
+        
         let tasks = new Listr<Context>(
             [
                 authExec(ctx),
                 startServer(ctx),
                 getGitInfo(ctx),
+                ...(ctx.config.tunnel && ctx.config.tunnel?.type === 'auto' ? [startTunnel(ctx)] : []),
                 createBuildExec(ctx),
 
             ],
@@ -51,7 +53,7 @@ command
         try {
             await tasks.run(ctx);
             if (ctx.build && ctx.build.id) {
-                startPingPolling(ctx);
+                startPingPolling(ctx, 'exec-start');
             }
             if (ctx.options.fetchResults && ctx.build && ctx.build.id) {
                 startPolling(ctx, '', false, '')
@@ -59,6 +61,7 @@ command
     
         } catch (error) {
             console.error('Error during server execution:', error);
+            process.exit(1);
         }
     });
 

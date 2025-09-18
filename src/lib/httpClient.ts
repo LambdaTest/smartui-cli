@@ -281,7 +281,7 @@ export default class httpClient {
     }
 
 
-    getSmartUICapabilities(sessionId: string, config: any, git: any, log: Logger) {
+    getSmartUICapabilities(sessionId: string, config: any, git: any, log: Logger, isStartExec: boolean) {
         return this.request({
             url: '/sessions/capabilities',
             method: 'GET',
@@ -290,7 +290,8 @@ export default class httpClient {
             },
             data: {
                 git,
-                config
+                config,
+                isStartExec
             },
             headers: {
                 projectToken: '',
@@ -343,24 +344,33 @@ export default class httpClient {
         }, ctx.log)
     }
 
-    processSnapshot(ctx: Context, snapshot: ProcessedSnapshot, snapshotUuid: string,  discoveryErrors: DiscoveryErrors, variantCount: number, sync: boolean = false) {
+    processSnapshot(ctx: Context, snapshot: ProcessedSnapshot, snapshotUuid: string,  discoveryErrors: DiscoveryErrors, variantCount: number, sync: boolean = false, approvalThreshold: number| undefined, rejectionThreshold: number| undefined) {
+        const requestData: any = {
+            name: snapshot.name,
+            url: snapshot.url,
+            snapshotUuid: snapshotUuid,
+            variantCount: variantCount,
+            test: {
+                type: ctx.testType,
+                source: 'cli'
+            },
+            discoveryErrors: discoveryErrors,
+            doRemoteDiscovery: snapshot.options.doRemoteDiscovery,
+            sync: sync
+        };
+
+        if (approvalThreshold !== undefined) {
+            requestData.approvalThreshold = approvalThreshold;
+        }
+        if (rejectionThreshold !== undefined) {
+            requestData.rejectionThreshold = rejectionThreshold;
+        }
+
         return this.request({
             url: `/build/${ctx.build.id}/snapshot`,
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            data: {
-                name: snapshot.name,
-                url: snapshot.url,
-                snapshotUuid: snapshotUuid,
-                variantCount: variantCount,
-                test: {
-                    type: ctx.testType,
-                    source: 'cli'
-                },
-                doRemoteDiscovery: snapshot.options.doRemoteDiscovery,
-                discoveryErrors: discoveryErrors,
-                sync: sync
-            }
+            data: requestData
         }, ctx.log)
     }
 

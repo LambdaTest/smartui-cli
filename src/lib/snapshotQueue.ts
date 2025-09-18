@@ -427,7 +427,9 @@ export default class Queue {
                                 }
                                 this.processNext();
                             } else {
-                                await this.ctx.client.processSnapshot(this.ctx, processedSnapshot, snapshotUuid, discoveryErrors,calculateVariantCountFromSnapshot(processedSnapshot, this.ctx.config),snapshot?.options?.sync);
+                                let approvalThreshold = snapshot?.options?.approvalThreshold || this.ctx.config.approvalThreshold;
+                                let rejectionThreshold = snapshot?.options?.rejectionThreshold || this.ctx.config.rejectionThreshold;
+                                await this.ctx.client.processSnapshot(this.ctx, processedSnapshot, snapshotUuid, discoveryErrors,calculateVariantCountFromSnapshot(processedSnapshot, this.ctx.config),snapshot?.options?.sync, approvalThreshold, rejectionThreshold);
                                 if(snapshot?.options?.contextId && this.ctx.contextToSnapshotMap?.has(snapshot.options.contextId)){
                                     this.ctx.contextToSnapshotMap.set(snapshot.options.contextId, 1);
                                 }

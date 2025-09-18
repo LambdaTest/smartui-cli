@@ -30,7 +30,7 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
 
             if (pingIntervalId !== null) {
                 clearInterval(pingIntervalId);
-                ctx.log.debug('Ping polling stopped immediately.');
+                ctx.log.debug('Ping polling stopped immediately from Finalize Build');
             }
 
             for (const [sessionId, capabilities] of ctx.sessionCapabilitiesMap.entries()) {

@@ -49,6 +49,9 @@
     "which": "^4.0.0",
     "winston": "^3.10.0"
   },
+  "overrides": {
+    "simple-swizzle": "0.2.2"
+  },
   "devDependencies": {
     "typescript": "^5.3.2"
   }

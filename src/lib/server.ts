@@ -5,7 +5,7 @@ import { readFileSync, truncate } from 'fs'
 import { Context } from '../types.js'
 import { validateSnapshot } from './schemaValidation.js'
 import { pingIntervalId } from './utils.js';
-import { startPolling } from './utils.js';
+import { stopTunnelHelper } from './utils.js';
 
 const uploadDomToS3ViaEnv = process.env.USE_LAMBDA_INTERNAL || false;
 export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMessage, ServerResponse>> => {
@@ -38,6 +38,12 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 		try {
 			let { snapshot, testType } = request.body;
 			if (!validateSnapshot(snapshot)) throw new Error(validateSnapshot.errors[0].message);
+
+			if(snapshot?.options?.approvalThreshold !== undefined && snapshot?.options?.rejectionThreshold !== undefined) {
+				if(snapshot?.options?.rejectionThreshold <= snapshot?.options?.approvalThreshold) {
+					throw new Error(`Invalid snapshot options; rejectionThreshold (${snapshot.options.rejectionThreshold}) must be greater than approvalThreshold (${snapshot.options.approvalThreshold})`);
+				}
+			}
 		
 			// Fetch sessionId from snapshot options if present
 			const sessionId = snapshot?.options?.sessionId;
@@ -53,7 +59,7 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 				} else {
 					// If not cached, fetch from API and cache it
 					try {
-						let fetchedCapabilitiesResp = await ctx.client.getSmartUICapabilities(sessionId, ctx.config, ctx.git, ctx.log);
+						let fetchedCapabilitiesResp = await ctx.client.getSmartUICapabilities(sessionId, ctx.config, ctx.git, ctx.log, ctx.isStartExec);
 						capsBuildId = fetchedCapabilitiesResp?.buildId || ''
 						ctx.log.debug(`fetch caps for sessionId: ${sessionId} are ${JSON.stringify(fetchedCapabilitiesResp)}`)
 						if (capsBuildId) {
@@ -151,6 +157,11 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 				}
 			}
 
+			//Handle Tunnel closure
+			if (ctx.config.tunnel && ctx.config.tunnel?.type === 'auto') {
+				await stopTunnelHelper(ctx)
+			}
+
 			await ctx.browser?.close();
 			if (ctx.server){
 				ctx.server.close();
@@ -168,7 +179,7 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 			replyCode = 500;
 			replyBody = { error: { message: error.message } };
 		}
-	
+		
 		// Step 5: Return the response
 		return reply.code(replyCode).send(replyBody);
 	});

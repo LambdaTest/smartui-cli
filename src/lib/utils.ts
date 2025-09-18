@@ -324,7 +324,7 @@ export async function startPolling(ctx: Context, build_id: string, baseline: boo
 
 export let pingIntervalId: NodeJS.Timeout | null = null;
 
-export async function startPingPolling(ctx: Context): Promise<void> {
+export async function startPingPolling(ctx: Context, event: string): Promise<void> {
     try {
         ctx.log.debug('Sending initial ping to server...');
         await ctx.client.ping(ctx.build.id, ctx.log);
@@ -336,9 +336,9 @@ export async function startPingPolling(ctx: Context): Promise<void> {
     // Start the polling interval
     pingIntervalId = setInterval(async () => {
         try {
-            ctx.log.debug('Sending ping to server...');
+            ctx.log.debug('Sending ping to server...'+ event);
             await ctx.client.ping(ctx.build.id, ctx.log);
-            ctx.log.debug('Ping sent successfully.');
+            ctx.log.debug('Ping sent successfully.'+ event);
         } catch (error: any) {
             ctx.log.error(`Error during ping polling: ${error.message}`);
         }
@@ -390,6 +390,11 @@ export async function startTunnelBinary(ctx: Context) {
         ctx.config.tunnel.tunnelName = randomTunnelName
     }
     
+    if (tunnelConfig?.environment) {
+        tunnelArguments.environment = tunnelConfig.environment
+    }
+
+
     ctx.log.debug(`tunnel config ${JSON.stringify(tunnelArguments)}`)
 
     if (ctx.config.tunnel?.type === 'auto') {
@@ -434,7 +439,7 @@ export async function startPollingForTunnel(ctx: Context, build_id: string, base
 
                 const status = await tunnelInstance.stop();
                 ctx.log.debug('Tunnel is Stopped ? ' + status);
-
+                return;
             }
         } catch (error: any) {
             if (error.message.includes('ENOTFOUND')) {
@@ -450,10 +455,10 @@ export async function startPollingForTunnel(ctx: Context, build_id: string, base
 
 export async function stopTunnelHelper(ctx: Context) {
     const tunnelRunningStatus = await tunnelInstance.isRunning();
-    ctx.log.debug('Running status of tunnel before stopping ? ' + tunnelRunningStatus);
+    ctx.log.debug('stop-tunnel:: Running status of tunnel before stopping ? ' + tunnelRunningStatus);
 
     const status = await tunnelInstance.stop();
-    ctx.log.debug('Tunnel is Stopped ? ' + status);
+    ctx.log.debug('stop-tunnel:: Tunnel is Stopped ? ' + status);
 } 
 
 /**

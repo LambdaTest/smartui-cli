@@ -40,6 +40,8 @@ export interface Context {
         useLambdaInternal?: boolean;
         useExtendedViewport?: boolean;
         loadDomContent?: boolean;
+        approvalThreshold?: number;
+        rejectionThreshold?: number;
     };
     uploadFilePath: string;
     webStaticConfig: WebStaticConfig;
@@ -156,6 +158,8 @@ export interface Snapshot {
         sync?: boolean;
         contextId?: string;
         useExtendedViewport?: boolean;
+        approvalThreshold?: number;
+        rejectionThreshold?: number;
     }
 }
 
@@ -235,6 +239,7 @@ export interface tunnelConfig {
     dir: string;
     v: boolean;
     logFile: string;
+    environment:string;
 }
 
 export interface FigmaWebConfig {
