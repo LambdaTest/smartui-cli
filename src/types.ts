@@ -38,6 +38,7 @@ export interface Context {
         requestHeaders?: Array<Record<string, string>>;
         allowDuplicateSnapshotNames?: boolean;
         useLambdaInternal?: boolean;
+        useRemoteDiscovery?: boolean;
         useExtendedViewport?: boolean;
         loadDomContent?: boolean;
         approvalThreshold?: number;
@@ -81,6 +82,7 @@ export interface Context {
     sessionCapabilitiesMap?: Map<string, any[]>;
     buildToSnapshotCountMap?: Map<string, number>;
     fetchResultsForBuild?: Array<string>;
+    sessionIdToSnapshotNameMap?: Map<string, string[]>;
     orgId?: number;
     userId?: number;
     mergeBranchSource?: string;

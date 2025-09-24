@@ -36,7 +36,7 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
                     }
                     task.output = chalk.gray(`build id: ${resp.data.buildId}`);
                     task.title = 'SmartUI build created'
-                    if (ctx.env.USE_REMOTE_DISCOVERY){
+                    if (ctx.env.USE_REMOTE_DISCOVERY || ctx.config.useRemoteDiscovery) {
                         task.output += chalk.gray(`\n Using remote discovery for this build`);
                     }
                 } else {

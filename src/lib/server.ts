@@ -3,10 +3,43 @@ import path from 'path';
 import fastify, { FastifyInstance, RouteShorthandOptions } from 'fastify';
 import { readFileSync, truncate } from 'fs'
 import { Context } from '../types.js'
+import { Logger } from 'winston'
 import { validateSnapshot } from './schemaValidation.js'
 import { pingIntervalId, startPollingForTunnel, stopTunnelHelper, isTunnelPolling } from './utils.js';
+import constants from './constants.js';
+var fp = require("find-free-port")
 
 const uploadDomToS3ViaEnv = process.env.USE_LAMBDA_INTERNAL || false;
+
+// Helper function to find an available port
+async function findAvailablePort(server: FastifyInstance, startPort: number, log: Logger): Promise<number> {
+	let currentPort = startPort;
+
+	// If the default port gives error, use find-free-port with range 49100-60000
+	try {
+		await server.listen({ port: currentPort });
+		return currentPort;
+	} catch (error: any) {
+		if (error.code === 'EADDRINUSE') {
+			log.debug(`Port ${currentPort} is in use, finding available port in range 49100-60000`);
+			
+			// Use find-free-port to get an available port in the specified range
+			const availablePorts = await fp(constants.MIN_PORT_RANGE, constants.MAX_PORT_RANGE);
+			if (availablePorts.length > 0) {
+				const freePort = availablePorts[0];
+				await server.listen({ port: freePort });
+				log.debug(`Found and started server on port ${freePort}`);
+				return freePort;
+			} else {
+				throw new Error('No available ports found in range 49100-60000');
+			}
+		} else {
+			// If it's not a port conflict error, rethrow it
+			throw error;
+		}
+	}
+}
+
 export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMessage, ServerResponse>> => {
 	
 	const server: FastifyInstance<Server, IncomingMessage, ServerResponse> = fastify({
@@ -307,12 +340,21 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 		}
 	});
 
+	// Use the helper function to find and start server on available port
+	if (ctx.sourceCommand && ctx.sourceCommand === 'exec-start') {
 
-	await server.listen({ port: ctx.options.port });
-	// store server's address for SDK
-	let { port } = server.addresses()[0];
-	process.env.SMARTUI_SERVER_ADDRESS = `http://localhost:${port}`;
-	process.env.CYPRESS_SMARTUI_SERVER_ADDRESS = `http://localhost:${port}`;
+		await server.listen({ port: ctx.options.port });
+		let { port } = server.addresses()[0];
+		process.env.SMARTUI_SERVER_ADDRESS = `http://localhost:${port}`;
+		process.env.CYPRESS_SMARTUI_SERVER_ADDRESS = `http://localhost:${port}`;
+		ctx.log.debug(`Server started successfully on port ${port}`);
+
+	} else {
+		const actualPort = await findAvailablePort(server, ctx.options.port, ctx.log);
+		process.env.SMARTUI_SERVER_ADDRESS = `http://localhost:${actualPort}`;
+		process.env.CYPRESS_SMARTUI_SERVER_ADDRESS = `http://localhost:${actualPort}`;
+		ctx.log.debug(`Server started successfully on port ${actualPort}`);
+	}
 
 	return server;
 }

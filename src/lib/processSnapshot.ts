@@ -501,19 +501,19 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
             for (const [key, value] of Object.entries(options[ignoreOrSelectDOM])) {
                 switch (key) {
                     case 'id':
-                        selectors.push(...value.map(e => '#' + e));
+                        selectors.push(...value.map(e => e.startsWith('#') ? e : '#' + e));
                         break;
                     case 'class':
-                        selectors.push(...value.map(e => '.' + e));
+                        selectors.push(...value.map(e => e.startsWith('.') ? e : '.' + e));
                         break;
                     case 'xpath':
-                        selectors.push(...value.map(e => 'xpath=' + e));
+                        selectors.push(...value.map(e => e.startsWith('xpath=') ? e : 'xpath=' + e));
                         break;
                     case 'cssSelector':
                         selectors.push(...value);
                         break;
                     case 'coordinates':
-                        selectors.push(...value.map(e => `coordinates=${e}`));
+                        selectors.push(...value.map(e =>`coordinates=${e}`));
                         break;
                 }
             }
@@ -648,14 +648,7 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
         }
 
         // snapshot options
-        if (processedOptions.element) {
-            let l = await page.locator(processedOptions.element).all()
-            if (l.length === 0) {
-                throw new Error(`for snapshot ${snapshot.name} viewport ${viewportString}, no element found for selector ${processedOptions.element}`);
-            } else if (l.length > 1) {
-                throw new Error(`for snapshot ${snapshot.name} viewport ${viewportString}, multiple elements found for selector ${processedOptions.element}`);
-            }
-        } else if (selectors.length) {
+        if (selectors.length) {
             let height = 0;
             height = await page.evaluate(() => {
                 const DEFAULT_HEIGHT = 16384;
@@ -707,52 +700,96 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
                         optionWarnings.add(`for snapshot ${snapshot.name} viewport ${viewportString}, coordinates may not be accurate for multiple viewports`);
                     }
 
-                    
+
                     const coordinateElement = { 
                         type: 'coordinates', 
                         ...validation.coords
                     };
                     locators.push(coordinateElement as any);
                     continue;
-                }
-                
-                let l = await page.locator(selector).all()
-                if (l.length === 0) {
-                    optionWarnings.add(`for snapshot ${snapshot.name} viewport ${viewportString}, no element found for selector ${selector}`);
-                    continue;
-                }
-                locators.push(...l);
-            }
 
-            for (const locator of locators) {
-                if (locator && typeof locator === 'object' && locator.hasOwnProperty('type') && (locator as any).type === 'coordinates') {
-                    const coordLocator = locator as any;
-                    const { top, bottom, left, right } = coordLocator;
-                    processedOptions[ignoreOrSelectBoxes][viewportString].push({
-                        left: left,
-                        top: top,
-                        right: right,
-                        bottom: bottom
-                    });
-                    continue;
-                }
-                
-                let bb = await locator.boundingBox();
-                if (bb) {
-                    // Calculate top and bottom from the bounding box properties
-                    const top = bb.y;
-                    const bottom = bb.y + bb.height;
-            
-                    // Only push if top and bottom are within the calculated height
-                    if (top <= height && bottom <= height) {
-                        processedOptions[ignoreOrSelectBoxes][viewportString].push({
-                            left: bb.x,
-                            top: top,
-                            right: bb.x + bb.width,
-                            bottom: bottom
-                        });
+                } else {
+                    const isXPath = selector.startsWith('xpath=');
+                    const selectorValue = isXPath ? selector.substring(6) : selector;
+
+                    const boxes = await page.evaluate(({ selectorValue, isXPath }) => {
+                        try {
+                            // First, determine the page height
+                            const DEFAULT_HEIGHT = 16384;
+                            const DEFAULT_WIDTH = 7680;
+                            const body = document.body;
+                            const html = document.documentElement;
+
+                            let pageHeight;
+                            let pageWidth;
+
+                            if (!body || !html) {
+                                pageHeight = DEFAULT_HEIGHT;
+                                pageWidth = DEFAULT_WIDTH;
+                            } else {
+                                const measurements = [
+                                    body?.scrollHeight || 0,
+                                    body?.offsetHeight || 0,
+                                    html?.clientHeight || 0,
+                                    html?.scrollHeight || 0,
+                                    html?.offsetHeight || 0
+                                ];
+
+                                const allMeasurementsInvalid = measurements.every(measurement => !measurement);
+
+                                if (allMeasurementsInvalid) {
+                                    pageHeight = DEFAULT_HEIGHT;
+                                } else {
+                                    pageHeight = Math.max(...measurements);
+                                }
+
+                                const measurementsWidth = [
+                                    body?.scrollWidth || 0,
+                                    body?.offsetWidth || 0,
+                                    html?.clientWidth || 0,
+                                    html?.scrollWidth || 0,
+                                    html?.offsetWidth || 0
+                                ];
+
+                                const allMeasurementsInvalidWidth = measurementsWidth.every(measurement => !measurement);
+
+                                if (allMeasurementsInvalidWidth) {
+                                    pageWidth = DEFAULT_WIDTH;
+                                } else {
+                                    pageWidth = Math.max(...measurementsWidth);
+                                }
+                            }
+
+                            let elements = [];
+
+                            if (isXPath) {
+                                // Use XPath evaluation
+                                const xpathResult = document.evaluate(
+                                    selectorValue,
+                                    document,
+                                    null,
+                                    XPathResult.ORDERED_NODE_SNAPSHOT_TYPE,
+                                    null
+                                );
+
+                                for (let i = 0; i < xpathResult.snapshotLength; i++) {
+                                    elements.push(xpathResult.snapshotItem(i));
+                                }
+                            } else {
+                                elements = Array.from(document.querySelectorAll(selectorValue));
+                            }
+
+                            return elements;
+
+                        } catch (error) {
+                        }
+
+                    }, { selectorValue, isXPath });
+
+                    if (boxes && boxes.length >= 1) {
+                        processedOptions[ignoreOrSelectBoxes][viewportString].push(...boxes);
                     } else {
-                        ctx.log.debug(`Bounding box for selector skipped due to exceeding height: ${JSON.stringify({ top, bottom, height })}`);
+                        optionWarnings.add(`for snapshot ${snapshot.name} viewport ${viewportString}, no element found for selector ${selector}`);
                     }
                 }
             }

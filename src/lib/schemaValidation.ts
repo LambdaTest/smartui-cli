@@ -272,6 +272,10 @@ const ConfigSchema = {
             type: "boolean",
             errorMessage: "Invalid config; useLambdaInternal must be true/false"
         },
+        useRemoteDiscovery: {
+            type: "boolean",
+            errorMessage: "Invalid config; useRemoteDiscovery must be true/false"
+        },
         useExtendedViewport: {
             type: "boolean",
             errorMessage: "Invalid config; useExtendedViewport must be true/false"

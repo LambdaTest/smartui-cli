@@ -46,6 +46,8 @@ export default {
     EDGE: 'edge',
     EDGE_CHANNEL: 'msedge',
     WEBKIT: 'webkit',
+    MIN_PORT_RANGE: 49100,
+    MAX_PORT_RANGE: 60000,
 
     // discovery browser launch arguments
     LAUNCH_ARGS: [
