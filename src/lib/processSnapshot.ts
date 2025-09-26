@@ -621,7 +621,7 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
                 // adding extra timeout since domcontentloaded event is fired pretty quickly
                 await new Promise(r => setTimeout(r, 1250));
                 if (ctx.config.waitForTimeout) await page.waitForTimeout(ctx.config.waitForTimeout);
-                await page.waitForLoadState("networkidle", { timeout: 30000 }).catch(() => { ctx.log.debug('networkidle event failed to fire within 30s') });
+                await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => { ctx.log.debug('networkidle event failed to fire within 10s') });
                 navigated = true;
                 ctx.log.debug(`Navigated to ${snapshot.url}`);
             } catch (error: any) {
