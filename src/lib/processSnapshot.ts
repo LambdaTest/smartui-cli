@@ -243,6 +243,47 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
             ctx.log.debug('No valid cookies to add');
         }
     }
+
+    let options = snapshot.options;
+
+    // Custom cookies include those which cannot be captured by javascript function `document.cookie` like httpOnly, secure, sameSite etc.
+    // These custom cookies will be captured by the user in their automation browser and sent to CLI through the snapshot options using `customCookies` field.
+    if (options?.customCookies && Array.isArray(options.customCookies) && options.customCookies.length > 0) {
+        ctx.log.debug(`Setting ${options.customCookies.length} custom cookies`);
+        
+        const validCustomCookies = options.customCookies.filter(cookie => {
+            if (!cookie.name || !cookie.value || !cookie.domain) {
+                ctx.log.debug(`Skipping invalid custom cookie: missing required fields (name, value, or domain)`);
+                return false;
+            }
+            
+            if (cookie.sameSite && !['Strict', 'Lax', 'None'].includes(cookie.sameSite)) {
+                ctx.log.debug(`Skipping invalid custom cookie: invalid sameSite value '${cookie.sameSite}'`);
+                return false;
+            }
+            
+            return true;
+        }).map(cookie => ({
+            name: cookie.name,
+            value: cookie.value,
+            domain: cookie.domain,
+            path: cookie.path || '/',
+            httpOnly: cookie.httpOnly || false,
+            secure: cookie.secure || false,
+            sameSite: cookie.sameSite || 'Lax'
+        }));
+
+        if (validCustomCookies.length > 0) {
+            try {
+                await context.addCookies(validCustomCookies);
+                ctx.log.debug(`Successfully added ${validCustomCookies.length} custom cookies`);
+            } catch (error) {
+                ctx.log.debug(`Failed to add custom cookies: ${error}`);
+            }
+        } else {
+            ctx.log.debug('No valid custom cookies to add');
+        }
+    }
     const page = await context.newPage();
 
     // populate cache with already captured resources
@@ -415,8 +456,6 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
             route.abort();
         }
     });
-
-    let options = snapshot.options;
     let optionWarnings: Set<string> = new Set();
     let selectors: Array<string> = [];
     let ignoreOrSelectDOM: string;
@@ -582,6 +621,7 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
                 // adding extra timeout since domcontentloaded event is fired pretty quickly
                 await new Promise(r => setTimeout(r, 1250));
                 if (ctx.config.waitForTimeout) await page.waitForTimeout(ctx.config.waitForTimeout);
+                await page.waitForLoadState("networkidle", { timeout: 30000 }).catch(() => { ctx.log.debug('networkidle event failed to fire within 30s') });
                 navigated = true;
                 ctx.log.debug(`Navigated to ${snapshot.url}`);
             } catch (error: any) {
@@ -815,7 +855,6 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
 
     if (hasBrowserErrors) {
         discoveryErrors.timestamp = new Date().toISOString();
-        // ctx.log.warn(discoveryErrors);
     }
 
     if (ctx.config.useGlobalCache) {

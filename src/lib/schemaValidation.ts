@@ -582,6 +582,14 @@ const SnapshotSchema: JSONSchemaType<Snapshot> = {
                     minimum: 0,
                     maximum: 100,
                     errorMessage: "Invalid snapshot options; rejectionThreshold must be a number between 0 and 100"
+                },
+                customCookies: {
+                    type: "array",
+                    items: {
+                        type: "object",
+                        minProperties: 1,
+                    },
+                    errorMessage: "Invalid snapshot options; customCookies must be an array of objects with string properties"
                 }
             },
             additionalProperties: false
