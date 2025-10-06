@@ -168,6 +168,7 @@ export interface Snapshot {
         useExtendedViewport?: boolean;
         approvalThreshold?: number;
         rejectionThreshold?: number;
+        customCookies?: CustomCookie[];
     }
 }
 
@@ -253,6 +254,16 @@ export interface tunnelConfig {
 export interface FigmaWebConfig {
     autoDetectViewports: Array<string>;
     configs: Array<{ figma_file_token: string, figma_ids: Array<string>, screenshot_names:Array<string> }>;
+}
+
+export interface CustomCookie {
+    name: string;
+    value: string;
+    domain: string;
+    path: string;
+    httpOnly: boolean;
+    secure: boolean;
+    sameSite: 'Strict' | 'Lax' | 'None';
 }
 
 
