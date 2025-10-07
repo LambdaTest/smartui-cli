@@ -545,7 +545,7 @@ export function startPdfPolling(ctx: Context) {
         try {
             const response = await ctx.client.fetchPdfResults(ctx);
 
-            if (response.screenshots && response.build?.build_status === constants.BUILD_COMPLETE) {
+            if (response.screenshots && response.build?.build_status !== constants.BUILD_RUNNING) {
                 clearInterval(interval);
 
                 const pdfGroups = groupScreenshotsByPdf(response.screenshots);
