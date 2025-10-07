@@ -25,8 +25,7 @@ export default {
         waitForTimeout: 1000,
         enableJavaScript: false,
         allowedHostnames: [],
-        smartIgnore: false,
-        showRenderErrors: false
+        smartIgnore: false
     },
     DEFAULT_WEB_STATIC_CONFIG: [
         {
