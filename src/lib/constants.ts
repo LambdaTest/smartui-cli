@@ -126,6 +126,7 @@ export default {
     MOBILE_ORIENTATION_LANDSCAPE: 'landscape',
 
     // build status
+    BUILD_RUNNING: 'running',
     BUILD_COMPLETE: 'completed',
     BUILD_ERROR: 'error',
 
