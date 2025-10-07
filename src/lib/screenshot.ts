@@ -25,7 +25,9 @@ async function captureScreenshotsForConfig(
     ctx.log.debug(`url:  ${url}  pageOptions: ${JSON.stringify(pageOptions)}`);
     let ssId = name.toLowerCase().replace(/\s/g, '_');
     let context: BrowserContext;
-    let contextOptions: Record<string, any> = {};
+    let contextOptions: Record<string, any> = {
+        ignoreHTTPSErrors: ctx.config.ignoreHTTPSErrors
+    };
     let page: Page;
     if (browserName == constants.CHROME) contextOptions.userAgent = constants.CHROME_USER_AGENT;
     else if (browserName == constants.FIREFOX) contextOptions.userAgent = constants.FIREFOX_USER_AGENT;
