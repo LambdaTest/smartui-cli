@@ -155,7 +155,6 @@ export default (options: Record<string, string>): Context => {
             loadDomContent: loadDomContent,
             approvalThreshold: config.approvalThreshold,
             rejectionThreshold: config.rejectionThreshold,
-            showRenderErrors: config.showRenderErrors ?? false
         },
         uploadFilePath: '',
         webStaticConfig: [],
@@ -193,8 +192,7 @@ export default (options: Record<string, string>): Context => {
             fetchResultsFileName: fetchResultsFileObj,
             baselineBranch: options.baselineBranch || '',
             baselineBuild: options.baselineBuild || '',
-            githubURL : options.githubURL || '',
-            showRenderErrors: options.showRenderErrors ? true : false
+            githubURL : options.githubURL || ''
         },
         cliVersion: version,
         totalSnapshots: -1,
