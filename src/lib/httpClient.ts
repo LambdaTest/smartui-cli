@@ -675,6 +675,9 @@ export default class httpClient {
         if (ctx.build.name !== undefined && ctx.build.name !== '') {
             form.append('buildName', buildName);
         }
+        if (ctx.options.markBaseline) {
+            form.append('markBaseline', ctx.options.markBaseline.toString());
+        }
 
         try {
             const response = await this.axiosInstance.request({
