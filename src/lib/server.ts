@@ -118,7 +118,7 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 			}
 			
 			if (contextId && ctx.contextToSnapshotMap) {
-				ctx.contextToSnapshotMap.set(contextId, 0);
+				ctx.contextToSnapshotMap.set(contextId, '0');
 				ctx.log.debug(`Marking contextId as captured and added to queue: ${contextId}`);
 			}
 
@@ -257,10 +257,9 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 					if(counter<=0){
 						throw new Error('Snapshot processing failed');
 					}
+					contextStatus = ctx.contextToSnapshotMap.get(contextId);
 					// Wait 5 seconds before next check
 					await new Promise(resolve => setTimeout(resolve, 5000));
-					
-					contextStatus = ctx.contextToSnapshotMap.get(contextId);
 					counter--;
 				}
 
