@@ -118,7 +118,7 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 			}
 			
 			if (contextId && ctx.contextToSnapshotMap) {
-				ctx.contextToSnapshotMap.set(contextId, 0);
+				ctx.contextToSnapshotMap.set(contextId, '0');
 				ctx.log.debug(`Marking contextId as captured and added to queue: ${contextId}`);
 			}
 
@@ -252,18 +252,27 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 			if (ctx.contextToSnapshotMap?.has(contextId)) {
 				let contextStatus = ctx.contextToSnapshotMap.get(contextId);
 				
-				while (contextStatus==0) {
+				let counter= 60;
+				while (contextStatus==='0') {
+					if(counter<=0){
+						throw new Error('Snapshot processing failed');
+					}
+					contextStatus = ctx.contextToSnapshotMap.get(contextId);
 					// Wait 5 seconds before next check
 					await new Promise(resolve => setTimeout(resolve, 5000));
-					
-					contextStatus = ctx.contextToSnapshotMap.get(contextId);
+					counter--;
 				}
 
-				if(contextStatus==2){
+				if(contextStatus==='2'){
 					throw new Error("Snapshot Failed");
 				}
 				
 				ctx.log.debug("Snapshot uploaded successfully");
+
+				const buildId = contextStatus;
+				if (!buildId) {
+					throw new Error(`No buildId found for contextId: ${contextId}`);
+				}
 
 				// Poll external API until it returns 200 or timeout is reached
 				let lastExternalResponse: any = null; 
@@ -272,6 +281,7 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 				while (true) {
 					try {
 						const externalResponse = await ctx.client.getSnapshotStatus(
+							buildId,
 							snapshotName,
 							contextId,
 							ctx
