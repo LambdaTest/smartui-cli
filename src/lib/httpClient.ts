@@ -375,7 +375,7 @@ export default class httpClient {
         }, ctx.log)
     }
 
-    processSnapshotCaps(ctx: Context, snapshot: ProcessedSnapshot, snapshotUuid: string, capsBuildId: string, capsProjectToken: string, discoveryErrors: DiscoveryErrors) {
+    processSnapshotCaps(ctx: Context, snapshot: ProcessedSnapshot, snapshotUuid: string, capsBuildId: string, capsProjectToken: string, discoveryErrors: DiscoveryErrors, variantCount: number, sync: boolean = false) {
         return this.request({
             url: `/build/${capsBuildId}/snapshot`,
             method: 'POST',
@@ -387,17 +387,19 @@ export default class httpClient {
                 name: snapshot.name,
                 url: snapshot.url,
                 snapshotUuid: snapshotUuid,
+                variantCount: variantCount,
                 test: {
                     type: ctx.testType,
                     source: 'cli'
                 },
                 doRemoteDiscovery: snapshot.options.doRemoteDiscovery,
                 discoveryErrors: discoveryErrors,
+                sync: sync
             }
         }, ctx.log)
     }
 
-    uploadSnapshotForCaps(ctx: Context, snapshot: ProcessedSnapshot, capsBuildId: string, capsProjectToken: string, discoveryErrors: DiscoveryErrors) {
+    uploadSnapshotForCaps(ctx: Context, snapshot: ProcessedSnapshot, capsBuildId: string, capsProjectToken: string, discoveryErrors: DiscoveryErrors, variantCount: number, sync: boolean = false) {
         // Use capsBuildId if provided, otherwise fallback to ctx.build.id
         const buildId = capsBuildId !== '' ? capsBuildId : ctx.build.id;
     
@@ -415,6 +417,8 @@ export default class httpClient {
                     source: 'cli'
                 },
                 discoveryErrors: discoveryErrors,
+                variantCount: variantCount,
+                sync: sync
             }
         }, ctx.log);
     }
@@ -660,9 +664,9 @@ export default class httpClient {
         }, ctx.log)
     }
 
-    getSnapshotStatus(snapshotName: string, snapshotUuid: string, ctx: Context): Promise<Record<string, any>> {
+    getSnapshotStatus(buildId: string, snapshotName: string, snapshotUuid: string, ctx: Context): Promise<Record<string, any>> {
         return this.request({
-            url: `/snapshot/status?buildId=${ctx.build.id}&snapshotName=${snapshotName}&snapshotUUID=${snapshotUuid}`,
+            url: `/snapshot/status?buildId=${buildId}&snapshotName=${snapshotName}&snapshotUUID=${snapshotUuid}`,
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
