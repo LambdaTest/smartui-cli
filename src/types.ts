@@ -93,7 +93,7 @@ export interface Context {
     mergeBuildTargetId?: string;
     mergeByBranch?: boolean;
     mergeByBuild?: boolean;
-    contextToSnapshotMap?: Map<string, number>;
+    contextToSnapshotMap?: Map<string, string>;
     sourceCommand?: string;
     autoTunnelStarted?: boolean;
 }
