@@ -645,7 +645,7 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
         if (ctx.config.cliEnableJavaScript && fullPage) await page.evaluate(scrollToBottomAndBackToTop, { frequency: 100, timing: ctx.config.scrollTime });
 
         try {
-            await page.waitForLoadState('networkidle', { timeout: 5000 });
+            await page.waitForLoadState('networkidle', { timeout: 15000 });
             ctx.log.debug('Network idle 500ms');
         } catch (error) {
             ctx.log.debug(`Network idle failed due to ${error}`);
