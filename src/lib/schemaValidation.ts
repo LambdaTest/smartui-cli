@@ -295,6 +295,10 @@ const ConfigSchema = {
             minimum: 0,
             maximum: 100,
             errorMessage: "Invalid config; rejectionThreshold must be a number"
+        },
+        showRenderErrors: {
+            type: "boolean",
+            errorMessage: "Invalid config; showRenderErrors must be true/false"
         }
     },
     anyOf: [
