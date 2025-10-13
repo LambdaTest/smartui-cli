@@ -360,9 +360,10 @@ export default class Queue {
                     }
 
 
-
                     if (useCapsBuildId) {
                         this.ctx.log.info(`Using cached buildId: ${capsBuildId}`);
+                        let approvalThreshold = snapshot?.options?.approvalThreshold || this.ctx.config.approvalThreshold;
+                        let rejectionThreshold = snapshot?.options?.rejectionThreshold || this.ctx.config.rejectionThreshold;
                         if (useKafkaFlowCaps) {
                             let snapshotUuid = uuidv4();
                             if (snapshot?.options?.contextId && this.ctx.contextToSnapshotMap?.has(snapshot.options.contextId)) {
@@ -378,9 +379,9 @@ export default class Queue {
                                 this.ctx.log.debug(`Uploading dom to S3 for snapshot using LSRS`);
                                 await this.ctx.client.sendDomToLSRSForCaps(this.ctx, processedSnapshot, snapshotUuid, capsBuildId, capsProjectToken);
                             }
-                            await this.ctx.client.processSnapshotCaps(this.ctx, processedSnapshot, snapshotUuid, capsBuildId, capsProjectToken, discoveryErrors, calculateVariantCountFromSnapshot(processedSnapshot, this.ctx.config), snapshot?.options?.sync);
+                            await this.ctx.client.processSnapshotCaps(this.ctx, processedSnapshot, snapshotUuid, capsBuildId, capsProjectToken, discoveryErrors, calculateVariantCountFromSnapshot(processedSnapshot, this.ctx.config), snapshot?.options?.sync, approvalThreshold, rejectionThreshold);
                         } else {
-                            await this.ctx.client.uploadSnapshotForCaps(this.ctx, processedSnapshot, capsBuildId, capsProjectToken, discoveryErrors, calculateVariantCountFromSnapshot(processedSnapshot, this.ctx.config), snapshot?.options?.sync);
+                            await this.ctx.client.uploadSnapshotForCaps(this.ctx, processedSnapshot, capsBuildId, capsProjectToken, discoveryErrors, calculateVariantCountFromSnapshot(processedSnapshot, this.ctx.config), snapshot?.options?.sync, approvalThreshold, rejectionThreshold);
                         }
 
                         // Increment snapshot count for the specific buildId
