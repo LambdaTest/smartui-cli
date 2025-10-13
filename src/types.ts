@@ -43,6 +43,7 @@ export interface Context {
         loadDomContent?: boolean;
         approvalThreshold?: number;
         rejectionThreshold?: number;
+        showRenderErrors?: boolean
     };
     uploadFilePath: string;
     webStaticConfig: WebStaticConfig;
@@ -71,7 +72,8 @@ export interface Context {
         fetchResultsFileName?: string,
         baselineBranch?: string,
         baselineBuild?: string,
-        githubURL?: string
+        githubURL?: string,
+        showRenderErrors?: boolean
     }
     cliVersion: string;
     totalSnapshots: number;
@@ -120,6 +122,8 @@ export interface Env {
     SMARTUI_API_SKIP_CERTIFICATES: boolean;
     USE_REMOTE_DISCOVERY: boolean;
     SMART_GIT: boolean;
+    SHOW_RENDER_ERRORS: boolean;
+    SMARTUI_SSE_URL: string;
 }
 
 export interface Snapshot {
