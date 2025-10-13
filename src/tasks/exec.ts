@@ -3,7 +3,7 @@ import { Context } from '../types.js'
 import chalk from 'chalk'
 import spawn from 'cross-spawn'
 import { updateLogContext } from '../lib/logger.js'
-import { startPolling } from '../lib/utils.js'
+import { startPolling, startSSEListener } from '../lib/utils.js'
 
 export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRendererFactory>  =>  {
     return {
@@ -13,6 +13,14 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
             if (ctx.options.fetchResults) {
                 if (ctx.build && ctx.build.id) {
                     startPolling(ctx, '', false, '');
+                }
+            }
+
+            if((ctx.env.SHOW_RENDER_ERRORS||ctx.options.showRenderErrors||ctx.config.showRenderErrors) && ctx.build && ctx.build.id) {
+                if(ctx.env.LT_USERNAME&&ctx.env.LT_ACCESS_KEY) {
+                    startSSEListener(ctx);
+                } else {
+                    ctx.log.info('LT_USERNAME and LT_ACCESS_KEY are not set, set them to display render errors');
                 }
             }
 

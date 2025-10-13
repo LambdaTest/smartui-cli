@@ -375,7 +375,26 @@ export default class httpClient {
         }, ctx.log)
     }
 
-    processSnapshotCaps(ctx: Context, snapshot: ProcessedSnapshot, snapshotUuid: string, capsBuildId: string, capsProjectToken: string, discoveryErrors: DiscoveryErrors) {
+    processSnapshotCaps(ctx: Context, snapshot: ProcessedSnapshot, snapshotUuid: string, capsBuildId: string, capsProjectToken: string, discoveryErrors: DiscoveryErrors, variantCount: number, sync: boolean = false, approvalThreshold: number| undefined, rejectionThreshold: number| undefined) {
+        const requestData: any = {
+            name: snapshot.name,
+            url: snapshot.url,
+            snapshotUuid: snapshotUuid,
+            variantCount: variantCount,
+            test: {
+                type: ctx.testType,
+                source: 'cli'
+            },
+            doRemoteDiscovery: snapshot.options.doRemoteDiscovery,
+            discoveryErrors: discoveryErrors,
+            sync: sync
+        }
+        if (approvalThreshold !== undefined) {
+            requestData.approvalThreshold = approvalThreshold;
+        }
+        if (rejectionThreshold !== undefined) {
+            requestData.rejectionThreshold = rejectionThreshold;
+        }
         return this.request({
             url: `/build/${capsBuildId}/snapshot`,
             method: 'POST',
@@ -383,24 +402,31 @@ export default class httpClient {
                 'Content-Type': 'application/json',
                 projectToken: capsProjectToken !== '' ? capsProjectToken : this.projectToken
             },
-            data: {
-                name: snapshot.name,
-                url: snapshot.url,
-                snapshotUuid: snapshotUuid,
-                test: {
-                    type: ctx.testType,
-                    source: 'cli'
-                },
-                doRemoteDiscovery: snapshot.options.doRemoteDiscovery,
-                discoveryErrors: discoveryErrors,
-            }
+            data: requestData
         }, ctx.log)
     }
 
-    uploadSnapshotForCaps(ctx: Context, snapshot: ProcessedSnapshot, capsBuildId: string, capsProjectToken: string, discoveryErrors: DiscoveryErrors) {
+    uploadSnapshotForCaps(ctx: Context, snapshot: ProcessedSnapshot, capsBuildId: string, capsProjectToken: string, discoveryErrors: DiscoveryErrors, variantCount: number, sync: boolean = false, approvalThreshold: number| undefined, rejectionThreshold: number| undefined) {
         // Use capsBuildId if provided, otherwise fallback to ctx.build.id
         const buildId = capsBuildId !== '' ? capsBuildId : ctx.build.id;
-    
+
+        const requestData: any = {
+            snapshot,
+            test: {
+                type: ctx.testType,
+                source: 'cli'
+            },
+            discoveryErrors: discoveryErrors,
+            variantCount: variantCount,
+            sync: sync
+        }
+        if (approvalThreshold !== undefined) {
+            requestData.approvalThreshold = approvalThreshold;
+        }
+        if (rejectionThreshold !== undefined) {
+            requestData.rejectionThreshold = rejectionThreshold;
+        }
+
         return this.request({
             url: `/builds/${buildId}/snapshot`,
             method: 'POST',
@@ -408,14 +434,7 @@ export default class httpClient {
                 'Content-Type': 'application/json',
                 projectToken: capsProjectToken !== '' ? capsProjectToken : this.projectToken // Use capsProjectToken dynamically
             },
-            data: { 
-                snapshot,
-                test: {
-                    type: ctx.testType,
-                    source: 'cli'
-                },
-                discoveryErrors: discoveryErrors,
-            }
+            data: requestData
         }, ctx.log);
     }
     
@@ -660,9 +679,9 @@ export default class httpClient {
         }, ctx.log)
     }
 
-    getSnapshotStatus(snapshotName: string, snapshotUuid: string, ctx: Context): Promise<Record<string, any>> {
+    getSnapshotStatus(buildId: string, snapshotName: string, snapshotUuid: string, ctx: Context): Promise<Record<string, any>> {
         return this.request({
-            url: `/snapshot/status?buildId=${ctx.build.id}&snapshotName=${snapshotName}&snapshotUUID=${snapshotUuid}`,
+            url: `/snapshot/status?buildId=${buildId}&snapshotName=${snapshotName}&snapshotUUID=${snapshotUuid}`,
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -674,6 +693,9 @@ export default class httpClient {
         form.append('projectToken', this.projectToken);
         if (ctx.build.name !== undefined && ctx.build.name !== '') {
             form.append('buildName', buildName);
+        }
+        if (ctx.options.markBaseline) {
+            form.append('markBaseline', ctx.options.markBaseline.toString());
         }
 
         try {

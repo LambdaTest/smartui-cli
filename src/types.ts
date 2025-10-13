@@ -43,6 +43,7 @@ export interface Context {
         loadDomContent?: boolean;
         approvalThreshold?: number;
         rejectionThreshold?: number;
+        showRenderErrors?: boolean
     };
     uploadFilePath: string;
     webStaticConfig: WebStaticConfig;
@@ -71,7 +72,8 @@ export interface Context {
         fetchResultsFileName?: string,
         baselineBranch?: string,
         baselineBuild?: string,
-        githubURL?: string
+        githubURL?: string,
+        showRenderErrors?: boolean
     }
     cliVersion: string;
     totalSnapshots: number;
@@ -93,7 +95,7 @@ export interface Context {
     mergeBuildTargetId?: string;
     mergeByBranch?: boolean;
     mergeByBuild?: boolean;
-    contextToSnapshotMap?: Map<string, number>;
+    contextToSnapshotMap?: Map<string, string>;
     sourceCommand?: string;
     autoTunnelStarted?: boolean;
 }
@@ -120,6 +122,8 @@ export interface Env {
     SMARTUI_API_SKIP_CERTIFICATES: boolean;
     USE_REMOTE_DISCOVERY: boolean;
     SMART_GIT: boolean;
+    SHOW_RENDER_ERRORS: boolean;
+    SMARTUI_SSE_URL: string;
 }
 
 export interface Snapshot {
@@ -164,6 +168,7 @@ export interface Snapshot {
         useExtendedViewport?: boolean;
         approvalThreshold?: number;
         rejectionThreshold?: number;
+        customCookies?: CustomCookie[];
     }
 }
 
@@ -249,6 +254,16 @@ export interface tunnelConfig {
 export interface FigmaWebConfig {
     autoDetectViewports: Array<string>;
     configs: Array<{ figma_file_token: string, figma_ids: Array<string>, screenshot_names:Array<string> }>;
+}
+
+export interface CustomCookie {
+    name: string;
+    value: string;
+    domain: string;
+    path: string;
+    httpOnly: boolean;
+    secure: boolean;
+    sameSite: 'Strict' | 'Lax' | 'None';
 }
 
 

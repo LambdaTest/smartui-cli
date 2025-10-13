@@ -360,11 +360,15 @@ export default class Queue {
                     }
 
 
-
                     if (useCapsBuildId) {
                         this.ctx.log.info(`Using cached buildId: ${capsBuildId}`);
+                        let approvalThreshold = snapshot?.options?.approvalThreshold || this.ctx.config.approvalThreshold;
+                        let rejectionThreshold = snapshot?.options?.rejectionThreshold || this.ctx.config.rejectionThreshold;
                         if (useKafkaFlowCaps) {
-                            const snapshotUuid = uuidv4();
+                            let snapshotUuid = uuidv4();
+                            if (snapshot?.options?.contextId && this.ctx.contextToSnapshotMap?.has(snapshot.options.contextId)) {
+                                snapshotUuid = snapshot.options.contextId;
+                             }
                             let uploadDomToS3 = this.ctx.config.useLambdaInternal || uploadDomToS3ViaEnv;
                             if (!uploadDomToS3) {
                                 this.ctx.log.debug(`Uploading dom to S3 for snapshot using presigned URL for CAPS`);
@@ -375,9 +379,9 @@ export default class Queue {
                                 this.ctx.log.debug(`Uploading dom to S3 for snapshot using LSRS`);
                                 await this.ctx.client.sendDomToLSRSForCaps(this.ctx, processedSnapshot, snapshotUuid, capsBuildId, capsProjectToken);
                             }
-                            await this.ctx.client.processSnapshotCaps(this.ctx, processedSnapshot, snapshotUuid, capsBuildId, capsProjectToken, discoveryErrors);
+                            await this.ctx.client.processSnapshotCaps(this.ctx, processedSnapshot, snapshotUuid, capsBuildId, capsProjectToken, discoveryErrors, calculateVariantCountFromSnapshot(processedSnapshot, this.ctx.config), snapshot?.options?.sync, approvalThreshold, rejectionThreshold);
                         } else {
-                            await this.ctx.client.uploadSnapshotForCaps(this.ctx, processedSnapshot, capsBuildId, capsProjectToken, discoveryErrors);
+                            await this.ctx.client.uploadSnapshotForCaps(this.ctx, processedSnapshot, capsBuildId, capsProjectToken, discoveryErrors, calculateVariantCountFromSnapshot(processedSnapshot, this.ctx.config), snapshot?.options?.sync, approvalThreshold, rejectionThreshold);
                         }
 
                         // Increment snapshot count for the specific buildId
@@ -385,6 +389,10 @@ export default class Queue {
                         const currentCount = cachedCapabilities?.snapshotCount || 0; // Get the current snapshot count for sessionId
                         cachedCapabilities.snapshotCount = currentCount + 1; // Increment snapshot count
                         this.ctx.sessionCapabilitiesMap.set(sessionId, cachedCapabilities);
+
+                        if (snapshot?.options?.contextId && this.ctx.contextToSnapshotMap) {
+                            this.ctx.contextToSnapshotMap.set(snapshot.options.contextId, capsBuildId);
+                        }
                     } else {
                         if (!this.ctx.build?.id) {
                             if (this.ctx.authenticatedInitially) {
@@ -440,7 +448,7 @@ export default class Queue {
                                     }
                                 }
                                 if(snapshot?.options?.contextId){
-                                    this.ctx.contextToSnapshotMap?.set(snapshot?.options?.contextId,2);
+                                    this.ctx.contextToSnapshotMap?.set(snapshot?.options?.contextId,'2');
                                 }
                                 this.processNext();
                             } else {
@@ -448,7 +456,7 @@ export default class Queue {
                                 let rejectionThreshold = snapshot?.options?.rejectionThreshold || this.ctx.config.rejectionThreshold;
                                 await this.ctx.client.processSnapshot(this.ctx, processedSnapshot, snapshotUuid, discoveryErrors,calculateVariantCountFromSnapshot(processedSnapshot, this.ctx.config),snapshot?.options?.sync, approvalThreshold, rejectionThreshold);
                                 if(snapshot?.options?.contextId && this.ctx.contextToSnapshotMap?.has(snapshot.options.contextId)){
-                                    this.ctx.contextToSnapshotMap.set(snapshot.options.contextId, 1);
+                                    this.ctx.contextToSnapshotMap.set(snapshot.options.contextId, this.ctx.build.id);
                                 }
                                 this.ctx.log.debug(`ContextId: ${snapshot?.options?.contextId} status set to uploaded`);
                             }
@@ -465,7 +473,7 @@ export default class Queue {
                 this.ctx.log.debug(`snapshot failed; ${error}`);
                 this.processedSnapshots.push({ name: snapshot?.name, error: error.message });
                 if (snapshot?.options?.contextId && this.ctx.contextToSnapshotMap) {
-                    this.ctx.contextToSnapshotMap.set(snapshot.options.contextId, 2);
+                    this.ctx.contextToSnapshotMap.set(snapshot.options.contextId, '2');
                 }
             }
             // Close open browser contexts and pages
