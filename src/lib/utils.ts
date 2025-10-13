@@ -741,3 +741,151 @@ export function validateCoordinates(
         coords: { top, bottom, left, right } 
     };
 }
+
+export function createBasicAuthToken(username: string, accessKey: string): string {
+    const credentials = `${username}:${accessKey}`;
+    return Buffer.from(credentials).toString('base64');
+}
+
+export async function listenToSmartUISSE(
+    baseURL: string,
+    accessToken: string,
+    ctx: Context,
+    onEvent?: (eventType: string, data: any) => void
+): Promise<{ abort: () => void }> {
+    const url = `${baseURL}/api/v1/sse/smartui`;
+    
+    const abortController = new AbortController();
+    
+    try {
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Accept': 'text/event-stream',
+                'Cache-Control': 'no-cache',
+                'Cookie': `stageAccessToken=Basic ${accessToken}`
+            },
+            signal: abortController.signal
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        onEvent?.('open', { status: 'connected' });
+
+        const reader = response.body?.getReader();
+        if (!reader) {
+            throw new Error('No response body reader available');
+        }
+
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let currentEvent = '';
+
+        try {
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                const chunk = decoder.decode(value, { stream: true });
+                
+                buffer += chunk;
+                const lines = buffer.split('\n');
+                
+                buffer = lines.pop() || '';
+
+                for (const line of lines) {
+                    if (line.startsWith('event:')) {
+                        currentEvent = line.substring(6).trim(); 
+                    } 
+                    else if (line.startsWith('data:')) {
+                        const data = line.substring(5).trim(); 
+                        
+                        if (data) {
+                            try {
+                                const parsedData = JSON.parse(data);
+                                onEvent?.(currentEvent, parsedData);
+                            } catch (parseError) {
+                                if (currentEvent === 'connection' && data === 'connected') {
+                                    onEvent?.(currentEvent, { status: 'connected', message: data });
+                                } else {
+                                    onEvent?.(currentEvent, data);
+                                }
+                            }
+                        }
+                    } 
+                    else if (line.trim() === '') {
+                        currentEvent = '';
+                    }
+                }
+            }
+        } catch (streamError: any) {
+            ctx.log.debug('SSE Streaming error:', streamError);
+            onEvent?.('error', streamError);
+        } finally {
+            reader.releaseLock();
+        }
+
+    } catch (error) {
+        ctx.log.debug('SSE Connection error:', error);
+        onEvent?.('error', error);
+    }
+
+    return {
+        abort: () => abortController.abort()
+    };
+}
+
+export async function startSSEListener(ctx: Context) {
+    let currentConnection: { abort: () => void } | null = null;
+    let errorCount = 0;
+    
+    try {
+        ctx.log.debug('Attempting SSE connection');
+        const accessKey = ctx.env.LT_ACCESS_KEY;
+        const username = ctx.env.LT_USERNAME;
+        
+        const basicAuthToken = createBasicAuthToken(username, accessKey);
+        ctx.log.debug(`Basic auth token: ${basicAuthToken}`);
+        currentConnection = await listenToSmartUISSE(
+            ctx.env.SMARTUI_SSE_URL,
+            basicAuthToken,
+            ctx,
+            (eventType, data) => {
+                switch (eventType) {
+                    case 'open':
+                        ctx.log.debug('Connected to SSE server');
+                        break;
+                        
+                    case 'connection':
+                        ctx.log.debug('Connection confirmed:', data);
+                        break;
+                        
+                    case 'Dot_buildCompleted':
+                        ctx.log.debug('Build completed');
+                        ctx.log.info(chalk.green.bold('Build completed'));
+                        process.exit(0);
+                    case 'DOTUIError':
+                        if (data.buildId== ctx.build.id) {
+                            errorCount++;
+                            ctx.log.info(chalk.red.bold(`Error: ${data.message}`));
+                        }
+                        break;
+                    case 'DOTUIWarning':
+                        if (data.buildId== ctx.build.id) {
+                            ctx.log.info(chalk.yellow.bold(`Warning: ${data.message}`));
+                        }
+                        break;
+                    case 'error':
+                        ctx.log.debug('SSE Error occurred:', data);
+                        currentConnection?.abort();
+                        return;
+                }
+            }
+        );
+
+    } catch (error) {
+        ctx.log.debug('Failed to start SSE listener:', error);
+    }
+}
