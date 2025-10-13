@@ -360,7 +360,7 @@ export default {
         'Xperia 10 IV': { os: 'android', viewport: { width: 412, height: 832 } },
         'Honeywell CT40': { os: 'android', viewport: { width: 360, height: 512 } },
         'Galaxy S25': { os: 'android', viewport: { width: 370, height: 802 } },
-        'Galaxy S25+': { os: 'android', viewport: { width: 393, height: 888 } },
+        'Galaxy S25 Plus': { os: 'android', viewport: { width: 393, height: 888 } },
         'Galaxy S25 Ultra': { os: 'android', viewport: { width: 432, height: 941 } },
         'iPhone 17': { os: 'ios', viewport: { width: 393, height: 852 } },
         'iPhone 17 Pro': { os: 'ios', viewport: { width: 393, height: 852 } },
