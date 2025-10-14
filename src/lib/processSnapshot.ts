@@ -12,6 +12,19 @@ const ALLOWED_STATUSES = [200, 201];
 const REQUEST_TIMEOUT = 1800000;
 const MIN_VIEWPORT_HEIGHT = 1080;
 
+const normalizeSameSite = (value) => {
+    if (!value) return 'Lax';
+    
+    const normalized = value.trim().toLowerCase();
+    const mapping = {
+        'lax': 'Lax',
+        'strict': 'Strict',
+        'none': 'None'
+    };
+    
+    return mapping[normalized] || value;
+};
+
 export async function prepareSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record<string, any>> {
     let processedOptions: Record<string, any> = {};
     processedOptions.cliEnableJavascript = ctx.config.cliEnableJavaScript;
@@ -257,11 +270,11 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
                 return false;
             }
             
-            if (cookie.sameSite && !['Strict', 'Lax', 'None'].includes(cookie.sameSite)) {
+            const sameSiteValue = normalizeSameSite(cookie.sameSite);
+            if (!['Strict', 'Lax', 'None'].includes(sameSiteValue)) {
                 ctx.log.debug(`Skipping invalid custom cookie: invalid sameSite value '${cookie.sameSite}'`);
                 return false;
             }
-            
             return true;
         }).map(cookie => ({
             name: cookie.name,
@@ -270,7 +283,7 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
             path: cookie.path || '/',
             httpOnly: cookie.httpOnly || false,
             secure: cookie.secure || false,
-            sameSite: cookie.sameSite || 'Lax'
+            sameSite: normalizeSameSite(cookie.sameSite)
         }));
 
         if (validCustomCookies.length > 0) {
