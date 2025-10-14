@@ -1123,11 +1123,12 @@ export function generateCSSInjectionReport(
         failedSelectors: string[];
         totalRules: number;
     },
-    logger: any
+    logger: any,
+    snapshotName: string
 ): string {
     const lines: string[] = [];
     
-    lines.push(chalk.cyan('[SmartUI] CSS Injection Report:'));
+    lines.push(chalk.cyan(`[SmartUI] CSS Injection Report for Snapshot: ${snapshotName}`));
     
     if (validationResult.successCount > 0) {
         lines.push(chalk.green(`[SmartUI] ✅ Success: ${validationResult.successCount} rules applied.`));

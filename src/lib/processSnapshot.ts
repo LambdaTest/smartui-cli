@@ -872,7 +872,7 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
         try {
             const cssRules = parseCSSFile(processedOptions.customCSS);
             const validationResult = await validateCSSSelectors(page, cssRules, ctx.log);
-            const report = generateCSSInjectionReport(validationResult, ctx.log);
+            const report = generateCSSInjectionReport(validationResult, ctx.log, snapshot.name);
             
             if (validationResult.failedSelectors.length > 0) {
                 validationResult.failedSelectors.forEach(selector => {
