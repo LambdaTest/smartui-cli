@@ -7,6 +7,7 @@ import fs from 'fs';
 import { globalAgent } from 'http';
 import { promisify } from 'util'
 import { build } from 'tsup';
+import postcss from 'postcss';
 const util = require('util'); // Import the util module
 
 var lambdaTunnel = require('@lambdatest/node-tunnel');
@@ -888,4 +889,259 @@ export async function startSSEListener(ctx: Context) {
     } catch (error) {
         ctx.log.debug('Failed to start SSE listener:', error);
     }
+}
+
+/**
+ * Validates if a string contains valid CSS syntax
+ * @param cssString - The CSS string to validate
+ * @returns true if valid CSS, false otherwise
+ */
+export function isValidCSS(cssString: string): boolean {
+    if (!cssString || typeof cssString !== 'string' || cssString.trim().length === 0) {
+        return false;
+    }
+
+    const trimmed = cssString.trim();
+    
+    // Basic CSS validation patterns
+    // Check for balanced braces
+    const openBraces = (trimmed.match(/\{/g) || []).length;
+    const closeBraces = (trimmed.match(/\}/g) || []).length;
+    
+    if (openBraces !== closeBraces) {
+        return false;
+    }
+
+    // Check for basic CSS structure (selector { property: value; })
+    // Allow comments /* */ and media queries
+    const cssPattern = /^[\s\S]*[\{\}][\s\S]*$/;
+    
+    // Must contain at least one CSS rule or be empty
+    if (trimmed.length > 0 && !cssPattern.test(trimmed)) {
+        // Allow single-line rules without newlines
+        const singleRulePattern = /^[^{]+\{[^}]+\}$/;
+        if (!singleRulePattern.test(trimmed)) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+/**
+ * Resolves customCSS from either a file path or inline CSS string
+ * @param cssValue - The CSS value from config (file path or inline CSS)
+ * @param configPath - The path to the config file (for resolving relative paths)
+ * @param logger - Logger instance for debug messages
+ * @returns Resolved CSS string or throws error if invalid
+ */
+export function resolveCustomCSS(cssValue: string, configPath: string, logger: any): string {
+    if (!cssValue || typeof cssValue !== 'string') {
+        throw new Error('customCSS must be a non-empty string');
+    }
+
+    const trimmed = cssValue.trim();
+    if (trimmed.length === 0) {
+        throw new Error('customCSS cannot be empty');
+    }
+
+    // Check if it looks like a file path
+    const path = require('path');
+    const isLikelyFilePath = 
+        trimmed.endsWith('.css') || 
+        trimmed.startsWith('./') || 
+        trimmed.startsWith('../') || 
+        trimmed.startsWith('/') ||
+        path.isAbsolute(trimmed);
+
+    if (isLikelyFilePath) {
+        logger.debug(`customCSS appears to be a file path: ${trimmed}`);
+        
+        // Validate file extension
+        const ext = path.extname(trimmed).toLowerCase();
+        if (ext && ext !== '.css') {
+            throw new Error(`Invalid customCSS file type: ${ext}. Only .css files are supported.`);
+        }
+
+        // Resolve the file path
+        const baseDir = path.dirname(configPath);
+        const resolvedPath = path.isAbsolute(trimmed) 
+            ? trimmed 
+            : path.resolve(baseDir, trimmed);
+
+        logger.debug(`Resolved customCSS file path: ${resolvedPath}`);
+
+        // Check if file exists
+        if (!fs.existsSync(resolvedPath)) {
+            throw new Error(`customCSS file not found: ${resolvedPath}`);
+        }
+
+        // Check if it's a file (not a directory)
+        const stats = fs.statSync(resolvedPath);
+        if (!stats.isFile()) {
+            throw new Error(`customCSS path is not a file: ${resolvedPath}`);
+        }
+
+        // Read the file
+        try {
+            const cssContent = fs.readFileSync(resolvedPath, 'utf-8');
+            logger.debug(`Read ${cssContent.length} characters from customCSS file`);
+            
+            return cssContent;
+        } catch (error: any) {
+            if (error.message.includes('Invalid CSS syntax')) {
+                throw error;
+            }
+            throw new Error(`Failed to read customCSS file: ${error.message}`);
+        }
+    } else {
+        // Treat as inline CSS
+        logger.debug('customCSS appears to be inline CSS');
+        return trimmed;
+    }
+}
+
+
+/**
+ * Parse CSS content and extract selectors with their rules
+ * @param cssContent - The CSS content to parse
+ * @returns Array of parsed CSS rules with selectors
+ */
+export function parseCSSFile(cssContent: string): Array<{
+    selector: string;
+    declarations: Array<{ property: string; value: string; important: boolean }>;
+    source?: { start?: any; end?: any };
+}> {
+    const rules: Array<{
+        selector: string;
+        declarations: Array<{ property: string; value: string; important: boolean }>;
+        source?: { start?: any; end?: any };
+    }> = [];
+    
+    try {
+        const ast = postcss.parse(cssContent);
+        
+        ast.walkRules((rule: any) => {
+            const declarations: Array<{ property: string; value: string; important: boolean }> = [];
+            
+            rule.walkDecls((decl: any) => {
+                declarations.push({
+                    property: decl.prop,
+                    value: decl.value,
+                    important: decl.important
+                });
+            });
+            
+            rules.push({
+                selector: rule.selector,
+                declarations: declarations,
+                source: {
+                    start: rule.source?.start,
+                    end: rule.source?.end
+                }
+            });
+        });
+    } catch (error: any) {
+        throw new Error(`Failed to parse CSS: ${error.message}`);
+    }
+    
+    return rules;
+}
+
+/**
+ * Validate CSS selectors in the page context
+ * @param page - Playwright page object
+ * @param cssRules - Parsed CSS rules
+ * @param logger - Logger instance
+ * @returns Validation results with success and failed selectors
+ */
+export async function validateCSSSelectors(
+    page: any,
+    cssRules: Array<{ selector: string; declarations: any[] }>,
+    logger: any
+): Promise<{
+    successCount: number;
+    failedSelectors: string[];
+    totalRules: number;
+}> {
+    const failedSelectors: string[] = [];
+    let successCount = 0;
+
+    for (const rule of cssRules) {
+        const selector = rule.selector;
+        
+        // Skip pseudo-selectors, media queries, and special selectors that can't be validated
+        if (
+            selector.includes(':') || 
+            selector.includes('@') ||
+            selector.includes('::')
+        ) {
+            successCount++; // Count as success since they're valid CSS
+            continue;
+        }
+
+        try {
+            // Validate if selector finds at least one element
+            const elementExists = await page.evaluate(({ selectorValue }: { selectorValue: string }) => {
+                try {
+                    const elements = document.querySelectorAll(selectorValue);
+                    return elements.length > 0;
+                } catch (error) {
+                    return false;
+                }
+            }, { selectorValue: selector });
+
+            if (elementExists) {
+                successCount++;
+                logger.debug(`CSS selector valid: ${selector}`);
+            } else {
+                failedSelectors.push(selector);
+                logger.debug(`CSS selector found no elements: ${selector}`);
+            }
+        } catch (error: any) {
+            failedSelectors.push(selector);
+            logger.debug(`CSS selector validation error for "${selector}": ${error.message}`);
+        }
+    }
+
+    return {
+        successCount,
+        failedSelectors,
+        totalRules: cssRules.length
+    };
+}
+
+/**
+ * Generate CSS injection report
+ * @param validationResult - Results from CSS selector validation
+ * @param logger - Logger instance
+ * @returns Formatted report string
+ */
+export function generateCSSInjectionReport(
+    validationResult: {
+        successCount: number;
+        failedSelectors: string[];
+        totalRules: number;
+    },
+    logger: any
+): string {
+    const lines: string[] = [];
+    
+    lines.push(chalk.cyan('[SmartUI] CSS Injection Report:'));
+    
+    if (validationResult.successCount > 0) {
+        lines.push(chalk.green(`[SmartUI] ✅ Success: ${validationResult.successCount} rules applied.`));
+    }
+    
+    if (validationResult.failedSelectors.length > 0) {
+        lines.push(chalk.yellow(`[SmartUI] ⚠️  Warning: ${validationResult.failedSelectors.length} selector(s) failed to find an element:`));
+        validationResult.failedSelectors.forEach(selector => {
+            lines.push(chalk.yellow(`[SmartUI]   - ${selector}`));
+        });
+    }
+    
+    const report = lines.join('\n');
+    logger.info(report);
+    
+    return report;
 }
