@@ -9,7 +9,7 @@ const globalCache = new NodeCache({ stdTTL: 3600, checkperiod: 600 });
 const MAX_RESOURCE_SIZE = 15 * (1024 ** 2); // 15MB
 var ALLOWED_RESOURCES = ['document', 'stylesheet', 'image', 'media', 'font', 'other'];
 const ALLOWED_STATUSES = [200, 201];
-const REQUEST_TIMEOUT = 1800000;
+const REQUEST_TIMEOUT = 180000;
 const MIN_VIEWPORT_HEIGHT = 1080;
 const MAX_RETRY_WAIT_TIME = 60000;
 
