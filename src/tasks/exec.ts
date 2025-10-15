@@ -31,14 +31,12 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
 
                 // Handle standard output
                 let totalOutput = '';
-                if (!ctx.env.LT_SDK_SKIP_EXECUTION_LOGS) {
-                    const output = createWritable((chunk: string) => {
-                        totalOutput += chunk;
-                        task.output = chalk.gray(totalOutput);
-                    })
-                    childProcess.stdout?.pipe(output);
-                    childProcess.stderr?.pipe(output);
-                }
+                const output = createWritable((chunk: string) => {
+                    totalOutput += chunk;
+                    task.output = chalk.gray(totalOutput);
+                })
+                childProcess.stdout?.pipe(output);
+                childProcess.stderr?.pipe(output);
 
                 childProcess.on('error', (error) => {
                     task.output = chalk.gray(`error: ${error.message}`);
