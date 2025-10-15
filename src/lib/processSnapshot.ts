@@ -11,6 +11,7 @@ var ALLOWED_RESOURCES = ['document', 'stylesheet', 'image', 'media', 'font', 'ot
 const ALLOWED_STATUSES = [200, 201];
 const REQUEST_TIMEOUT = 1800000;
 const MIN_VIEWPORT_HEIGHT = 1080;
+const MAX_RETRY_WAIT_TIME = 60000;
 
 export async function prepareSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record<string, any>> {
     let processedOptions: Record<string, any> = {};
@@ -299,6 +300,8 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
         }
     }
 
+    const pendingResources = new Map<string, any>();
+
     // Use route to intercept network requests and discover resources
     await page.route('**/*', async (route, request) => {
         const requestUrl = request.url()
@@ -357,6 +360,7 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
                 body = globalCache.get(requestUrl).body;
             } else {
                 ctx.log.debug(`Resource not found in cache or global cache ${requestUrl} fetching from server`);
+                pendingResources.set(requestUrl, request);
                 response = await page.request.fetch(request, requestOptions);
                 body = await response.body();
             }
@@ -364,18 +368,24 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
             // handle response
             if (!body) {
                 ctx.log.debug(`Handling request ${requestUrl}\n - skipping no response`);
+                pendingResources.delete(requestUrl);
             } else if (!body.length) {
                 ctx.log.debug(`Handling request ${requestUrl}\n - skipping empty response`);
+                pendingResources.delete(requestUrl);
             } else if (requestUrl === snapshot.url) {
                 ctx.log.debug(`Handling request ${requestUrl}\n - skipping root resource`);
+                pendingResources.delete(requestUrl);
             } else if (!ctx.config.allowedHostnames.includes(requestHostname)) {
                 ctx.log.debug(`Handling request ${requestUrl}\n - skipping remote resource`);
+                pendingResources.delete(requestUrl);
             } else if (cache[requestUrl]) {
                 ctx.log.debug(`Handling request ${requestUrl}\n - skipping already cached resource`);
             } else if (body.length > MAX_RESOURCE_SIZE) {
                 ctx.log.debug(`Handling request ${requestUrl}\n - skipping resource larger than 15MB`);
+                pendingResources.delete(requestUrl);
             } else if (!ALLOWED_RESOURCES.includes(request.resourceType())) {
                 ctx.log.debug(`Handling request ${requestUrl}\n - skipping disallowed resource type [${request.resourceType()}]`);
+                pendingResources.delete(requestUrl);
             }  else if (!ALLOWED_STATUSES.includes(response.status())) {
                 ctx.log.debug(`${globalViewport} Handling request ${requestUrl}\n - skipping disallowed status [${response.status()}]`);
 
@@ -395,6 +405,13 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
                         body: bodyOfRetry.toString('base64'),
                         type: responseOfRetry.headers()['content-type']
                     }
+                    if (ctx.config.useGlobalCache) {
+                        globalCache.set(requestUrl, {
+                            body: bodyOfRetry.toString('base64'),
+                            type: responseOfRetry.headers()['content-type']
+                        });
+                    }
+                    pendingResources.delete(requestUrl);
                     route.fulfill({
                         status: responseOfRetry.status(),
                         headers: responseOfRetry.headers(),
@@ -443,7 +460,10 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
                     body: body.toString('base64'),
                     type: response.headers()['content-type']
                 }
+                
+                pendingResources.delete(requestUrl);
             }
+
 
             // Continue the request with the fetched response
             route.fulfill({
@@ -649,6 +669,53 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
             ctx.log.debug('Network idle 500ms');
         } catch (error) {
             ctx.log.debug(`Network idle failed due to ${error}`);
+        }
+
+        // Retry all pending resources
+        for (const [pendingUrl, pendingRequest] of pendingResources) {
+            ctx.log.debug(`Retrying resource ${pendingUrl} with ${MAX_RETRY_WAIT_TIME}s timeout...`);
+            try {
+                
+                const retryOptions: Record<string, any> = {
+                    timeout: MAX_RETRY_WAIT_TIME,
+                    headers: {
+                        ...constants.REQUEST_HEADERS
+                    }
+                };
+                if (ctx.config.basicAuthorization) {
+                    ctx.log.debug(`Adding basic authorization to the headers for root url`);
+                    let token = Buffer.from(`${ctx.config.basicAuthorization.username}:${ctx.config.basicAuthorization.password}`).toString('base64');
+                    retryOptions.headers.Authorization = `Basic ${token}`;
+                }
+                if (ctx.config.requestHeaders && Array.isArray(ctx.config.requestHeaders)) {
+                    ctx.config.requestHeaders.forEach((headerObj) => {
+                        Object.entries(headerObj).forEach(([key, value]) => {
+                            retryOptions.headers[key] = value;
+                        });
+                    });
+                }
+                const retryResponse = await page.request.fetch(pendingRequest, retryOptions);
+                const retryBody = await retryResponse.body();
+                
+                if (retryResponse && retryResponse.status() && ALLOWED_STATUSES.includes(retryResponse.status())) {
+                    ctx.log.debug(`Retry successful for ${pendingUrl}`);
+                    cache[pendingUrl] = {
+                        body: retryBody.toString('base64'),
+                        type: retryResponse.headers()['content-type']
+                    };
+
+                    if (ctx.config.useGlobalCache) {
+                        globalCache.set(pendingUrl, {
+                            body: retryBody.toString('base64'),
+                            type: retryResponse.headers()['content-type']
+                        });
+                    }
+                }
+                pendingResources.delete(pendingUrl);
+            } catch (retryError) {
+                ctx.log.debug(`Retry failed for ${pendingUrl}: ${retryError}`);
+                pendingResources.delete(pendingUrl);
+            }
         }
 
 
