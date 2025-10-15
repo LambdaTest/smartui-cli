@@ -674,7 +674,7 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
                 break;
               }
               ctx.log.debug('Pending requests:', Array.from(pendingRequests.keys()));
-              await page.waitForTimeout(1000); 
+              await new Promise(resolve => setTimeout(resolve, 1000)); 
             }
             ctx.log.debug('No pending requests.');
           };
