@@ -667,17 +667,19 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
         // Wait for pending requests to complete
         const checkPending = async () => {
             const startTime = Date.now();
+            ctx.log.debug(`${pendingRequests.size} Pending requests before wait for ${snapshot.name}: ${Array.from(pendingRequests)}`);
             while (pendingRequests.size > 0) {
               const elapsedTime = Date.now() - startTime;
               if (elapsedTime >= MAX_WAIT_FOR_REQUEST_CALL) {
                 ctx.log.debug(`Timeout reached (${MAX_WAIT_FOR_REQUEST_CALL/1000}s). Stopping wait for pending requests.`);
+                ctx.log.debug(`${pendingRequests.size} Pending requests after wait for ${snapshot.name}: ${Array.from(pendingRequests)}`);
+
                 break;
               }
-              ctx.log.debug(`Pending requests: ${Array.from(pendingRequests)}`);
               await new Promise(resolve => setTimeout(resolve, 1000)); 
             }
             if(pendingRequests.size === 0) {
-                ctx.log.debug('No pending requests.');
+                ctx.log.debug(`No pending requests for ${snapshot.name}.`);
             }
           };
         
