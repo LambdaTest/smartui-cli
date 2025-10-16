@@ -13,7 +13,6 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
             try {
                 if (ctx.authenticatedInitially && !ctx.config.skipBuildCreation) {
                     let resp = await ctx.client.createBuild(ctx.git, ctx.config, ctx.log, ctx.build.name, ctx.isStartExec, ctx.env.SMART_GIT, ctx.options.markBaseline, ctx.options.baselineBuild, ctx.options.scheduled,ctx.env.LT_USERNAME,ctx.env.LT_ACCESS_KEY);
-                    ctx.log.debug(`resp from createBuild: ${JSON.stringify(resp)}`);
                     if (resp && resp.data && resp.data.buildId) {
                         ctx.build = {
                             id: resp.data.buildId,
