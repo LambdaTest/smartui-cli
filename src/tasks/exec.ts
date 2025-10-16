@@ -4,6 +4,8 @@ import chalk from 'chalk'
 import spawn from 'cross-spawn'
 import { updateLogContext } from '../lib/logger.js'
 import { startPolling, startSSEListener } from '../lib/utils.js'
+import fs from 'fs'
+import path from 'path'
 
 export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRendererFactory>  =>  {
     return {
@@ -38,6 +40,25 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
                     })
                     childProcess.stdout?.pipe(output);
                     childProcess.stderr?.pipe(output);
+                } else {
+                    // Write logs to file when skipping terminal output
+                    const logFileName = `execution-logs.log`;
+                    const logFilePath = path.join(process.cwd(), logFileName);
+                    const logStream = fs.createWriteStream(logFilePath, { flags: 'a' });
+                    
+                    task.output = chalk.gray(`Execution logs being written to: ${logFileName}`);
+                    
+                    childProcess.stdout?.on('data', (data) => {
+                        logStream.write(data);
+                    });
+                    
+                    childProcess.stderr?.on('data', (data) => {
+                        logStream.write(data);
+                    });
+                    
+                    childProcess.on('close', () => {
+                        logStream.end();
+                    });
                 }
 
                 childProcess.on('error', (error) => {
