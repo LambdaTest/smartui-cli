@@ -200,6 +200,7 @@ export interface Build {
     useKafkaFlow: boolean;
     hasDiscoveryError: boolean;
     projectId?: string;
+    checkPendingRequests: boolean;
 }
 
 export interface WebConfig {

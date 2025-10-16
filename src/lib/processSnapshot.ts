@@ -11,7 +11,7 @@ var ALLOWED_RESOURCES = ['document', 'stylesheet', 'image', 'media', 'font', 'ot
 const ALLOWED_STATUSES = [200, 201];
 const REQUEST_TIMEOUT = 180000;
 const MIN_VIEWPORT_HEIGHT = 1080;
-const MAX_WAIT_FOR_REQUEST_CALL = 60000;
+const MAX_WAIT_FOR_REQUEST_CALL = 30000;
 
 export async function prepareSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record<string, any>> {
     let processedOptions: Record<string, any> = {};
@@ -360,10 +360,14 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
                 body = globalCache.get(requestUrl).body;
             } else {
                 ctx.log.debug(`Resource not found in cache or global cache ${requestUrl} fetching from server`);
-                pendingRequests.add(requestUrl);
+                if(ctx.build.checkPendingRequests){
+                    pendingRequests.add(requestUrl);
+                }
                 response = await page.request.fetch(request, requestOptions);
                 body = await response.body();
-                pendingRequests.delete(requestUrl);
+                if(ctx.build.checkPendingRequests){
+                    pendingRequests.delete(requestUrl);
+                }
             }
 
             // handle response
@@ -391,10 +395,14 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
 
                 let responseOfRetry, bodyOfRetry
                 ctx.log.debug(`Resource had a disallowed status ${requestUrl} fetching from server again`);
-                pendingRequests.add(requestUrl);
+                if(ctx.build.checkPendingRequests){
+                    pendingRequests.add(requestUrl);
+                }
                 responseOfRetry = await page.request.fetch(request, requestOptions);
                 bodyOfRetry = await responseOfRetry.body();
-                pendingRequests.delete(requestUrl);
+                if(ctx.build.checkPendingRequests){
+                    pendingRequests.delete(requestUrl);
+                }
                 if (responseOfRetry && responseOfRetry.status() && ALLOWED_STATUSES.includes(responseOfRetry.status())) {
                     ctx.log.debug(`Handling request after retry ${requestUrl}\n - content-type ${responseOfRetry.headers()['content-type']}`);
                     cache[requestUrl] = {
@@ -663,27 +671,6 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
         } catch (error) {
             ctx.log.debug(`Network idle failed due to ${error}`);
         }
-
-        // Wait for pending requests to complete
-        const checkPending = async () => {
-            const startTime = Date.now();
-            ctx.log.debug(`${pendingRequests.size} Pending requests before wait for ${snapshot.name}: ${Array.from(pendingRequests)}`);
-            while (pendingRequests.size > 0) {
-              const elapsedTime = Date.now() - startTime;
-              if (elapsedTime >= MAX_WAIT_FOR_REQUEST_CALL) {
-                ctx.log.debug(`Timeout reached (${MAX_WAIT_FOR_REQUEST_CALL/1000}s). Stopping wait for pending requests.`);
-                ctx.log.debug(`${pendingRequests.size} Pending requests after wait for ${snapshot.name}: ${Array.from(pendingRequests)}`);
-
-                break;
-              }
-              await new Promise(resolve => setTimeout(resolve, 1000)); 
-            }
-            if(pendingRequests.size === 0) {
-                ctx.log.debug(`No pending requests for ${snapshot.name}.`);
-            }
-          };
-        
-          await checkPending();
         
 
 
@@ -873,6 +860,28 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
         processedOptions.selectDOM = options?.selectDOM;
         ctx.log.debug(`Processed options: ${JSON.stringify(processedOptions)}`);
     }
+
+    // Wait for pending requests to complete
+    const checkPending = async () => {
+        let startTime = Date.now();
+        ctx.log.debug(`${pendingRequests.size} Pending requests before wait for ${snapshot.name}: ${Array.from(pendingRequests)}`);
+        while (pendingRequests.size > 0) {
+          const elapsedTime = Date.now() - startTime;
+          if (elapsedTime >= MAX_WAIT_FOR_REQUEST_CALL) {
+            ctx.log.debug(`Timeout reached (${MAX_WAIT_FOR_REQUEST_CALL/1000}s). Stopping wait for pending requests.`);
+            ctx.log.debug(`${pendingRequests.size} Pending requests after wait for ${snapshot.name}: ${Array.from(pendingRequests)}`);
+            break;
+          }
+          await new Promise(resolve => setTimeout(resolve, 1000)); 
+        }
+        if(pendingRequests.size === 0) {
+            ctx.log.debug(`No pending requests for ${snapshot.name}.`);
+        }
+      };
+
+      if (ctx.build.checkPendingRequests) {
+        await checkPending();
+      }
 
     
     let hasBrowserErrors = false;
