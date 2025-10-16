@@ -679,13 +679,17 @@ export default class httpClient {
         }, ctx.log)
     }
 
-    getSnapshotStatus(buildId: string, snapshotName: string, snapshotUuid: string, ctx: Context): Promise<Record<string, any>> {
+    getSnapshotStatus(buildId: string, snapshotName: string, snapshotUuid: string, ctx: Context, basicAuthToken: string | null): Promise<Record<string, any>> {
+        const headers: Record<string, string> = {
+            'Content-Type': 'application/json'
+        };
+        if(basicAuthToken) {
+            headers['Authorization'] = `Basic ${basicAuthToken}`;
+        }
         return this.request({
             url: `/snapshot/status?buildId=${buildId}&snapshotName=${snapshotName}&snapshotUUID=${snapshotUuid}`,
             method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-            }
+            headers: headers
         }, ctx.log);
     }
 

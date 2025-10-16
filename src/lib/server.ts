@@ -5,7 +5,7 @@ import { readFileSync, truncate } from 'fs'
 import { Context } from '../types.js'
 import { Logger } from 'winston'
 import { validateSnapshot } from './schemaValidation.js'
-import { pingIntervalId, startPollingForTunnel, stopTunnelHelper, isTunnelPolling } from './utils.js';
+import { pingIntervalId, startPollingForTunnel, stopTunnelHelper, isTunnelPolling, createBasicAuthToken } from './utils.js';
 import constants from './constants.js';
 var fp = require("find-free-port")
 
@@ -277,14 +277,20 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 				// Poll external API until it returns 200 or timeout is reached
 				let lastExternalResponse: any = null; 
 				const startTime = Date.now(); 
-
+				const accessKey = ctx.env.LT_ACCESS_KEY;
+				const username = ctx.env.LT_USERNAME;
+				let basicAuthToken: string | null = null;
+				if(accessKey && username) {
+					basicAuthToken = createBasicAuthToken(username, accessKey);
+				}
 				while (true) {
 					try {
 						const externalResponse = await ctx.client.getSnapshotStatus(
 							buildId,
 							snapshotName,
 							contextId,
-							ctx
+							ctx,
+							basicAuthToken
 						);
 						
 						lastExternalResponse = externalResponse;
