@@ -673,10 +673,12 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
                 ctx.log.debug(`Timeout reached (${MAX_WAIT_FOR_REQUEST_CALL/1000}s). Stopping wait for pending requests.`);
                 break;
               }
-              ctx.log.debug('Pending requests:', Array.from(pendingRequests.keys()));
+              ctx.log.debug(`Pending requests: ${Array.from(pendingRequests)}`);
               await new Promise(resolve => setTimeout(resolve, 1000)); 
             }
-            ctx.log.debug('No pending requests.');
+            if(pendingRequests.size === 0) {
+                ctx.log.debug('No pending requests.');
+            }
           };
         
           await checkPending();
