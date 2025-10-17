@@ -758,12 +758,14 @@ export async function listenToSmartUISSE(
     const abortController = new AbortController();
     
     try {
+        const cookieKey = baseURL === 'https://server-events.lambdatest.com' ? 'accessToken' : 'stageAccessToken';
+        
         const response = await fetch(url, {
             method: 'GET',
             headers: {
                 'Accept': 'text/event-stream',
                 'Cache-Control': 'no-cache',
-                'Cookie': `stageAccessToken=Basic ${accessToken}`
+                'Cookie': `${cookieKey}=Basic ${accessToken}`
             },
             signal: abortController.signal
         });
