@@ -545,7 +545,7 @@ export function startPdfPolling(ctx: Context) {
         try {
             const response = await ctx.client.fetchPdfResults(ctx);
 
-            if (response.screenshots && response.build?.build_status === constants.BUILD_COMPLETE) {
+            if (response.screenshots && response.build?.build_status !== constants.BUILD_RUNNING) {
                 clearInterval(interval);
 
                 const pdfGroups = groupScreenshotsByPdf(response.screenshots);
@@ -758,12 +758,14 @@ export async function listenToSmartUISSE(
     const abortController = new AbortController();
     
     try {
+        const cookieKey = baseURL === 'https://server-events.lambdatest.com' ? 'accessToken' : 'stageAccessToken';
+        
         const response = await fetch(url, {
             method: 'GET',
             headers: {
                 'Accept': 'text/event-stream',
                 'Cache-Control': 'no-cache',
-                'Cookie': `stageAccessToken=Basic ${accessToken}`
+                'Cookie': `${cookieKey}=Basic ${accessToken}`
             },
             signal: abortController.signal
         });
