@@ -159,14 +159,11 @@ export async function prepareSnapshot(snapshot: Snapshot, ctx: Context): Promise
         if (options?.customCSS) {
             const resolvedCSS = resolveCustomCSS(options.customCSS, '', ctx.log);
             processedOptions.customCSS = resolvedCSS;
-            ctx.log.debug('Using per-snapshot customCSS (overriding config)');
         } else if (ctx.config.customCSS) {
             processedOptions.customCSS = ctx.config.customCSS;
-            ctx.log.debug('Using config customCSS');
         }
     } catch (error: any) {
-        ctx.log.warn(`customCSS warning: ${error.message}`);
-        chalk.yellow(`[SmartUI] warning: ${error.message}`);
+        optionWarnings.add(`${error.message}`);
     }
 
     processedOptions.allowedAssets = ctx.config.allowedAssets;
@@ -602,8 +599,6 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
     } catch (error: any) {
         optionWarnings.add(`${error.message}`);
     }
-
-    ctx.log.debug(`Processed options: ${JSON.stringify(processedOptions)}`);
 
     // process for every viewport
     let navigated: boolean = false;

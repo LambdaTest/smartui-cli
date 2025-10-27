@@ -891,50 +891,7 @@ export async function startSSEListener(ctx: Context) {
     }
 }
 
-/**
- * Validates if a string contains valid CSS syntax
- * @param cssString - The CSS string to validate
- * @returns true if valid CSS, false otherwise
- */
-export function isValidCSS(cssString: string): boolean {
-    if (!cssString || typeof cssString !== 'string' || cssString.trim().length === 0) {
-        return false;
-    }
 
-    const trimmed = cssString.trim();
-    
-    // Basic CSS validation patterns
-    // Check for balanced braces
-    const openBraces = (trimmed.match(/\{/g) || []).length;
-    const closeBraces = (trimmed.match(/\}/g) || []).length;
-    
-    if (openBraces !== closeBraces) {
-        return false;
-    }
-
-    // Check for basic CSS structure (selector { property: value; })
-    // Allow comments /* */ and media queries
-    const cssPattern = /^[\s\S]*[\{\}][\s\S]*$/;
-    
-    // Must contain at least one CSS rule or be empty
-    if (trimmed.length > 0 && !cssPattern.test(trimmed)) {
-        // Allow single-line rules without newlines
-        const singleRulePattern = /^[^{]+\{[^}]+\}$/;
-        if (!singleRulePattern.test(trimmed)) {
-            return false;
-        }
-    }
-
-    return true;
-}
-
-/**
- * Resolves customCSS from either a file path or inline CSS string
- * @param cssValue - The CSS value from config (file path or inline CSS)
- * @param configPath - The path to the config file (for resolving relative paths)
- * @param logger - Logger instance for debug messages
- * @returns Resolved CSS string or throws error if invalid
- */
 export function resolveCustomCSS(cssValue: string, configPath: string, logger: any): string {
     if (!cssValue || typeof cssValue !== 'string') {
         throw new Error('customCSS must be a non-empty string');
@@ -948,11 +905,13 @@ export function resolveCustomCSS(cssValue: string, configPath: string, logger: a
     // Check if it looks like a file path
     const path = require('path');
     const isLikelyFilePath = 
-        trimmed.endsWith('.css') || 
-        trimmed.startsWith('./') || 
-        trimmed.startsWith('../') || 
-        trimmed.startsWith('/') ||
-        path.isAbsolute(trimmed);
+        trimmed.includes('.') && (
+            trimmed.startsWith('./') || 
+            trimmed.startsWith('../') || 
+            trimmed.startsWith('/') ||
+            path.isAbsolute(trimmed) ||
+            /\.(css|json|js|txt|html)$/i.test(trimmed) 
+    );
 
     if (isLikelyFilePath) {
         logger.debug(`customCSS appears to be a file path: ${trimmed}`);
@@ -961,6 +920,10 @@ export function resolveCustomCSS(cssValue: string, configPath: string, logger: a
         const ext = path.extname(trimmed).toLowerCase();
         if (ext && ext !== '.css') {
             throw new Error(`Invalid customCSS file type: ${ext}. Only .css files are supported.`);
+        }
+        // If no extension at all, also reject
+        if (!ext) {
+            throw new Error('Invalid file provided in customCSS. Expected .css file.');
         }
 
         // Resolve the file path
@@ -971,7 +934,6 @@ export function resolveCustomCSS(cssValue: string, configPath: string, logger: a
 
         logger.debug(`Resolved customCSS file path: ${resolvedPath}`);
 
-        // Check if file exists
         if (!fs.existsSync(resolvedPath)) {
             throw new Error(`customCSS file not found: ${resolvedPath}`);
         }
@@ -982,7 +944,6 @@ export function resolveCustomCSS(cssValue: string, configPath: string, logger: a
             throw new Error(`customCSS path is not a file: ${resolvedPath}`);
         }
 
-        // Read the file
         try {
             const cssContent = fs.readFileSync(resolvedPath, 'utf-8');
             logger.debug(`Read ${cssContent.length} characters from customCSS file`);
@@ -995,18 +956,12 @@ export function resolveCustomCSS(cssValue: string, configPath: string, logger: a
             throw new Error(`Failed to read customCSS file: ${error.message}`);
         }
     } else {
-        // Treat as inline CSS
         logger.debug('customCSS appears to be inline CSS');
         return trimmed;
     }
 }
 
 
-/**
- * Parse CSS content and extract selectors with their rules
- * @param cssContent - The CSS content to parse
- * @returns Array of parsed CSS rules with selectors
- */
 export function parseCSSFile(cssContent: string): Array<{
     selector: string;
     declarations: Array<{ property: string; value: string; important: boolean }>;
@@ -1022,6 +977,13 @@ export function parseCSSFile(cssContent: string): Array<{
         const ast = postcss.parse(cssContent);
         
         ast.walkRules((rule: any) => {
+
+            // Skip rules inside @keyframes, @media, and other at-rules
+            // by checking if the parent is an AtRule
+            if (rule.parent && rule.parent.type === 'atrule') {
+                return; // Skip this rule
+            }
+
             const declarations: Array<{ property: string; value: string; important: boolean }> = [];
             
             rule.walkDecls((decl: any) => {
