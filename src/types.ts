@@ -125,6 +125,7 @@ export interface Env {
     SMART_GIT: boolean;
     SHOW_RENDER_ERRORS: boolean;
     SMARTUI_SSE_URL: string;
+    LT_SDK_SKIP_EXECUTION_LOGS: boolean;
 }
 
 export interface Snapshot {
@@ -202,6 +203,7 @@ export interface Build {
     useKafkaFlow: boolean;
     hasDiscoveryError: boolean;
     projectId?: string;
+    checkPendingRequests: boolean;
 }
 
 export interface WebConfig {

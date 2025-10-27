@@ -10,8 +10,22 @@ const globalCache = new NodeCache({ stdTTL: 3600, checkperiod: 600 });
 const MAX_RESOURCE_SIZE = 15 * (1024 ** 2); // 15MB
 var ALLOWED_RESOURCES = ['document', 'stylesheet', 'image', 'media', 'font', 'other'];
 const ALLOWED_STATUSES = [200, 201];
-const REQUEST_TIMEOUT = 1800000;
+const REQUEST_TIMEOUT = 180000;
 const MIN_VIEWPORT_HEIGHT = 1080;
+const MAX_WAIT_FOR_REQUEST_CALL = 30000;
+
+const normalizeSameSite = (value) => {
+    if (!value) return 'Lax';
+    
+    const normalized = value.trim().toLowerCase();
+    const mapping = {
+        'lax': 'Lax',
+        'strict': 'Strict',
+        'none': 'None'
+    };
+    
+    return mapping[normalized] || value;
+};
 
 export async function prepareSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record<string, any>> {
     let processedOptions: Record<string, any> = {};
@@ -269,11 +283,11 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
                 return false;
             }
             
-            if (cookie.sameSite && !['Strict', 'Lax', 'None'].includes(cookie.sameSite)) {
+            const sameSiteValue = normalizeSameSite(cookie.sameSite);
+            if (!['Strict', 'Lax', 'None'].includes(sameSiteValue)) {
                 ctx.log.debug(`Skipping invalid custom cookie: invalid sameSite value '${cookie.sameSite}'`);
                 return false;
             }
-            
             return true;
         }).map(cookie => ({
             name: cookie.name,
@@ -282,7 +296,7 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
             path: cookie.path || '/',
             httpOnly: cookie.httpOnly || false,
             secure: cookie.secure || false,
-            sameSite: cookie.sameSite || 'Lax'
+            sameSite: normalizeSameSite(cookie.sameSite)
         }));
 
         if (validCustomCookies.length > 0) {
@@ -310,6 +324,8 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
             }
         }
     }
+
+    const pendingRequests = new Set<string>();
 
     // Use route to intercept network requests and discover resources
     await page.route('**/*', async (route, request) => {
@@ -369,8 +385,14 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
                 body = globalCache.get(requestUrl).body;
             } else {
                 ctx.log.debug(`Resource not found in cache or global cache ${requestUrl} fetching from server`);
+                if(ctx.build.checkPendingRequests){
+                    pendingRequests.add(requestUrl);
+                }
                 response = await page.request.fetch(request, requestOptions);
                 body = await response.body();
+                if(ctx.build.checkPendingRequests){
+                    pendingRequests.delete(requestUrl);
+                }
             }
 
             // handle response
@@ -398,14 +420,25 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
 
                 let responseOfRetry, bodyOfRetry
                 ctx.log.debug(`Resource had a disallowed status ${requestUrl} fetching from server again`);
+                if(ctx.build.checkPendingRequests){
+                    pendingRequests.add(requestUrl);
+                }
                 responseOfRetry = await page.request.fetch(request, requestOptions);
                 bodyOfRetry = await responseOfRetry.body();
-
+                if(ctx.build.checkPendingRequests){
+                    pendingRequests.delete(requestUrl);
+                }
                 if (responseOfRetry && responseOfRetry.status() && ALLOWED_STATUSES.includes(responseOfRetry.status())) {
                     ctx.log.debug(`Handling request after retry ${requestUrl}\n - content-type ${responseOfRetry.headers()['content-type']}`);
                     cache[requestUrl] = {
                         body: bodyOfRetry.toString('base64'),
                         type: responseOfRetry.headers()['content-type']
+                    }
+                    if (ctx.config.useGlobalCache) {
+                        globalCache.set(requestUrl, {
+                            body: bodyOfRetry.toString('base64'),
+                            type: responseOfRetry.headers()['content-type']
+                        });
                     }
                     route.fulfill({
                         status: responseOfRetry.status(),
@@ -456,6 +489,7 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
                     type: response.headers()['content-type']
                 }
             }
+
 
             // Continue the request with the fetched response
             route.fulfill({
@@ -673,6 +707,7 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
         } catch (error) {
             ctx.log.debug(`Network idle failed due to ${error}`);
         }
+        
 
 
         if (ctx.config.allowedAssets && ctx.config.allowedAssets.length) {
@@ -861,6 +896,28 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
         processedOptions.selectDOM = options?.selectDOM;
         ctx.log.debug(`Processed options: ${JSON.stringify(processedOptions)}`);
     }
+
+    // Wait for pending requests to complete
+    const checkPending = async () => {
+        let startTime = Date.now();
+        ctx.log.debug(`${pendingRequests.size} Pending requests before wait for ${snapshot.name}: ${Array.from(pendingRequests)}`);
+        while (pendingRequests.size > 0) {
+          const elapsedTime = Date.now() - startTime;
+          if (elapsedTime >= MAX_WAIT_FOR_REQUEST_CALL) {
+            ctx.log.debug(`Timeout reached (${MAX_WAIT_FOR_REQUEST_CALL/1000}s). Stopping wait for pending requests.`);
+            ctx.log.debug(`${pendingRequests.size} Pending requests after wait for ${snapshot.name}: ${Array.from(pendingRequests)}`);
+            break;
+          }
+          await new Promise(resolve => setTimeout(resolve, 1000)); 
+        }
+        if(pendingRequests.size === 0) {
+            ctx.log.debug(`No pending requests for ${snapshot.name}.`);
+        }
+      };
+
+      if (ctx.build.checkPendingRequests) {
+        await checkPending();
+      }
 
     // Validate and report CSS injection after selector processing
     if (processedOptions.customCSS) {

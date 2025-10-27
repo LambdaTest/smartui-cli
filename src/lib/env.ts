@@ -24,7 +24,8 @@ export default (): Env => {
         USE_REMOTE_DISCOVERY,
         SMART_GIT,
         SHOW_RENDER_ERRORS,
-        SMARTUI_SSE_URL='https://server-events.lambdatest.com'
+        SMARTUI_SSE_URL='https://server-events.lambdatest.com',
+        LT_SDK_SKIP_EXECUTION_LOGS
     } = process.env
         
     return {
@@ -50,6 +51,7 @@ export default (): Env => {
         USE_REMOTE_DISCOVERY: USE_REMOTE_DISCOVERY === 'true',
         SMART_GIT: SMART_GIT === 'true',
         SHOW_RENDER_ERRORS: SHOW_RENDER_ERRORS === 'true',
-        SMARTUI_SSE_URL
+        SMARTUI_SSE_URL,
+        LT_SDK_SKIP_EXECUTION_LOGS: LT_SDK_SKIP_EXECUTION_LOGS === 'true'
     }
 }
