@@ -282,7 +282,7 @@ export default class httpClient {
     }
 
 
-    getSmartUICapabilities(sessionId: string, config: any, git: any, log: Logger, isStartExec: boolean) {
+    getSmartUICapabilities(sessionId: string, config: any, git: any, log: Logger, isStartExec: boolean, baselineBuild: string) {
         return this.request({
             url: '/sessions/capabilities',
             method: 'GET',
@@ -292,7 +292,8 @@ export default class httpClient {
             data: {
                 git,
                 config,
-                isStartExec
+                isStartExec,
+                baselineBuild
             },
             headers: {
                 projectToken: '',
