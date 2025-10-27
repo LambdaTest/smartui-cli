@@ -681,8 +681,13 @@ export default class httpClient {
 
     getSnapshotStatus(buildId: string, snapshotName: string, snapshotUuid: string, ctx: Context): Promise<Record<string, any>> {
         return this.request({
-            url: `/snapshot/status?buildId=${buildId}&snapshotName=${snapshotName}&snapshotUUID=${snapshotUuid}`,
+            url: `/snapshot/status`,
             method: 'GET',
+            params: {
+                buildId,
+                snapshotName,
+                snapshotUUID: snapshotUuid
+            },
             headers: {
                 'Content-Type': 'application/json',
             }
