@@ -241,10 +241,12 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 
 		try {
 			ctx.log.debug(`request.query : ${JSON.stringify(request.query)}`);
-			const { contextId, pollTimeout, snapshotName } = request.query as { contextId: string, pollTimeout: number, snapshotName: string };
+			const { contextId, pollTimeout, snapshotName: rawSnapshotName } = request.query as { contextId: string, pollTimeout: number, snapshotName: string };
+			const snapshotName = rawSnapshotName?.trim();
 			if (!contextId || !snapshotName) {
 				throw new Error('contextId and snapshotName are required parameters');
 			}
+			
 
 			const timeoutDuration = pollTimeout*1000 || 30000; 
 
