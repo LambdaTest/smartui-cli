@@ -880,6 +880,22 @@ export async function startSSEListener(ctx: Context) {
                             ctx.log.info(chalk.yellow.bold(`Warning: ${data.message}`));
                         }
                         break;
+                    case 'CSSReport': 
+                        if (data.buildId == ctx.build.id) {
+                            const lines = data.message.split('\n');
+                            if (lines.length < 1 ) {
+                                return;
+                            }
+                            ctx.log.info(chalk.green(lines[0]));
+                            
+                            if(lines[1].includes('Success')) {
+                                lines.slice(1).forEach(line => ctx.log.info(chalk.green(line)));
+                            }
+                            else {
+                                lines.slice(1).forEach(line => ctx.log.info(chalk.yellow(line)));
+                            }
+                            break;
+                        }
                     case 'error':
                         ctx.log.debug('SSE Error occurred:', data);
                         currentConnection?.abort();
@@ -964,7 +980,7 @@ export function resolveCustomCSS(cssValue: string, configPath: string, logger: a
 }
 
 
-export function parseCSSFile(cssContent: string): Array<{
+export function parseCSS(cssContent: string): Array<{
     selector: string;
     declarations: Array<{ property: string; value: string; important: boolean }>;
     source?: { start?: any; end?: any };
@@ -1012,13 +1028,6 @@ export function parseCSSFile(cssContent: string): Array<{
     return rules;
 }
 
-/**
- * Validate CSS selectors in the page context
- * @param page - Playwright page object
- * @param cssRules - Parsed CSS rules
- * @param logger - Logger instance
- * @returns Validation results with success and failed selectors
- */
 export async function validateCSSSelectors(
     page: any,
     cssRules: Array<{ selector: string; declarations: any[] }>,
@@ -1040,12 +1049,12 @@ export async function validateCSSSelectors(
             selector.includes('@') ||
             selector.includes('::')
         ) {
-            successCount++; // Count as success since they're valid CSS
+            successCount++; 
             continue;
         }
 
         try {
-            // Validate if selector finds at least one element
+
             const elementExists = await page.evaluate(({ selectorValue }: { selectorValue: string }) => {
                 try {
                     const elements = document.querySelectorAll(selectorValue);
@@ -1075,12 +1084,6 @@ export async function validateCSSSelectors(
     };
 }
 
-/**
- * Generate CSS injection report
- * @param validationResult - Results from CSS selector validation
- * @param logger - Logger instance
- * @returns Formatted report string
- */
 export function generateCSSInjectionReport(
     validationResult: {
         successCount: number;

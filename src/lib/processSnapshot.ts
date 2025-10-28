@@ -1,5 +1,5 @@
 import { Snapshot, Context, DiscoveryErrors } from "../types.js";
-import { scrollToBottomAndBackToTop, getRenderViewports, getRenderViewportsForOptions, validateCoordinates, resolveCustomCSS, parseCSSFile, validateCSSSelectors, generateCSSInjectionReport } from "./utils.js"
+import { scrollToBottomAndBackToTop, getRenderViewports, getRenderViewportsForOptions, validateCoordinates, resolveCustomCSS, parseCSS, validateCSSSelectors, generateCSSInjectionReport } from "./utils.js"
 import { chromium, Locator } from "@playwright/test"
 import constants from "./constants.js";
 import { updateLogContext } from '../lib/logger.js'
@@ -922,7 +922,7 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
     // Validate and report CSS injection after selector processing
     if (processedOptions.customCSS) {
         try {
-            const cssRules = parseCSSFile(processedOptions.customCSS);
+            const cssRules = parseCSS(processedOptions.customCSS);
             const validationResult = await validateCSSSelectors(page, cssRules, ctx.log);
             const report = generateCSSInjectionReport(validationResult, ctx.log, snapshot.name);
             
