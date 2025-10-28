@@ -888,12 +888,19 @@ export async function startSSEListener(ctx: Context) {
                             }
                             ctx.log.info(chalk.green(lines[0]));
                             
-                            if(lines[1].includes('Success')) {
-                                lines.slice(1).forEach(line => ctx.log.info(chalk.green(line)));
-                            }
-                            else {
-                                lines.slice(1).forEach(line => ctx.log.info(chalk.yellow(line)));
-                            }
+                            let isWarningSection = false;
+
+                            lines.slice(1).forEach(line => {
+                                if (line.includes('Warning')) {
+                                    isWarningSection = true;
+                                }
+
+                                if (isWarningSection) {
+                                    ctx.log.info(chalk.yellow(line));
+                                } else {
+                                    ctx.log.info(chalk.green(line));
+                                }
+});
                             break;
                         }
                     case 'error':
@@ -1043,13 +1050,21 @@ export async function validateCSSSelectors(
     for (const rule of cssRules) {
         const selector = rule.selector;
         
-        // Skip pseudo-selectors, media queries, and special selectors that can't be validated
-        if (
-            selector.includes(':') || 
-            selector.includes('@') ||
-            selector.includes('::')
-        ) {
-            successCount++; 
+        // Strip pseudo-classes and pseudo-elements to get the base selector
+        let baseSelector = selector;
+            
+        // Remove pseudo-elements (::before, ::after, etc.)
+        baseSelector = baseSelector.replace(/::[a-zA-Z-]+(\([^)]*\))?/g, '');
+        
+        // Remove pseudo-classes (:hover, :focus, :nth-child(), etc.)
+        baseSelector = baseSelector.replace(/:[a-zA-Z-]+(\([^)]*\))?/g, '');
+        
+        // Clean up any trailing spaces or commas
+        baseSelector = baseSelector.trim();
+
+        // Skip if nothing remains after stripping (e.g., pure pseudo-selector like ":root")
+        if (!baseSelector || baseSelector === '') {
+            successCount++;
             continue;
         }
 
@@ -1062,7 +1077,7 @@ export async function validateCSSSelectors(
                 } catch (error) {
                     return false;
                 }
-            }, { selectorValue: selector });
+            }, { selectorValue: baseSelector });
 
             if (elementExists) {
                 successCount++;
