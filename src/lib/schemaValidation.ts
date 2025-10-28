@@ -337,6 +337,9 @@ const WebStaticConfigSchema: JSONSchemaType<WebStaticConfig> = {
             execute: {
                 type: "object",
                 properties: {
+                    beforeNavigation: {
+                        type: "string",
+                    },
                     afterNavigation : {
                         type: "string",
                     },

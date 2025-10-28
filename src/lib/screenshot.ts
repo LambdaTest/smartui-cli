@@ -17,6 +17,7 @@ async function captureScreenshotsForConfig(
     ctx.log.debug(`*** urlConfig  ${JSON.stringify(urlConfig)}`);
 
     let {name, url, waitForTimeout, execute, pageEvent, userAgent} = urlConfig;
+    let beforeNavigationScript = execute?.beforeNavigation;
     let afterNavigationScript = execute?.afterNavigation;
     let beforeSnapshotScript = execute?.beforeSnapshot;
     let waitUntilEvent = pageEvent || process.env.SMARTUI_PAGE_WAIT_UNTIL_EVENT || 'load';
@@ -43,10 +44,19 @@ async function captureScreenshotsForConfig(
     }
 
     try {
-        ctx.log.debug(`SHRINISH :: contextOptions: ${JSON.stringify(contextOptions)}`);
         const browser = browsers[browserName];
         context = await browser?.newContext(contextOptions);
         page = await context?.newPage();
+
+        if (beforeNavigationScript && beforeNavigationScript !== "") {
+            const wrappedScript = new Function('page', `
+                return (async () => {
+                    ${beforeNavigationScript}
+                })();
+            `);
+            
+            await wrappedScript(page);
+        }
         const headersObject: Record<string, string> = {};
         if (ctx.config.requestHeaders && Array.isArray(ctx.config.requestHeaders)) {
             ctx.config.requestHeaders.forEach((headerObj) => {
