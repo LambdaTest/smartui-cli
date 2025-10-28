@@ -43,6 +43,7 @@ async function captureScreenshotsForConfig(
     }
 
     try {
+        ctx.log.debug(`SHRINISH :: contextOptions: ${JSON.stringify(contextOptions)}`);
         const browser = browsers[browserName];
         context = await browser?.newContext(contextOptions);
         page = await context?.newPage();
@@ -60,6 +61,12 @@ async function captureScreenshotsForConfig(
                     headersObject[key] = value;
                 });
             });
+        }
+
+        if (ctx.config.basicAuthorization) {
+            ctx.log.debug(`Adding basic authorization to the headers for root url`);
+            let token = Buffer.from(`${ctx.config.basicAuthorization.username}:${ctx.config.basicAuthorization.password}`).toString('base64');
+            headersObject['Authorization'] = `Basic ${token}`;
         }
 
         ctx.log.debug(`Combined headers: ${JSON.stringify(headersObject)}`);
