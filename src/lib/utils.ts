@@ -886,6 +886,7 @@ export async function startSSEListener(ctx: Context) {
                             if (lines.length < 1 ) {
                                 return;
                             }
+                            ctx.log.debug(`CSSReport: ${JSON.stringify(lines)}`);
                             ctx.log.info(chalk.green(lines[0]));
                             
                             let isWarningSection = false;
@@ -1069,7 +1070,7 @@ export async function validateCSSSelectors(
         }
 
         try {
-
+            logger.debug(`selector to validate: ${baseSelector}`);
             const elementExists = await page.evaluate(({ selectorValue }: { selectorValue: string }) => {
                 try {
                     const elements = document.querySelectorAll(selectorValue);
