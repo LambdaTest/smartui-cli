@@ -38,7 +38,6 @@ command
         }
         try {
             ctx.webStaticConfig = JSON.parse(fs.readFileSync(file, 'utf8'));
-            ctx.log.info({config : ctx.webStaticConfig})
             if (!validateWebStaticConfig(ctx.webStaticConfig)){
                 ctx.log.debug(JSON.stringify(validateWebStaticConfig.errors, null, 2));
                 // Iterate and add warning for "additionalProperties"
