@@ -1,10 +1,9 @@
 import { Snapshot, Context, DiscoveryErrors } from "../types.js";
-import { scrollToBottomAndBackToTop, getRenderViewports, getRenderViewportsForOptions, validateCoordinates, resolveCustomCSS, parseCSS, validateCSSSelectors, generateCSSInjectionReport } from "./utils.js"
+import { scrollToBottomAndBackToTop, getRenderViewports, getRenderViewportsForOptions, validateCoordinates } from "./utils.js"
 import { chromium, Locator } from "@playwright/test"
 import constants from "./constants.js";
 import { updateLogContext } from '../lib/logger.js'
 import NodeCache from 'node-cache'; 
-import chalk from "chalk";
 
 const globalCache = new NodeCache({ stdTTL: 3600, checkperiod: 600 });
 const MAX_RESOURCE_SIZE = 15 * (1024 ** 2); // 15MB
@@ -167,17 +166,6 @@ export async function prepareSnapshot(snapshot: Snapshot, ctx: Context): Promise
     }
     if (ctx.config.useExtendedViewport) {
         processedOptions.useExtendedViewport = true;
-    }
-
-    try {
-        if (options?.customCSS) {
-            const resolvedCSS = resolveCustomCSS(options.customCSS, '', ctx.log);
-            processedOptions.customCSS = resolvedCSS;
-        } else if (ctx.config.customCSS) {
-            processedOptions.customCSS = ctx.config.customCSS;
-        }
-    } catch (error: any) {
-        optionWarnings.add(`${error.message}`);
     }
 
     processedOptions.allowedAssets = ctx.config.allowedAssets;
@@ -623,17 +611,6 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
         processedOptions.useExtendedViewport = true;
     }
 
-    try {
-        if (options?.customCSS) {
-            const resolvedCSS = resolveCustomCSS(options.customCSS, '', ctx.log);
-            processedOptions.customCSS = resolvedCSS;
-        } else if (ctx.config.customCSS) {
-            processedOptions.customCSS = ctx.config.customCSS;
-        }
-    } catch (error: any) {
-        optionWarnings.add(`${error.message}`);
-    }
-
     // process for every viewport
     let navigated: boolean = false;
     let previousDeviceType: string | null = null;
@@ -918,24 +895,6 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
       if (ctx.build.checkPendingRequests) {
         await checkPending();
       }
-
-    // Validate and report CSS injection after selector processing
-    if (processedOptions.customCSS) {
-        try {
-            const cssRules = parseCSS(processedOptions.customCSS);
-            const validationResult = await validateCSSSelectors(page, cssRules, ctx.log);
-            const report = generateCSSInjectionReport(validationResult, ctx.log, snapshot.name);
-            
-            if (validationResult.failedSelectors.length > 0) {
-                validationResult.failedSelectors.forEach(selector => {
-                    optionWarnings.add(`customCSS selector not found: ${selector}`);
-                });
-            }
-        } catch (error: any) {
-            ctx.log.warn(`CSS validation failed: ${error.message}`);
-            optionWarnings.add(`CSS validation error: ${error.message}`);
-        }
-    }
 
     
     let hasBrowserErrors = false;
