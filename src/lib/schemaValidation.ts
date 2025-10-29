@@ -284,10 +284,6 @@ const ConfigSchema = {
             type: "boolean",
             errorMessage: "Invalid config; loadDomContent must be true/false"
         },
-        customCSS: {
-            type: "string",
-            errorMessage: "Invalid config; customCSS must be a string"
-        },
         approvalThreshold: {
             type: "number",
             minimum: 0,
@@ -379,8 +375,7 @@ const SnapshotSchema: JSONSchemaType<Snapshot> = {
         name: {
             type: "string",
             minLength: 1,
-            maxLength: 255,
-            errorMessage: "Invalid snapshot; name is mandatory and cannot be empty and more than 255 characters"
+            errorMessage: "Invalid snapshot; name is mandatory and cannot be empty"
         },
         url: {
             type: "string",
@@ -599,10 +594,6 @@ const SnapshotSchema: JSONSchemaType<Snapshot> = {
                         minProperties: 1,
                     },
                     errorMessage: "Invalid snapshot options; customCookies must be an array of objects with string properties"
-                },
-                customCSS: {
-                    type: "string",
-                    errorMessage: "Invalid snapshot options; customCSS must be a string"
                 }
             },
             additionalProperties: false
