@@ -29,6 +29,39 @@ async function captureScreenshotsForConfig(
     let contextOptions: Record<string, any> = {
         ignoreHTTPSErrors: ctx.config.ignoreHTTPSErrors
     };
+
+    // Resolve proxy/tunnel from global config
+    try {
+        if (ctx.config.tunnel && ctx.config.tunnel.tunnelName) {
+            if (ctx.tunnelDetails && ctx.tunnelDetails.tunnelPort != -1 && ctx.tunnelDetails.tunnelHost) {
+                const tunnelServer = `http://${ctx.tunnelDetails.tunnelHost}:${ctx.tunnelDetails.tunnelPort}`;
+                ctx.log.info(`URL Capture :: Using tunnel address: ${tunnelServer}`);
+                contextOptions.proxy = { server: tunnelServer };
+            } else {
+                let tunnelResp = await ctx.client.getTunnelDetails(ctx, ctx.log);
+                ctx.log.debug(`Tunnel Response: ${JSON.stringify(tunnelResp)}`)
+                if (tunnelResp && tunnelResp.data && tunnelResp.data.host && tunnelResp.data.port) {
+                    ctx.tunnelDetails = {
+                        tunnelHost: tunnelResp.data.host,
+                        tunnelPort: tunnelResp.data.port,
+                        tunnelName: tunnelResp.data.tunnel_name
+                    } as any;
+                    const tunnelServer = `http://${ctx.tunnelDetails.tunnelHost}:${ctx.tunnelDetails.tunnelPort}`;
+                    ctx.log.info(`URL Capture :: Using tunnel address: ${tunnelServer}`);
+                    contextOptions.proxy = { server: tunnelServer };
+                } else if (tunnelResp && tunnelResp.error) {
+                    if (tunnelResp.error.message) {
+                        ctx.log.warn(`Error while fetching tunnel details: ${tunnelResp.error.message}`)
+                    }
+                }
+            }
+        } else if (ctx.config.dedicatedProxyURL && ctx.config.dedicatedProxyURL !== '') {
+            ctx.log.info(`URL Capture :: Using dedicated proxy: ${ctx.config.dedicatedProxyURL}`);
+            contextOptions.proxy = { server: ctx.config.dedicatedProxyURL };
+        }
+    } catch (e) {
+        ctx.log.debug(`Failed resolving tunnel/proxy details: ${e}`);
+    }
     let page: Page;
     if (browserName == constants.CHROME) contextOptions.userAgent = constants.CHROME_USER_AGENT;
     else if (browserName == constants.FIREFOX) contextOptions.userAgent = constants.FIREFOX_USER_AGENT;

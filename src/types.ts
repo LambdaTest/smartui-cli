@@ -34,6 +34,7 @@ export interface Context {
         ignoreHTTPSErrors : boolean;
         skipBuildCreation?: boolean;
         tunnel: tunnelConfig | undefined;
+        dedicatedProxyURL?: string;
         userAgent?: string;
         requestHeaders?: Array<Record<string, string>>;
         allowDuplicateSnapshotNames?: boolean;

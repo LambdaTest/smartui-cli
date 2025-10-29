@@ -264,6 +264,10 @@ const ConfigSchema = {
                 uniqueItems: "Invalid config; duplicates in requestHeaders"
             }
         },
+        dedicatedProxyURL: {
+            type: "string",
+            errorMessage: "Invalid config; dedicatedProxyURL must be a string"
+        },
         allowDuplicateSnapshotNames: {
             type: "boolean",
             errorMessage: "Invalid config; allowDuplicateSnapshotNames must be true/false"
