@@ -126,6 +126,7 @@ export interface Env {
     SHOW_RENDER_ERRORS: boolean;
     SMARTUI_SSE_URL: string;
     LT_SDK_SKIP_EXECUTION_LOGS: boolean;
+    MAX_CONCURRENT_PROCESSING: number;
 }
 
 export interface Snapshot {
