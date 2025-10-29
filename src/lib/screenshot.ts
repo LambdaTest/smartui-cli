@@ -87,7 +87,7 @@ async function captureScreenshotsForConfig(
                     ${beforeNavigationScript}
                 })();
             `);
-            
+            ctx.log.debug(`Executing before navigation script: ${wrappedScript}`);
             await wrappedScript(page);
         }
         const headersObject: Record<string, string> = {};
