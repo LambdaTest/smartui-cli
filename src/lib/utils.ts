@@ -458,7 +458,7 @@ export async function startPollingForTunnel(ctx: Context, build_id: string, base
 
 export async function stopTunnelHelper(ctx: Context) {
     ctx.log.debug('stop-tunnel:: Stopping the tunnel now');
-    const tunnelRunningStatus = await tunnelInstance.isRunning();
+    const tunnelRunningStatus = await tunnelInstance?.isRunning();
     ctx.log.debug('stop-tunnel:: Running status of tunnel before stopping ? ' + tunnelRunningStatus);
 
     const status = await tunnelInstance.stop();

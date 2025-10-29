@@ -148,7 +148,7 @@ export default class httpClient {
             })
     }
 
-    async auth(log: Logger, env: Env): Promise<number> {
+    async auth(log: Logger, env: Env): Promise<{ authResult: number, orgId: number, userId: number }> {
         let result = 1;
         if (this.projectToken) {
             result = 0;
@@ -162,12 +162,20 @@ export default class httpClient {
             }
         }, log);
         if (response && response.projectToken) {
+            let orgId = 0;
+            let userId = 0;
             this.projectToken = response.projectToken;
             env.PROJECT_TOKEN = response.projectToken;
             if (response.message && response.message.includes('Project created successfully')) {
                 result = 2;
             }
-            return result;
+            if (response.orgId) {
+                orgId = response.orgId
+            }
+            if (response.userId) {
+                userId = response.userId
+            }
+            return { authResult : result, orgId, userId };
         } else {
             throw new Error('Authentication failed, project token not received');
         }
