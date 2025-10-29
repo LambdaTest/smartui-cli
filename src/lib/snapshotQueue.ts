@@ -280,7 +280,13 @@ export default class Queue {
             const useRemoteDiscovery = this.ctx.env.USE_REMOTE_DISCOVERY || this.ctx.config.useRemoteDiscovery;
 
             if (useRemoteDiscovery && !this.ctx.config.delayedUpload && !this.ctx.config.allowDuplicateSnapshotNames) {
-                const maxConcurrentProcessing = this.ctx.env.MAX_CONCURRENT_PROCESSING === 0 ? this.MAX_CONCURRENT_PROCESSING : this.ctx.env.MAX_CONCURRENT_PROCESSING;
+                let maxConcurrentProcessing = this.ctx.env.MAX_CONCURRENT_PROCESSING === 0 ? this.MAX_CONCURRENT_PROCESSING : this.ctx.env.MAX_CONCURRENT_PROCESSING;
+                if (maxConcurrentProcessing > 15 || maxConcurrentProcessing < 1) {
+                    this.ctx.log.info(`Larger than 15 concurrent processing. Setting to 5.`);
+                    maxConcurrentProcessing = 5;
+                }
+
+                this.ctx.log.info(`Max concurrent processing: ${maxConcurrentProcessing}`);
                 const snapshotsToProcess: Array<Snapshot> = [];
                 const maxSnapshots = Math.min(maxConcurrentProcessing - this.activeProcessingCount, this.snapshots.length);
                 
