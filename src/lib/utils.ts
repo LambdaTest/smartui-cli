@@ -7,6 +7,7 @@ import fs from 'fs';
 import { globalAgent } from 'http';
 import { promisify } from 'util'
 import { build } from 'tsup';
+import postcss from 'postcss';
 const util = require('util'); // Import the util module
 
 var lambdaTunnel = require('@lambdatest/node-tunnel');
@@ -879,6 +880,30 @@ export async function startSSEListener(ctx: Context) {
                             ctx.log.info(chalk.yellow.bold(`Warning: ${data.message}`));
                         }
                         break;
+                    case 'CSSReport': 
+                        if (data.buildId == ctx.build.id) {
+                            const lines = data.message.split('\n');
+                            if (lines.length < 1 ) {
+                                return;
+                            }
+                            ctx.log.debug(`CSSReport: ${JSON.stringify(lines)}`);
+                            ctx.log.info(chalk.green(lines[0]));
+                            
+                            let isWarningSection = false;
+
+                            lines.slice(1).forEach(line => {
+                                if (line.includes('Warning')) {
+                                    isWarningSection = true;
+                                }
+
+                                if (isWarningSection) {
+                                    ctx.log.info(chalk.yellow(line));
+                                } else {
+                                    ctx.log.info(chalk.green(line));
+                                }
+});
+                            break;
+                        }
                     case 'error':
                         ctx.log.debug('SSE Error occurred:', data);
                         currentConnection?.abort();
@@ -890,4 +915,217 @@ export async function startSSEListener(ctx: Context) {
     } catch (error) {
         ctx.log.debug('Failed to start SSE listener:', error);
     }
+}
+
+
+export function resolveCustomCSS(cssValue: string, configPath: string, logger: any): string {
+    if (!cssValue || typeof cssValue !== 'string') {
+        throw new Error('customCSS must be a non-empty string');
+    }
+
+    const trimmed = cssValue.trim();
+    if (trimmed.length === 0) {
+        throw new Error('customCSS cannot be empty');
+    }
+
+    // Check if it looks like a file path
+    const path = require('path');
+    const isLikelyFilePath = 
+        trimmed.includes('.') && (
+            trimmed.startsWith('./') || 
+            trimmed.startsWith('../') || 
+            trimmed.startsWith('/') ||
+            path.isAbsolute(trimmed) ||
+            /\.(css|json|js|txt|html)$/i.test(trimmed) 
+    );
+
+    if (isLikelyFilePath) {
+        logger.debug(`customCSS appears to be a file path: ${trimmed}`);
+        
+        // Validate file extension
+        const ext = path.extname(trimmed).toLowerCase();
+        if (ext && ext !== '.css') {
+            throw new Error(`Invalid customCSS file type: ${ext}. Only .css files are supported.`);
+        }
+        // If no extension at all, also reject
+        if (!ext) {
+            throw new Error('Invalid file provided in customCSS. Expected .css file.');
+        }
+
+        // Resolve the file path
+        const baseDir = path.dirname(configPath);
+        const resolvedPath = path.isAbsolute(trimmed) 
+            ? trimmed 
+            : path.resolve(baseDir, trimmed);
+
+        logger.debug(`Resolved customCSS file path: ${resolvedPath}`);
+
+        if (!fs.existsSync(resolvedPath)) {
+            throw new Error(`customCSS file not found: ${resolvedPath}`);
+        }
+
+        // Check if it's a file (not a directory)
+        const stats = fs.statSync(resolvedPath);
+        if (!stats.isFile()) {
+            throw new Error(`customCSS path is not a file: ${resolvedPath}`);
+        }
+
+        try {
+            const cssContent = fs.readFileSync(resolvedPath, 'utf-8');
+            logger.debug(`Read ${cssContent.length} characters from customCSS file`);
+            
+            return cssContent;
+        } catch (error: any) {
+            if (error.message.includes('Invalid CSS syntax')) {
+                throw error;
+            }
+            throw new Error(`Failed to read customCSS file: ${error.message}`);
+        }
+    } else {
+        logger.debug('customCSS appears to be inline CSS');
+        return trimmed;
+    }
+}
+
+
+export function parseCSS(cssContent: string): Array<{
+    selector: string;
+    declarations: Array<{ property: string; value: string; important: boolean }>;
+    source?: { start?: any; end?: any };
+}> {
+    const rules: Array<{
+        selector: string;
+        declarations: Array<{ property: string; value: string; important: boolean }>;
+        source?: { start?: any; end?: any };
+    }> = [];
+    
+    try {
+        const ast = postcss.parse(cssContent);
+        
+        ast.walkRules((rule: any) => {
+
+            // Skip rules inside @keyframes, @media, and other at-rules
+            // by checking if the parent is an AtRule
+            if (rule.parent && rule.parent.type === 'atrule') {
+                return; // Skip this rule
+            }
+
+            const declarations: Array<{ property: string; value: string; important: boolean }> = [];
+            
+            rule.walkDecls((decl: any) => {
+                declarations.push({
+                    property: decl.prop,
+                    value: decl.value,
+                    important: decl.important
+                });
+            });
+            
+            rules.push({
+                selector: rule.selector,
+                declarations: declarations,
+                source: {
+                    start: rule.source?.start,
+                    end: rule.source?.end
+                }
+            });
+        });
+    } catch (error: any) {
+        throw new Error(`Failed to parse CSS: ${error.message}`);
+    }
+    
+    return rules;
+}
+
+export async function validateCSSSelectors(
+    page: any,
+    cssRules: Array<{ selector: string; declarations: any[] }>,
+    logger: any
+): Promise<{
+    successCount: number;
+    failedSelectors: string[];
+    totalRules: number;
+}> {
+    const failedSelectors: string[] = [];
+    let successCount = 0;
+
+    for (const rule of cssRules) {
+        const selector = rule.selector;
+        
+        // Strip pseudo-classes and pseudo-elements to get the base selector
+        let baseSelector = selector;
+            
+        // Remove pseudo-elements (::before, ::after, etc.)
+        baseSelector = baseSelector.replace(/::[a-zA-Z-]+(\([^)]*\))?/g, '');
+        
+        // Remove pseudo-classes (:hover, :focus, :nth-child(), etc.)
+        baseSelector = baseSelector.replace(/:[a-zA-Z-]+(\([^)]*\))?/g, '');
+        
+        // Clean up any trailing spaces or commas
+        baseSelector = baseSelector.trim();
+
+        // Skip if nothing remains after stripping (e.g., pure pseudo-selector like ":root")
+        if (!baseSelector || baseSelector === '') {
+            successCount++;
+            continue;
+        }
+
+        try {
+            logger.debug(`selector to validate: ${baseSelector}`);
+            const elementExists = await page.evaluate(({ selectorValue }: { selectorValue: string }) => {
+                try {
+                    const elements = document.querySelectorAll(selectorValue);
+                    return elements.length > 0;
+                } catch (error) {
+                    return false;
+                }
+            }, { selectorValue: baseSelector });
+
+            if (elementExists) {
+                successCount++;
+                logger.debug(`CSS selector valid: ${selector}`);
+            } else {
+                failedSelectors.push(selector);
+                logger.debug(`CSS selector found no elements: ${selector}`);
+            }
+        } catch (error: any) {
+            failedSelectors.push(selector);
+            logger.debug(`CSS selector validation error for "${selector}": ${error.message}`);
+        }
+    }
+
+    return {
+        successCount,
+        failedSelectors,
+        totalRules: cssRules.length
+    };
+}
+
+export function generateCSSInjectionReport(
+    validationResult: {
+        successCount: number;
+        failedSelectors: string[];
+        totalRules: number;
+    },
+    logger: any,
+    snapshotName: string
+): string {
+    const lines: string[] = [];
+    
+    lines.push(chalk.cyan(`[SmartUI] CSS Injection Report for Snapshot: ${snapshotName}`));
+    
+    if (validationResult.successCount > 0) {
+        lines.push(chalk.green(`[SmartUI] ✅ Success: ${validationResult.successCount} rules applied.`));
+    }
+    
+    if (validationResult.failedSelectors.length > 0) {
+        lines.push(chalk.yellow(`[SmartUI] ⚠️  Warning: ${validationResult.failedSelectors.length} selector(s) failed to find an element:`));
+        validationResult.failedSelectors.forEach(selector => {
+            lines.push(chalk.yellow(`[SmartUI]   - ${selector}`));
+        });
+    }
+    
+    const report = lines.join('\n');
+    logger.info(report);
+    
+    return report;
 }
