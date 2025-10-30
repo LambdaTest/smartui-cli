@@ -6,6 +6,7 @@ import logger from './logger.js'
 import getEnv from './env.js'
 import httpClient from './httpClient.js'
 import fs from 'fs'
+import { resolveCustomCSS } from './utils.js'
 
 export default (options: Record<string, string>): Context => {
     let env: Env = getEnv();
@@ -52,6 +53,20 @@ export default (options: Record<string, string>): Context => {
             if (!validateConfigFn(config)) {
                 throw new Error(validateConfigFn.errors[0].message);
             }
+
+            // Resolve customCSS if provided
+            if ((config as any).customCSS) {
+                try {
+                    (config as any).customCSS = resolveCustomCSS(
+                        (config as any).customCSS,
+                        options.config,
+                        logger
+                    );
+                    logger.debug('Successfully resolved and validated customCSS from config');
+                } catch (error: any) {
+                    throw new Error(`customCSS error: ${error.message}`);
+                }
+            }
         } else {
             logger.info("## No config file provided. Using default config.");
         }
@@ -80,6 +95,8 @@ export default (options: Record<string, string>): Context => {
         if (options.userName && options.accessKey) {
             env.LT_USERNAME = options.userName
             env.LT_ACCESS_KEY = options.accessKey
+            process.env.LT_USERNAME = options.userName
+            process.env.LT_ACCESS_KEY = options.accessKey
         }
     } catch (error: any) {
         console.log(`[smartui] Error: ${error.message}`);
@@ -155,7 +172,8 @@ export default (options: Record<string, string>): Context => {
             loadDomContent: loadDomContent,
             approvalThreshold: config.approvalThreshold,
             rejectionThreshold: config.rejectionThreshold,
-            showRenderErrors: config.showRenderErrors ?? false
+            showRenderErrors: config.showRenderErrors ?? false,
+            customCSS: (config as any).customCSS
         },
         uploadFilePath: '',
         webStaticConfig: [],
@@ -194,7 +212,9 @@ export default (options: Record<string, string>): Context => {
             baselineBranch: options.baselineBranch || '',
             baselineBuild: options.baselineBuild || '',
             githubURL : options.githubURL || '',
-            showRenderErrors: options.showRenderErrors ? true : false
+            showRenderErrors: options.showRenderErrors ? true : false,
+            userName: options.userName || '',
+            accessKey: options.accessKey || ''
         },
         cliVersion: version,
         totalSnapshots: -1,

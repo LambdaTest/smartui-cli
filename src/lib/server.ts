@@ -91,7 +91,7 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 				} else {
 					// If not cached, fetch from API and cache it
 					try {
-						let fetchedCapabilitiesResp = await ctx.client.getSmartUICapabilities(sessionId, ctx.config, ctx.git, ctx.log, ctx.isStartExec);
+						let fetchedCapabilitiesResp = await ctx.client.getSmartUICapabilities(sessionId, ctx.config, ctx.git, ctx.log, ctx.isStartExec, ctx.options.baselineBuild);
 						capsBuildId = fetchedCapabilitiesResp?.buildId || ''
 						ctx.log.debug(`fetch caps for sessionId: ${sessionId} are ${JSON.stringify(fetchedCapabilitiesResp)}`)
 						if (capsBuildId) {
@@ -241,10 +241,12 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 
 		try {
 			ctx.log.debug(`request.query : ${JSON.stringify(request.query)}`);
-			const { contextId, pollTimeout, snapshotName } = request.query as { contextId: string, pollTimeout: number, snapshotName: string };
+			const { contextId, pollTimeout, snapshotName: rawSnapshotName } = request.query as { contextId: string, pollTimeout: number, snapshotName: string };
+			const snapshotName = rawSnapshotName?.trim();
 			if (!contextId || !snapshotName) {
 				throw new Error('contextId and snapshotName are required parameters');
 			}
+			
 
 			const timeoutDuration = pollTimeout*1000 || 30000; 
 
