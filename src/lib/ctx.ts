@@ -95,6 +95,8 @@ export default (options: Record<string, string>): Context => {
         if (options.userName && options.accessKey) {
             env.LT_USERNAME = options.userName
             env.LT_ACCESS_KEY = options.accessKey
+            process.env.LT_USERNAME = options.userName
+            process.env.LT_ACCESS_KEY = options.accessKey
         }
     } catch (error: any) {
         console.log(`[smartui] Error: ${error.message}`);
