@@ -212,7 +212,9 @@ export default (options: Record<string, string>): Context => {
             baselineBranch: options.baselineBranch || '',
             baselineBuild: options.baselineBuild || '',
             githubURL : options.githubURL || '',
-            showRenderErrors: options.showRenderErrors ? true : false
+            showRenderErrors: options.showRenderErrors ? true : false,
+            userName: options.userName || '',
+            accessKey: options.accessKey || ''
         },
         cliVersion: version,
         totalSnapshots: -1,
