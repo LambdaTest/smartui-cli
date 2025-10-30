@@ -77,7 +77,7 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 				}
 			}
 
-			snapshot.name=snapshot?.name?.trim();
+			snapshot.name=snapshot?.name?.trim().replace(/\s+/g,'_');
 		
 			// Fetch sessionId from snapshot options if present
 			const sessionId = snapshot?.options?.sessionId;
