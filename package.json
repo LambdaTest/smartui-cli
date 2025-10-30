@@ -1,6 +1,6 @@
 {
   "name": "@lambdatest/smartui-cli",
-  "version": "4.1.39",
+  "version": "4.1.40",
   "description": "A command line interface (CLI) to run SmartUI tests on LambdaTest",
   "files": [
     "dist/**/*"
@@ -43,6 +43,7 @@
     "json-stringify-safe": "^5.0.1",
     "listr2": "^7.0.1",
     "node-cache": "^5.1.2",
+    "postcss": "^8.5.6",
     "sharp": "^0.33.4",
     "tsup": "^7.2.0",
     "uuid": "^11.0.3",

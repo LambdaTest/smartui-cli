@@ -14,6 +14,8 @@ export default class Queue {
     private ctx: Context;
     private snapshotNames: Array<string> = [];
     private variants: Array<string> = [];
+    private activeProcessingCount: number = 0;
+    private readonly MAX_CONCURRENT_PROCESSING = 5;
 
     constructor(ctx: Context) {
         this.ctx = ctx;
@@ -275,15 +277,65 @@ export default class Queue {
 
     private async processNext(): Promise<void> {
         if (!this.isEmpty()) {
+            const useRemoteDiscovery = this.ctx.env.USE_REMOTE_DISCOVERY || this.ctx.config.useRemoteDiscovery;
+
+            if (useRemoteDiscovery && !this.ctx.config.delayedUpload && !this.ctx.config.allowDuplicateSnapshotNames) {
+                let maxConcurrentProcessing = this.ctx.env.MAX_CONCURRENT_PROCESSING === 0 ? this.MAX_CONCURRENT_PROCESSING : this.ctx.env.MAX_CONCURRENT_PROCESSING;
+                if (maxConcurrentProcessing > 15 || maxConcurrentProcessing < 1) {
+                    this.ctx.log.info(`Larger than 15 concurrent processing. Setting to 5.`);
+                    maxConcurrentProcessing = 5;
+                }
+
+                this.ctx.log.info(`Max concurrent processing: ${maxConcurrentProcessing}`);
+                const snapshotsToProcess: Array<Snapshot> = [];
+                const maxSnapshots = Math.min(maxConcurrentProcessing - this.activeProcessingCount, this.snapshots.length);
+                
+                for (let i = 0; i < maxSnapshots; i++) {
+                    let snapshot;
+                    if (this.ctx.config.delayedUpload) {
+                        snapshot = this.snapshots.pop();
+                    } else {
+                        snapshot = this.snapshots.shift();
+                    }
+                    if (snapshot) {
+                        snapshotsToProcess.push(snapshot);
+                    }
+                }
+                
+                if (snapshotsToProcess.length > 0) {
+                    this.activeProcessingCount += snapshotsToProcess.length;
+                    const processingPromises = snapshotsToProcess.map(snapshot => this.processSnapshot(snapshot));
+                    await Promise.allSettled(processingPromises);
+                    this.activeProcessingCount -= snapshotsToProcess.length;
+                    
+                    if (!this.isEmpty()) {
+                        this.processNext();
+                    } else {
+                        this.processing = false;
+                    }
+                    return;
+                }
+            }
+            
             let snapshot;
             if (this.ctx.config.delayedUpload) {
                 snapshot = this.snapshots.pop();
             } else {
                 snapshot = this.snapshots.shift();
             }
-            try {
-                this.processingSnapshot = snapshot?.name;
-                let drop = false;
+            if (snapshot) {
+                await this.processSnapshot(snapshot);
+                this.processNext();
+            }
+        } else {
+            this.processing = false;
+        }
+    }
+
+    private async processSnapshot(snapshot: Snapshot): Promise<void> {
+        try {
+            this.processingSnapshot = snapshot?.name;
+            let drop = false;
 
 
                 if (this.ctx.isStartExec) {
@@ -450,7 +502,6 @@ export default class Queue {
                                 if(snapshot?.options?.contextId){
                                     this.ctx.contextToSnapshotMap?.set(snapshot?.options?.contextId,'2');
                                 }
-                                this.processNext();
                             } else {
                                 let approvalThreshold = snapshot?.options?.approvalThreshold || this.ctx.config.approvalThreshold;
                                 let rejectionThreshold = snapshot?.options?.rejectionThreshold || this.ctx.config.rejectionThreshold;
@@ -487,10 +538,6 @@ export default class Queue {
                     this.ctx.log.debug(`Closed browser context for snapshot ${snapshot.name}`);
                 }
             }
-            this.processNext();
-        } else {
-            this.processing = false;
-        }
     }
 
     isProcessing(): boolean {

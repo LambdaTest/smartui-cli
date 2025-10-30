@@ -43,7 +43,8 @@ export interface Context {
         loadDomContent?: boolean;
         approvalThreshold?: number;
         rejectionThreshold?: number;
-        showRenderErrors?: boolean
+        showRenderErrors?: boolean;
+        customCSS?: string;
     };
     uploadFilePath: string;
     webStaticConfig: WebStaticConfig;
@@ -73,7 +74,9 @@ export interface Context {
         baselineBranch?: string,
         baselineBuild?: string,
         githubURL?: string,
-        showRenderErrors?: boolean
+        showRenderErrors?: boolean,
+        userName?: string,
+        accessKey?: string
     }
     cliVersion: string;
     totalSnapshots: number;
@@ -125,6 +128,7 @@ export interface Env {
     SHOW_RENDER_ERRORS: boolean;
     SMARTUI_SSE_URL: string;
     LT_SDK_SKIP_EXECUTION_LOGS: boolean;
+    MAX_CONCURRENT_PROCESSING: number;
 }
 
 export interface Snapshot {
@@ -170,6 +174,7 @@ export interface Snapshot {
         approvalThreshold?: number;
         rejectionThreshold?: number;
         customCookies?: CustomCookie[];
+        customCSS?: string;
     }
 }
 
