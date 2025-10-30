@@ -379,7 +379,9 @@ const SnapshotSchema: JSONSchemaType<Snapshot> = {
         name: {
             type: "string",
             minLength: 1,
-            errorMessage: "Invalid snapshot; name is mandatory and cannot be empty"
+            maxLength:255,
+            pattern: "^.*\\S.*$",
+            errorMessage: "Invalid snapshot: name is mandatory, cannot be empty, and must not exceed 255 characters."
         },
         url: {
             type: "string",
