@@ -95,6 +95,8 @@ export default (options: Record<string, string>): Context => {
         if (options.userName && options.accessKey) {
             env.LT_USERNAME = options.userName
             env.LT_ACCESS_KEY = options.accessKey
+            process.env.LT_USERNAME = options.userName
+            process.env.LT_ACCESS_KEY = options.accessKey
         }
     } catch (error: any) {
         console.log(`[smartui] Error: ${error.message}`);
@@ -210,7 +212,9 @@ export default (options: Record<string, string>): Context => {
             baselineBranch: options.baselineBranch || '',
             baselineBuild: options.baselineBuild || '',
             githubURL : options.githubURL || '',
-            showRenderErrors: options.showRenderErrors ? true : false
+            showRenderErrors: options.showRenderErrors ? true : false,
+            userName: options.userName || '',
+            accessKey: options.accessKey || ''
         },
         cliVersion: version,
         totalSnapshots: -1,

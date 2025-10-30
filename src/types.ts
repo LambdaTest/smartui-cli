@@ -74,7 +74,9 @@ export interface Context {
         baselineBranch?: string,
         baselineBuild?: string,
         githubURL?: string,
-        showRenderErrors?: boolean
+        showRenderErrors?: boolean,
+        userName?: string,
+        accessKey?: string
     }
     cliVersion: string;
     totalSnapshots: number;
