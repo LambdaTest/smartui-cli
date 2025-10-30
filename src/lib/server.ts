@@ -244,7 +244,7 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 		try {
 			ctx.log.debug(`request.query : ${JSON.stringify(request.query)}`);
 			const { contextId, pollTimeout, snapshotName: rawSnapshotName } = request.query as { contextId: string, pollTimeout: number, snapshotName: string };
-			const snapshotName = rawSnapshotName?.trim();
+			const snapshotName = rawSnapshotName?.trim().replace(/\s+/g,'_');;
 			if (!contextId || !snapshotName) {
 				throw new Error('contextId and snapshotName are required parameters');
 			}
