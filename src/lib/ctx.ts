@@ -6,6 +6,7 @@ import logger from './logger.js'
 import getEnv from './env.js'
 import httpClient from './httpClient.js'
 import fs from 'fs'
+import { resolveCustomCSS } from './utils.js'
 
 export default (options: Record<string, string>): Context => {
     let env: Env = getEnv();
@@ -25,6 +26,9 @@ export default (options: Record<string, string>): Context => {
     let buildNameObj: string;
     let allowDuplicateSnapshotNames: boolean = false;
     let useLambdaInternal: boolean = false;
+    let useRemoteDiscovery: boolean = false;
+    let useExtendedViewport: boolean = false;
+    let loadDomContent: boolean = false;
     try {
         if (options.config) {
             config = JSON.parse(fs.readFileSync(options.config, 'utf-8'));
@@ -37,11 +41,31 @@ export default (options: Record<string, string>): Context => {
                 delete config.web.resolutions;
             }
 
+            if(config.approvalThreshold && config.rejectionThreshold) {
+                if(config.rejectionThreshold <= config.approvalThreshold) {
+                    throw new Error('Invalid config; rejectionThreshold must be greater than approvalThreshold');
+                }
+            }
+
             let validateConfigFn = options.scheduled ? validateConfigForScheduled : validateConfig;
 
             // validate config
             if (!validateConfigFn(config)) {
                 throw new Error(validateConfigFn.errors[0].message);
+            }
+
+            // Resolve customCSS if provided
+            if ((config as any).customCSS) {
+                try {
+                    (config as any).customCSS = resolveCustomCSS(
+                        (config as any).customCSS,
+                        options.config,
+                        logger
+                    );
+                    logger.debug('Successfully resolved and validated customCSS from config');
+                } catch (error: any) {
+                    throw new Error(`customCSS error: ${error.message}`);
+                }
             }
         } else {
             logger.info("## No config file provided. Using default config.");
@@ -71,6 +95,8 @@ export default (options: Record<string, string>): Context => {
         if (options.userName && options.accessKey) {
             env.LT_USERNAME = options.userName
             env.LT_ACCESS_KEY = options.accessKey
+            // process.env.LT_USERNAME = options.userName
+            // process.env.LT_ACCESS_KEY = options.accessKey
         }
     } catch (error: any) {
         console.log(`[smartui] Error: ${error.message}`);
@@ -99,6 +125,15 @@ export default (options: Record<string, string>): Context => {
     }
     if (config.useLambdaInternal) {
         useLambdaInternal = true;
+    }
+    if (config.useRemoteDiscovery) {
+        useRemoteDiscovery = true;
+    }
+    if (config.useExtendedViewport) {
+        useExtendedViewport = true;
+    }
+    if (config.loadDomContent) {
+        loadDomContent = true;
     }
 
     //if config.waitForPageRender has value and if its less than 30000 then make it to 30000 default
@@ -132,6 +167,13 @@ export default (options: Record<string, string>): Context => {
             requestHeaders: config.requestHeaders || {},
             allowDuplicateSnapshotNames: allowDuplicateSnapshotNames,
             useLambdaInternal: useLambdaInternal,
+            useRemoteDiscovery: useRemoteDiscovery,
+            useExtendedViewport: useExtendedViewport,
+            loadDomContent: loadDomContent,
+            approvalThreshold: config.approvalThreshold,
+            rejectionThreshold: config.rejectionThreshold,
+            showRenderErrors: config.showRenderErrors ?? false,
+            customCSS: (config as any).customCSS
         },
         uploadFilePath: '',
         webStaticConfig: [],
@@ -169,7 +211,10 @@ export default (options: Record<string, string>): Context => {
             fetchResultsFileName: fetchResultsFileObj,
             baselineBranch: options.baselineBranch || '',
             baselineBuild: options.baselineBuild || '',
-            githubURL : options.githubURL || ''
+            githubURL : options.githubURL || '',
+            showRenderErrors: options.showRenderErrors ? true : false,
+            userName: options.userName || '',
+            accessKey: options.accessKey || ''
         },
         cliVersion: version,
         totalSnapshots: -1,
@@ -177,6 +222,7 @@ export default (options: Record<string, string>): Context => {
         isSnapshotCaptured: false,
         sessionCapabilitiesMap: new Map<string, any[]>(),
         buildToSnapshotCountMap: new Map<string, number>(),
+        sessionIdToSnapshotNameMap: new Map<string, string[]>(),
         fetchResultsForBuild: new Array<string>,
         orgId: 0,
         userId: 0,

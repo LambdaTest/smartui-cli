@@ -3,11 +3,43 @@ import path from 'path';
 import fastify, { FastifyInstance, RouteShorthandOptions } from 'fastify';
 import { readFileSync, truncate } from 'fs'
 import { Context } from '../types.js'
+import { Logger } from 'winston'
 import { validateSnapshot } from './schemaValidation.js'
-import { pingIntervalId } from './utils.js';
-import { startPolling } from './utils.js';
+import { pingIntervalId, startPollingForTunnel, stopTunnelHelper, isTunnelPolling } from './utils.js';
+import constants from './constants.js';
+var fp = require("find-free-port")
 
 const uploadDomToS3ViaEnv = process.env.USE_LAMBDA_INTERNAL || false;
+
+// Helper function to find an available port
+async function findAvailablePort(server: FastifyInstance, startPort: number, log: Logger): Promise<number> {
+	let currentPort = startPort;
+
+	// If the default port gives error, use find-free-port with range 49100-60000
+	try {
+		await server.listen({ port: currentPort });
+		return currentPort;
+	} catch (error: any) {
+		if (error.code === 'EADDRINUSE') {
+			log.debug(`Port ${currentPort} is in use, finding available port in range 49100-60000`);
+			
+			// Use find-free-port to get an available port in the specified range
+			const availablePorts = await fp(constants.MIN_PORT_RANGE, constants.MAX_PORT_RANGE);
+			if (availablePorts.length > 0) {
+				const freePort = availablePorts[0];
+				await server.listen({ port: freePort });
+				log.debug(`Found and started server on port ${freePort}`);
+				return freePort;
+			} else {
+				throw new Error('No available ports found in range 49100-60000');
+			}
+		} else {
+			// If it's not a port conflict error, rethrow it
+			throw error;
+		}
+	}
+}
+
 export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMessage, ServerResponse>> => {
 	
 	const server: FastifyInstance<Server, IncomingMessage, ServerResponse> = fastify({
@@ -38,6 +70,13 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 		try {
 			let { snapshot, testType } = request.body;
 			if (!validateSnapshot(snapshot)) throw new Error(validateSnapshot.errors[0].message);
+
+			if(snapshot?.options?.approvalThreshold !== undefined && snapshot?.options?.rejectionThreshold !== undefined) {
+				if(snapshot?.options?.rejectionThreshold <= snapshot?.options?.approvalThreshold) {
+					throw new Error(`Invalid snapshot options; rejectionThreshold (${snapshot.options.rejectionThreshold}) must be greater than approvalThreshold (${snapshot.options.approvalThreshold})`);
+				}
+			}
+			snapshot.name=snapshot?.name?.trim();
 		
 			// Fetch sessionId from snapshot options if present
 			const sessionId = snapshot?.options?.sessionId;
@@ -53,7 +92,7 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 				} else {
 					// If not cached, fetch from API and cache it
 					try {
-						let fetchedCapabilitiesResp = await ctx.client.getSmartUICapabilities(sessionId, ctx.config, ctx.git, ctx.log);
+						let fetchedCapabilitiesResp = await ctx.client.getSmartUICapabilities(sessionId, ctx.config, ctx.git, ctx.log, ctx.isStartExec, ctx.options.baselineBuild);
 						capsBuildId = fetchedCapabilitiesResp?.buildId || ''
 						ctx.log.debug(`fetch caps for sessionId: ${sessionId} are ${JSON.stringify(fetchedCapabilitiesResp)}`)
 						if (capsBuildId) {
@@ -63,7 +102,7 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 						}
 					} catch (error: any) {
 						ctx.log.debug(`Failed to fetch capabilities for sessionId ${sessionId}: ${error.message}`);
-						console.log(`Failed to fetch capabilities for sessionId ${sessionId}: ${error.message}`);
+						// console.log(`Failed to fetch capabilities for sessionId ${sessionId}: ${error.message}`);
 					}
 				}
 
@@ -80,7 +119,7 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 			}
 			
 			if (contextId && ctx.contextToSnapshotMap) {
-				ctx.contextToSnapshotMap.set(contextId, 0);
+				ctx.contextToSnapshotMap.set(contextId, '0');
 				ctx.log.debug(`Marking contextId as captured and added to queue: ${contextId}`);
 			}
 
@@ -106,6 +145,7 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 		let replyCode: number;
 		let replyBody: Record<string, any>;
 		try {
+			ctx.log.info('Received stop command. Finalizing build ...');
 			if(ctx.config.delayedUpload){
 				ctx.log.debug("started after processing because of delayedUpload")
 				ctx.snapshotQueue?.startProcessingfunc()
@@ -118,21 +158,56 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 					}
 				}, 1000);
 			})
-			await ctx.client.finalizeBuild(ctx.build.id, ctx.totalSnapshots, ctx.log);
+            let buildUrls = `build url: ${ctx.build.url}\n`;
+
+			for (const [sessionId, capabilities] of ctx.sessionCapabilitiesMap.entries()) {
+                try {
+                    const buildId = capabilities?.buildId || '';
+                    const projectToken = capabilities?.projectToken || '';
+                    const totalSnapshots = capabilities?.snapshotCount || 0;
+                    const sessionBuildUrl = capabilities?.buildURL || '';
+                    const testId = capabilities?.id || '';
+					ctx.log.debug(`Capabilities for sessionId ${sessionId}: ${JSON.stringify(capabilities)}`)
+                    if (buildId && projectToken) {
+                        await ctx.client.finalizeBuildForCapsWithToken(buildId, totalSnapshots, projectToken, ctx.log);
+						if (ctx.autoTunnelStarted) {
+							await startPollingForTunnel(ctx, buildId, false, projectToken, capabilities?.buildName);
+						}
+                    }
+
+                    if (testId && buildId) {
+                        buildUrls += `TestId ${testId}: ${sessionBuildUrl}\n`;
+                    }
+                } catch (error: any) {
+                    ctx.log.debug(`Error finalizing build for session ${sessionId}: ${error.message}`);
+                }
+            }
+
+			if (ctx.build && ctx.build.id) {
+				await ctx.client.finalizeBuild(ctx.build.id, ctx.totalSnapshots, ctx.log);
+				let uploadCLILogsToS3 = ctx?.config?.useLambdaInternal || uploadDomToS3ViaEnv;
+				if (!uploadCLILogsToS3) {
+					ctx.log.debug(`Log file to be uploaded`)
+					let resp = await ctx.client.getS3PreSignedURL(ctx);
+					await ctx.client.uploadLogs(ctx, resp.data.url);
+				} else {
+					ctx.log.debug(`Skipping upload of CLI logs as useLambdaInternal is set`)
+				}
+			}
+
+
+			//If Tunnel Details are present, start polling for tunnel status 
+			if (ctx.tunnelDetails && ctx.tunnelDetails.tunnelHost != "" && ctx.build?.id) {
+				await startPollingForTunnel(ctx, ctx.build.id, false, '', '');
+			} 
+			//stop the tunnel if it was auto started and no tunnel polling is active
+			if (ctx.autoTunnelStarted && isTunnelPolling === null) {
+                await stopTunnelHelper(ctx);
+            }
+
 			await ctx.browser?.close();
 			if (ctx.server){
 				ctx.server.close();
-			}
-
-			let uploadCLILogsToS3 = ctx?.config?.useLambdaInternal || uploadDomToS3ViaEnv;
-			if (!uploadCLILogsToS3) {
-				ctx.log.debug(`Log file to be uploaded`)
-				let resp = await ctx.client.getS3PreSignedURL(ctx);
-				await ctx.client.uploadLogs(ctx, resp.data.url);
-			} else {
-				ctx.log.debug(`Skipping upload of CLI logs as useLambdaInternal is set`)
-				// ctx.log.debug(`Log file to be uploaded via LSRS`)
-				// let resp = ctx.client.sendCliLogsToLSRS(ctx);
 			}
 
 			if (pingIntervalId !== null) {
@@ -147,7 +222,9 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 			replyCode = 500;
 			replyBody = { error: { message: error.message } };
 		}
-	
+		
+		ctx.log.info('Stop command processed. Tearing down server.');
+
 		// Step 5: Return the response
 		return reply.code(replyCode).send(replyBody);
 	});
@@ -165,10 +242,12 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 
 		try {
 			ctx.log.debug(`request.query : ${JSON.stringify(request.query)}`);
-			const { contextId, pollTimeout, snapshotName } = request.query as { contextId: string, pollTimeout: number, snapshotName: string };
+			const { contextId, pollTimeout, snapshotName: rawSnapshotName } = request.query as { contextId: string, pollTimeout: number, snapshotName: string };
+			const snapshotName = rawSnapshotName?.trim();
 			if (!contextId || !snapshotName) {
 				throw new Error('contextId and snapshotName are required parameters');
 			}
+			
 
 			const timeoutDuration = pollTimeout*1000 || 30000; 
 
@@ -176,18 +255,27 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 			if (ctx.contextToSnapshotMap?.has(contextId)) {
 				let contextStatus = ctx.contextToSnapshotMap.get(contextId);
 				
-				while (contextStatus==0) {
+				let counter= 60;
+				while (contextStatus==='0') {
+					if(counter<=0){
+						throw new Error('Snapshot processing failed');
+					}
+					contextStatus = ctx.contextToSnapshotMap.get(contextId);
 					// Wait 5 seconds before next check
 					await new Promise(resolve => setTimeout(resolve, 5000));
-					
-					contextStatus = ctx.contextToSnapshotMap.get(contextId);
+					counter--;
 				}
 
-				if(contextStatus==2){
+				if(contextStatus==='2'){
 					throw new Error("Snapshot Failed");
 				}
 				
 				ctx.log.debug("Snapshot uploaded successfully");
+
+				const buildId = contextStatus;
+				if (!buildId) {
+					throw new Error(`No buildId found for contextId: ${contextId}`);
+				}
 
 				// Poll external API until it returns 200 or timeout is reached
 				let lastExternalResponse: any = null; 
@@ -196,6 +284,7 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 				while (true) {
 					try {
 						const externalResponse = await ctx.client.getSnapshotStatus(
+							buildId,
 							snapshotName,
 							contextId,
 							ctx
@@ -264,12 +353,21 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 		}
 	});
 
+	// Use the helper function to find and start server on available port
+	if (ctx.sourceCommand && ctx.sourceCommand === 'exec-start') {
 
-	await server.listen({ port: ctx.options.port });
-	// store server's address for SDK
-	let { port } = server.addresses()[0];
-	process.env.SMARTUI_SERVER_ADDRESS = `http://localhost:${port}`;
-	process.env.CYPRESS_SMARTUI_SERVER_ADDRESS = `http://localhost:${port}`;
+		await server.listen({ port: ctx.options.port });
+		let { port } = server.addresses()[0];
+		process.env.SMARTUI_SERVER_ADDRESS = `http://localhost:${port}`;
+		process.env.CYPRESS_SMARTUI_SERVER_ADDRESS = `http://localhost:${port}`;
+		ctx.log.debug(`Server started successfully on port ${port}`);
+
+	} else {
+		const actualPort = await findAvailablePort(server, ctx.options.port, ctx.log);
+		process.env.SMARTUI_SERVER_ADDRESS = `http://localhost:${actualPort}`;
+		process.env.CYPRESS_SMARTUI_SERVER_ADDRESS = `http://localhost:${actualPort}`;
+		ctx.log.debug(`Server started successfully on port ${actualPort}`);
+	}
 
 	return server;
 }

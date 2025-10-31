@@ -10,6 +10,7 @@ import stopServer from './stopServer.js'
 import ping from './ping.js'
 import merge from './merge.js'
 import pingTest from './pingTest.js'
+import uploadPdf from "./uploadPdf.js";
 
 const program = new Command();
 
@@ -38,6 +39,7 @@ program
     .addCommand(uploadWebFigmaCommand)
     .addCommand(uploadAppFigmaCommand)
     .addCommand(pingTest)
+    .addCommand(uploadPdf)
 
 
 

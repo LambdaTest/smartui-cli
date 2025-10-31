@@ -33,8 +33,10 @@ command
             }
         } catch (error: any) {
             // Handle any errors during the HTTP request
-            if (error.code === 'ECONNABORTED') {
+            if (error && error.code === 'ECONNABORTED') {
                 console.error(chalk.red('Error: SmartUI server did not respond in 15 seconds'));
+            } if (error && error.code === 'ECONNREFUSED') {
+                console.error(chalk.red('Error: Looks like smartui cli server is already stopped'));
             } else {
                 console.error(chalk.red('Error while stopping server'));
             }

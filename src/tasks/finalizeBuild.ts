@@ -2,7 +2,7 @@ import { ListrTask, ListrRendererFactory } from 'listr2';
 import { Context } from '../types.js'
 import { updateLogContext } from '../lib/logger.js';
 import chalk from 'chalk';
-import { startPolling, pingIntervalId } from '../lib/utils.js';
+import { startPolling, pingIntervalId, startPollingForTunnel, stopTunnelHelper, isTunnelPolling } from '../lib/utils.js';
 import { unlinkSync } from 'fs';
 import constants from '../lib/constants.js';
 import fs from 'fs';
@@ -30,9 +30,9 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
 
             if (pingIntervalId !== null) {
                 clearInterval(pingIntervalId);
-                ctx.log.debug('Ping polling stopped immediately.');
+                ctx.log.debug('Ping polling stopped immediately from Finalize Build');
             }
-
+            
             for (const [sessionId, capabilities] of ctx.sessionCapabilitiesMap.entries()) {
                 try {
                     const buildId = capabilities?.buildId || '';
@@ -54,9 +54,12 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
                             ctx.fetchResultsForBuild.push(buildId);
                         }
                     }
-            
+                    ctx.log.debug(`Capabilities for sessionId ${sessionId}: ${JSON.stringify(capabilities)}`)
                     if (buildId && projectToken) {
                         await ctx.client.finalizeBuildForCapsWithToken(buildId, totalSnapshots, projectToken, ctx.log);
+                        if (ctx.autoTunnelStarted) {
+							await startPollingForTunnel(ctx, buildId, false, projectToken, capabilities?.buildName);
+						}
                     }
 
                     if (testId && buildId) {
@@ -68,6 +71,15 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
             }
             task.output = chalk.gray(buildUrls);
             task.title = 'Finalized build';
+
+            //If Tunnel Details are present, start polling for tunnel status 
+			if (ctx.tunnelDetails && ctx.tunnelDetails.tunnelHost != "" && ctx.build?.id) {
+				await startPollingForTunnel(ctx, ctx.build.id, false, '', '');
+			} 
+			//stop the tunnel if it was auto started and no tunnel polling is active
+			if (ctx.autoTunnelStarted && isTunnelPolling === null) {
+                await stopTunnelHelper(ctx);
+            }
            
             // cleanup and upload logs
             try {

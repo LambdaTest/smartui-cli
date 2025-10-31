@@ -36,6 +36,9 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
                 }
                 task.output = output;
                 task.title = 'Processed snapshots'
+                if(ctx.snapshotQueue?.getProcessedSnapshots()?.length === 0){
+                    task.title = 'No snapshots processed';
+                }
             } catch (error: any) {
                 ctx.log.debug(error);
                 task.output = chalk.gray(error.message);

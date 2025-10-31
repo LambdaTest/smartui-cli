@@ -25,7 +25,9 @@ async function captureScreenshotsForConfig(
     ctx.log.debug(`url:  ${url}  pageOptions: ${JSON.stringify(pageOptions)}`);
     let ssId = name.toLowerCase().replace(/\s/g, '_');
     let context: BrowserContext;
-    let contextOptions: Record<string, any> = {};
+    let contextOptions: Record<string, any> = {
+        ignoreHTTPSErrors: ctx.config.ignoreHTTPSErrors
+    };
     let page: Page;
     if (browserName == constants.CHROME) contextOptions.userAgent = constants.CHROME_USER_AGENT;
     else if (browserName == constants.FIREFOX) contextOptions.userAgent = constants.FIREFOX_USER_AGENT;
@@ -44,6 +46,26 @@ async function captureScreenshotsForConfig(
         const browser = browsers[browserName];
         context = await browser?.newContext(contextOptions);
         page = await context?.newPage();
+        const headersObject: Record<string, string> = {};
+        if (ctx.config.requestHeaders && Array.isArray(ctx.config.requestHeaders)) {
+            ctx.config.requestHeaders.forEach((headerObj) => {
+                Object.entries(headerObj).forEach(([key, value]) => {
+                    headersObject[key] = value;
+                });
+            });
+        }
+        if (urlConfig.requestHeaders && Array.isArray(urlConfig.requestHeaders)) {
+            urlConfig.requestHeaders.forEach((headerObj) => {
+                Object.entries(headerObj).forEach(([key, value]) => {
+                    headersObject[key] = value;
+                });
+            });
+        }
+
+        ctx.log.debug(`Combined headers: ${JSON.stringify(headersObject)}`);
+        if (Object.keys(headersObject).length > 0) {
+            await page.setExtraHTTPHeaders(headersObject);
+        }
 
         await page?.goto(url.trim(), pageOptions);
         await executeDocumentScripts(ctx, page, "afterNavigation", afterNavigationScript)

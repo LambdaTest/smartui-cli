@@ -19,6 +19,7 @@ export default async (ctx: Context): Promise<string> => {
       smartIgnore: ctx.config.smartIgnore,
       git: ctx.git,
       platformType: 'app',
+      markBaseline: ctx.options.markBaseline,
     };
 
     const responseData = await ctx.client.processWebFigma(requestBody, ctx.log);

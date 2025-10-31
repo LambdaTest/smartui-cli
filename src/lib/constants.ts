@@ -25,7 +25,8 @@ export default {
         waitForTimeout: 1000,
         enableJavaScript: false,
         allowedHostnames: [],
-        smartIgnore: false
+        smartIgnore: false,
+        showRenderErrors: false
     },
     DEFAULT_WEB_STATIC_CONFIG: [
         {
@@ -46,6 +47,8 @@ export default {
     EDGE: 'edge',
     EDGE_CHANNEL: 'msedge',
     WEBKIT: 'webkit',
+    MIN_PORT_RANGE: 49100,
+    MAX_PORT_RANGE: 60000,
 
     // discovery browser launch arguments
     LAUNCH_ARGS: [
@@ -123,6 +126,7 @@ export default {
     MOBILE_ORIENTATION_LANDSCAPE: 'landscape',
 
     // build status
+    BUILD_RUNNING: 'running',
     BUILD_COMPLETE: 'completed',
     BUILD_ERROR: 'error',
 
@@ -356,6 +360,22 @@ export default {
         'Aquos Sense 5G': { os: 'android', viewport: { width: 393, height: 731 } },
         'Xperia 10 IV': { os: 'android', viewport: { width: 412, height: 832 } },
         'Honeywell CT40': { os: 'android', viewport: { width: 360, height: 512 } },
+        'Galaxy S25': { os: 'android', viewport: { width: 370, height: 802 } },
+        'Galaxy S25 Plus': { os: 'android', viewport: { width: 393, height: 888 } },
+        'Galaxy S25 Ultra': { os: 'android', viewport: { width: 432, height: 941 } },
+        'iPhone 17': { os: 'ios', viewport: { width: 393, height: 852 } },
+        'iPhone 17 Pro': { os: 'ios', viewport: { width: 393, height: 852 } },
+        'iPhone 17 Pro Max': { os: 'ios', viewport: { width: 430, height: 932 } },
+        'Galaxy Z Fold7': { os: 'android', viewport: { width: 373, height: 873 } },
+        'Galaxy Z Flip7': { os: 'android', viewport: { width: 299, height: 723 } },
+        'Galaxy Z Fold6': { os: 'android', viewport: { width: 373, height: 873 } },
+        'Galaxy Z Flip6': { os: 'android', viewport: { width: 298, height: 713 } },
+        'Pixel 10 Pro': { os: 'android', viewport: { width: 393, height: 852 } },
+        'Pixel 10 Pro XL': { os: 'android', viewport: { width: 412, height: 915 } },
+        'Motorola Edge 50 Pro': { os: 'android', viewport: { width: 384, height: 864 } },
+        'OnePlus 12': { os: 'android', viewport: { width: 384, height: 884 } },
+        'Nothing Phone 1': { os: 'android', viewport: { width: 393, height: 853 } },
+        'Nothing Phone 2': { os: 'android', viewport: { width: 393, height: 878 } },
     },
 
     FIGMA_API: 'https://api.figma.com/v1/',

@@ -14,6 +14,8 @@ export default class Queue {
     private ctx: Context;
     private snapshotNames: Array<string> = [];
     private variants: Array<string> = [];
+    private activeProcessingCount: number = 0;
+    private readonly MAX_CONCURRENT_PROCESSING = 5;
 
     constructor(ctx: Context) {
         this.ctx = ctx;
@@ -275,24 +277,91 @@ export default class Queue {
 
     private async processNext(): Promise<void> {
         if (!this.isEmpty()) {
+            const useRemoteDiscovery = this.ctx.env.USE_REMOTE_DISCOVERY || this.ctx.config.useRemoteDiscovery;
+
+            if (useRemoteDiscovery && !this.ctx.config.delayedUpload && !this.ctx.config.allowDuplicateSnapshotNames) {
+                let maxConcurrentProcessing = this.ctx.env.MAX_CONCURRENT_PROCESSING === 0 ? this.MAX_CONCURRENT_PROCESSING : this.ctx.env.MAX_CONCURRENT_PROCESSING;
+                if (maxConcurrentProcessing > 15 || maxConcurrentProcessing < 1) {
+                    this.ctx.log.info(`Larger than 15 concurrent processing. Setting to 5.`);
+                    maxConcurrentProcessing = 5;
+                }
+
+                this.ctx.log.info(`Max concurrent processing: ${maxConcurrentProcessing}`);
+                const snapshotsToProcess: Array<Snapshot> = [];
+                const maxSnapshots = Math.min(maxConcurrentProcessing - this.activeProcessingCount, this.snapshots.length);
+                
+                for (let i = 0; i < maxSnapshots; i++) {
+                    let snapshot;
+                    if (this.ctx.config.delayedUpload) {
+                        snapshot = this.snapshots.pop();
+                    } else {
+                        snapshot = this.snapshots.shift();
+                    }
+                    if (snapshot) {
+                        snapshotsToProcess.push(snapshot);
+                    }
+                }
+                
+                if (snapshotsToProcess.length > 0) {
+                    this.activeProcessingCount += snapshotsToProcess.length;
+                    const processingPromises = snapshotsToProcess.map(snapshot => this.processSnapshot(snapshot));
+                    await Promise.allSettled(processingPromises);
+                    this.activeProcessingCount -= snapshotsToProcess.length;
+                    
+                    if (!this.isEmpty()) {
+                        this.processNext();
+                    } else {
+                        this.processing = false;
+                    }
+                    return;
+                }
+            }
+            
             let snapshot;
             if (this.ctx.config.delayedUpload) {
                 snapshot = this.snapshots.pop();
             } else {
                 snapshot = this.snapshots.shift();
             }
-            try {
-                this.processingSnapshot = snapshot?.name;
-                let drop = false;
+            if (snapshot) {
+                await this.processSnapshot(snapshot);
+                this.processNext();
+            }
+        } else {
+            this.processing = false;
+        }
+    }
+
+    private async processSnapshot(snapshot: Snapshot): Promise<void> {
+        try {
+            this.processingSnapshot = snapshot?.name;
+            let drop = false;
 
 
-                if (this.ctx.isStartExec && !this.ctx.config.tunnel) {
+                if (this.ctx.isStartExec) {
                     this.ctx.log.info(`Processing Snapshot: ${snapshot?.name}`);
                 }
 
                 if (!this.ctx.config.delayedUpload && snapshot && snapshot.name && this.snapshotNames.includes(snapshot.name) && !this.ctx.config.allowDuplicateSnapshotNames) {
-                    drop = true;
-                    this.ctx.log.info(`Skipping duplicate SmartUI snapshot '${snapshot.name}'. To capture duplicate screenshots, please set the 'allowDuplicateSnapshotNames' or 'delayedUpload' configuration as true in your config file.`);
+                    // check if sessionIdToSnapshotNameMap has snapshot name for the sessionId
+                    if (this.ctx.sessionIdToSnapshotNameMap && snapshot.options && snapshot.options.sessionId) {
+                        if (this.ctx.sessionIdToSnapshotNameMap.has(snapshot.options.sessionId)) {
+                            console.log(`snapshot.options.sessionId`,snapshot.options.sessionId, `this.ctx.sessionIdToSnapshotNameMap`,JSON.stringify([...this.ctx.sessionIdToSnapshotNameMap]));
+                            const existingNames = this.ctx.sessionIdToSnapshotNameMap.get(snapshot.options.sessionId) || [];
+                            if (existingNames.includes(snapshot.name)) {
+                                drop = true;
+                                this.ctx.log.info(`Skipping123 duplicate SmartUI snapshot '${snapshot.name}'. To capture duplicate screenshots, please set the 'allowDuplicateSnapshotNames' or 'delayedUpload' configuration as true in your config file.`);
+                            } else {
+                                existingNames.push(snapshot.name);
+                                this.ctx.sessionIdToSnapshotNameMap.set(snapshot.options.sessionId, existingNames);
+                            }
+                        } else {
+                            this.ctx.sessionIdToSnapshotNameMap.set(snapshot.options.sessionId, [snapshot.name]);
+                        }
+                    } else {
+                        drop = true;
+                        this.ctx.log.info(`Skipping duplicate SmartUI snapshot '${snapshot.name}'. To capture duplicate screenshots, please set the 'allowDuplicateSnapshotNames' or 'delayedUpload' configuration as true in your config file.`);
+                    }
                 }
 
                 if (this.ctx.config.delayedUpload && snapshot && snapshot.name && this.snapshotNames.includes(snapshot.name)) {
@@ -327,7 +396,7 @@ export default class Queue {
                     }
 
                     let processedSnapshot, warnings, discoveryErrors;
-                    if (this.ctx.env.USE_REMOTE_DISCOVERY) {
+                    if (this.ctx.env.USE_REMOTE_DISCOVERY || this.ctx.config.useRemoteDiscovery) {
                         this.ctx.log.debug(`Using remote discovery`);
                         let result = await prepareSnapshot(snapshot, this.ctx);
                         
@@ -343,11 +412,15 @@ export default class Queue {
                     }
 
 
-
                     if (useCapsBuildId) {
                         this.ctx.log.info(`Using cached buildId: ${capsBuildId}`);
+                        let approvalThreshold = snapshot?.options?.approvalThreshold || this.ctx.config.approvalThreshold;
+                        let rejectionThreshold = snapshot?.options?.rejectionThreshold || this.ctx.config.rejectionThreshold;
                         if (useKafkaFlowCaps) {
-                            const snapshotUuid = uuidv4();
+                            let snapshotUuid = uuidv4();
+                            if (snapshot?.options?.contextId && this.ctx.contextToSnapshotMap?.has(snapshot.options.contextId)) {
+                                snapshotUuid = snapshot.options.contextId;
+                             }
                             let uploadDomToS3 = this.ctx.config.useLambdaInternal || uploadDomToS3ViaEnv;
                             if (!uploadDomToS3) {
                                 this.ctx.log.debug(`Uploading dom to S3 for snapshot using presigned URL for CAPS`);
@@ -358,9 +431,9 @@ export default class Queue {
                                 this.ctx.log.debug(`Uploading dom to S3 for snapshot using LSRS`);
                                 await this.ctx.client.sendDomToLSRSForCaps(this.ctx, processedSnapshot, snapshotUuid, capsBuildId, capsProjectToken);
                             }
-                            await this.ctx.client.processSnapshotCaps(this.ctx, processedSnapshot, snapshotUuid, capsBuildId, capsProjectToken, discoveryErrors);
+                            await this.ctx.client.processSnapshotCaps(this.ctx, processedSnapshot, snapshotUuid, capsBuildId, capsProjectToken, discoveryErrors, calculateVariantCountFromSnapshot(processedSnapshot, this.ctx.config), snapshot?.options?.sync, approvalThreshold, rejectionThreshold);
                         } else {
-                            await this.ctx.client.uploadSnapshotForCaps(this.ctx, processedSnapshot, capsBuildId, capsProjectToken, discoveryErrors);
+                            await this.ctx.client.uploadSnapshotForCaps(this.ctx, processedSnapshot, capsBuildId, capsProjectToken, discoveryErrors, calculateVariantCountFromSnapshot(processedSnapshot, this.ctx.config), snapshot?.options?.sync, approvalThreshold, rejectionThreshold);
                         }
 
                         // Increment snapshot count for the specific buildId
@@ -368,6 +441,10 @@ export default class Queue {
                         const currentCount = cachedCapabilities?.snapshotCount || 0; // Get the current snapshot count for sessionId
                         cachedCapabilities.snapshotCount = currentCount + 1; // Increment snapshot count
                         this.ctx.sessionCapabilitiesMap.set(sessionId, cachedCapabilities);
+
+                        if (snapshot?.options?.contextId && this.ctx.contextToSnapshotMap) {
+                            this.ctx.contextToSnapshotMap.set(snapshot.options.contextId, capsBuildId);
+                        }
                     } else {
                         if (!this.ctx.build?.id) {
                             if (this.ctx.authenticatedInitially) {
@@ -380,7 +457,7 @@ export default class Queue {
                                     useKafkaFlow: resp.data.useKafkaFlow || false,
                                 }
                             } else {
-                                if (this.ctx.config.tunnel && this.ctx.config.tunnel?.type === 'auto') {
+                                if (this.ctx.autoTunnelStarted) {
                                     await stopTunnelHelper(this.ctx)
                                 }
                                 throw new Error('SmartUI capabilities are missing in env variables or in driver capabilities');
@@ -423,13 +500,14 @@ export default class Queue {
                                     }
                                 }
                                 if(snapshot?.options?.contextId){
-                                    this.ctx.contextToSnapshotMap?.set(snapshot?.options?.contextId,2);
+                                    this.ctx.contextToSnapshotMap?.set(snapshot?.options?.contextId,'2');
                                 }
-                                this.processNext();
                             } else {
-                                await this.ctx.client.processSnapshot(this.ctx, processedSnapshot, snapshotUuid, discoveryErrors,calculateVariantCountFromSnapshot(processedSnapshot, this.ctx.config),snapshot?.options?.sync);
+                                let approvalThreshold = snapshot?.options?.approvalThreshold || this.ctx.config.approvalThreshold;
+                                let rejectionThreshold = snapshot?.options?.rejectionThreshold || this.ctx.config.rejectionThreshold;
+                                await this.ctx.client.processSnapshot(this.ctx, processedSnapshot, snapshotUuid, discoveryErrors,calculateVariantCountFromSnapshot(processedSnapshot, this.ctx.config),snapshot?.options?.sync, approvalThreshold, rejectionThreshold);
                                 if(snapshot?.options?.contextId && this.ctx.contextToSnapshotMap?.has(snapshot.options.contextId)){
-                                    this.ctx.contextToSnapshotMap.set(snapshot.options.contextId, 1);
+                                    this.ctx.contextToSnapshotMap.set(snapshot.options.contextId, this.ctx.build.id);
                                 }
                                 this.ctx.log.debug(`ContextId: ${snapshot?.options?.contextId} status set to uploaded`);
                             }
@@ -446,7 +524,7 @@ export default class Queue {
                 this.ctx.log.debug(`snapshot failed; ${error}`);
                 this.processedSnapshots.push({ name: snapshot?.name, error: error.message });
                 if (snapshot?.options?.contextId && this.ctx.contextToSnapshotMap) {
-                    this.ctx.contextToSnapshotMap.set(snapshot.options.contextId, 2);
+                    this.ctx.contextToSnapshotMap.set(snapshot.options.contextId, '2');
                 }
             }
             // Close open browser contexts and pages
@@ -460,10 +538,6 @@ export default class Queue {
                     this.ctx.log.debug(`Closed browser context for snapshot ${snapshot.name}`);
                 }
             }
-            this.processNext();
-        } else {
-            this.processing = false;
-        }
     }
 
     isProcessing(): boolean {

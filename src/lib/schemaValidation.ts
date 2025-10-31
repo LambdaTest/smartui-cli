@@ -239,6 +239,11 @@ const ConfigSchema = {
                     type: "string",
                     errorMessage: "Invalid config; logFile should be a string value"
                 },
+                environment: {
+                    type: "string",
+                    enum: ["stage", "prod"],
+                    errorMessage: "Invalid config; environment should be a string value either stage or prod"
+                }
             },
             required: ["type"],
             additionalProperties: false
@@ -266,6 +271,38 @@ const ConfigSchema = {
         useLambdaInternal: {
             type: "boolean",
             errorMessage: "Invalid config; useLambdaInternal must be true/false"
+        },
+        useRemoteDiscovery: {
+            type: "boolean",
+            errorMessage: "Invalid config; useRemoteDiscovery must be true/false"
+        },
+        useExtendedViewport: {
+            type: "boolean",
+            errorMessage: "Invalid config; useExtendedViewport must be true/false"
+        },
+        loadDomContent: {
+            type: "boolean",
+            errorMessage: "Invalid config; loadDomContent must be true/false"
+        },
+        customCSS: {
+            type: "string",
+            errorMessage: "Invalid config; customCSS must be a string"
+        },
+        approvalThreshold: {
+            type: "number",
+            minimum: 0,
+            maximum: 100,
+            errorMessage: "Invalid config; approvalThreshold must be a number"
+        },
+        rejectionThreshold: {
+            type: "number",
+            minimum: 0,
+            maximum: 100,
+            errorMessage: "Invalid config; rejectionThreshold must be a number"
+        },
+        showRenderErrors: {
+            type: "boolean",
+            errorMessage: "Invalid config; showRenderErrors must be true/false"
         }
     },
     anyOf: [
@@ -317,6 +354,18 @@ const WebStaticConfigSchema: JSONSchemaType<WebStaticConfig> = {
                 enum: ['load', 'domcontentloaded'],
                 errorMessage: "pageEvent can be load, domcontentloaded"
             },
+            requestHeaders: {
+                type: "array",
+                items: {
+                    type: "object",
+                    minProperties: 1,
+                    additionalProperties: { type: "string" }
+                },
+                uniqueItems: true,
+                errorMessage: {
+                    uniqueItems: "Invalid config; duplicates in requestHeaders"
+                }
+            },
         },
         required: ["name", "url"],
         additionalProperties: false
@@ -330,7 +379,9 @@ const SnapshotSchema: JSONSchemaType<Snapshot> = {
         name: {
             type: "string",
             minLength: 1,
-            errorMessage: "Invalid snapshot; name is mandatory and cannot be empty"
+            maxLength:255,
+            pattern: "^.*\\S.*$",
+            errorMessage: "Invalid snapshot: name is mandatory, cannot be empty, and must not exceed 255 characters."
         },
         url: {
             type: "string",
@@ -395,6 +446,12 @@ const SnapshotSchema: JSONSchemaType<Snapshot> = {
                             uniqueItems: true,
                             errorMessage: "Invalid snapshot options; ignoreDOM xpath array must have unique and non-empty items"
                         },
+                        coordinates: {
+                            type: "array",
+                            items: { type: "string", minLength: 1 },
+                            uniqueItems: true,
+                            errorMessage: "Invalid snapshot options; ignoreDOM coordinates array must have unique and non-empty items"
+                        }
                     }
                 },
                 selectDOM: {
@@ -424,6 +481,12 @@ const SnapshotSchema: JSONSchemaType<Snapshot> = {
                             uniqueItems: true,
                             errorMessage: "Invalid snapshot options; selectDOM xpath array must have unique and non-empty items"
                         },
+                        coordinates: {
+                            type: "array",
+                            items: { type: "string", minLength: 1 },
+                            uniqueItems: true,
+                            errorMessage: "Invalid snapshot options; selectDOM coordinates array must have unique and non-empty items"
+                        }
                     }
                 },
                 ignoreType: {
@@ -513,6 +576,34 @@ const SnapshotSchema: JSONSchemaType<Snapshot> = {
                 timeout: {
                     type: "number",
                     errorMessage: "Invalid snapshot options; timeout must be a number"
+                },
+                useExtendedViewport: {
+                    type: "boolean",
+                    errorMessage: "Invalid snapshot options; useExtendedViewport must be a boolean"
+                },
+                approvalThreshold: {
+                    type: "number",
+                    minimum: 0,
+                    maximum: 100,
+                    errorMessage: "Invalid snapshot options; approvalThreshold must be a number between 0 and 100"
+                },
+                rejectionThreshold: {
+                    type: "number",
+                    minimum: 0,
+                    maximum: 100,
+                    errorMessage: "Invalid snapshot options; rejectionThreshold must be a number between 0 and 100"
+                },
+                customCookies: {
+                    type: "array",
+                    items: {
+                        type: "object",
+                        minProperties: 1,
+                    },
+                    errorMessage: "Invalid snapshot options; customCookies must be an array of objects with string properties"
+                },
+                customCSS: {
+                    type: "string",
+                    errorMessage: "Invalid snapshot options; customCSS must be a string"
                 }
             },
             additionalProperties: false

@@ -17,11 +17,12 @@ function executeCommand(command: string): string {
 	}
 }
 
-export function isGitRepo(): boolean {
+export function isGitRepo(ctx: Context): boolean {
 	try {
 		executeCommand('git status')
 		return true
 	} catch (error) {
+		setNonGitInfo(ctx)
 		return false
 	}
 }
@@ -82,3 +83,25 @@ export default (ctx: Context): Git => {
 		};
 	}
 }
+
+
+function setNonGitInfo(ctx: Context) {
+	let branch = ctx.env.CURRENT_BRANCH || 'unknown-branch'
+	if (ctx.options.markBaseline) {
+		ctx.env.BASELINE_BRANCH = branch
+		ctx.env.SMART_GIT = false
+	}
+	let githubURL;
+	if (ctx.options.githubURL && ctx.options.githubURL.startsWith('https://')) {
+		githubURL = ctx.options.githubURL;
+	}
+
+	ctx.git = {
+		branch: branch,
+		commitId: '-',
+		commitAuthor: '-',
+		commitMessage: '-',
+		githubURL: githubURL? githubURL : '',
+		baselineBranch: ctx.options.baselineBranch || ctx.env.BASELINE_BRANCH || ''
+	}
+}	

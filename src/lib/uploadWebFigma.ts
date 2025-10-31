@@ -18,6 +18,7 @@ export default async (ctx: Context): Promise<string> => {
       figma: figmaConfig,
       smartIgnore: ctx.config.smartIgnore,
       git: ctx.git,
+      markBaseline: ctx.options.markBaseline,
     };
 
     const responseData = await ctx.client.processWebFigma(requestBody, ctx.log);

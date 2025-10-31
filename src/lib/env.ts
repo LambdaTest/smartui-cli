@@ -4,6 +4,7 @@ export default (): Env => {
     const {
         PROJECT_TOKEN = '',
         SMARTUI_CLIENT_API_URL = 'https://api.lambdatest.com/visualui/1.0',
+        SMARTUI_UPLOAD_URL = 'https://api.lambdatest.com',
         SMARTUI_GIT_INFO_FILEPATH,
         SMARTUI_DO_NOT_USE_CAPTURED_COOKIES,
         HTTP_PROXY,
@@ -21,12 +22,17 @@ export default (): Env => {
         SMARTUI_API_PROXY,
         SMARTUI_API_SKIP_CERTIFICATES,
         USE_REMOTE_DISCOVERY,
-        SMART_GIT
+        SMART_GIT,
+        SHOW_RENDER_ERRORS,
+        SMARTUI_SSE_URL='https://server-events.lambdatest.com',
+        LT_SDK_SKIP_EXECUTION_LOGS,
+        MAX_CONCURRENT_PROCESSING
     } = process.env
         
     return {
         PROJECT_TOKEN,
         SMARTUI_CLIENT_API_URL,
+        SMARTUI_UPLOAD_URL: SMARTUI_UPLOAD_URL,
         SMARTUI_GIT_INFO_FILEPATH,
         HTTP_PROXY,
         HTTPS_PROXY,
@@ -44,6 +50,10 @@ export default (): Env => {
         SMARTUI_API_PROXY,
         SMARTUI_API_SKIP_CERTIFICATES: SMARTUI_API_SKIP_CERTIFICATES === 'true',
         USE_REMOTE_DISCOVERY: USE_REMOTE_DISCOVERY === 'true',
-        SMART_GIT: SMART_GIT === 'true'
+        SMART_GIT: SMART_GIT === 'true',
+        SHOW_RENDER_ERRORS: SHOW_RENDER_ERRORS === 'true',
+        SMARTUI_SSE_URL,
+        LT_SDK_SKIP_EXECUTION_LOGS: LT_SDK_SKIP_EXECUTION_LOGS === 'true',
+        MAX_CONCURRENT_PROCESSING: MAX_CONCURRENT_PROCESSING ? parseInt(MAX_CONCURRENT_PROCESSING, 10) : 0,
     }
 }

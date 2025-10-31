@@ -38,6 +38,13 @@ export interface Context {
         requestHeaders?: Array<Record<string, string>>;
         allowDuplicateSnapshotNames?: boolean;
         useLambdaInternal?: boolean;
+        useRemoteDiscovery?: boolean;
+        useExtendedViewport?: boolean;
+        loadDomContent?: boolean;
+        approvalThreshold?: number;
+        rejectionThreshold?: number;
+        showRenderErrors?: boolean;
+        customCSS?: string;
     };
     uploadFilePath: string;
     webStaticConfig: WebStaticConfig;
@@ -66,7 +73,10 @@ export interface Context {
         fetchResultsFileName?: string,
         baselineBranch?: string,
         baselineBuild?: string,
-        githubURL?: string
+        githubURL?: string,
+        showRenderErrors?: boolean,
+        userName?: string,
+        accessKey?: string
     }
     cliVersion: string;
     totalSnapshots: number;
@@ -77,6 +87,7 @@ export interface Context {
     sessionCapabilitiesMap?: Map<string, any[]>;
     buildToSnapshotCountMap?: Map<string, number>;
     fetchResultsForBuild?: Array<string>;
+    sessionIdToSnapshotNameMap?: Map<string, string[]>;
     orgId?: number;
     userId?: number;
     mergeBranchSource?: string;
@@ -87,12 +98,15 @@ export interface Context {
     mergeBuildTargetId?: string;
     mergeByBranch?: boolean;
     mergeByBuild?: boolean;
-    contextToSnapshotMap?: Map<string, number>;
+    contextToSnapshotMap?: Map<string, string>;
+    sourceCommand?: string;
+    autoTunnelStarted?: boolean;
 }
 
 export interface Env {
     PROJECT_TOKEN: string;
     SMARTUI_CLIENT_API_URL: string;
+    SMARTUI_UPLOAD_URL: string;
     SMARTUI_DO_NOT_USE_CAPTURED_COOKIES: boolean;
     SMARTUI_GIT_INFO_FILEPATH: string | undefined;
     HTTP_PROXY: string | undefined;
@@ -111,6 +125,10 @@ export interface Env {
     SMARTUI_API_SKIP_CERTIFICATES: boolean;
     USE_REMOTE_DISCOVERY: boolean;
     SMART_GIT: boolean;
+    SHOW_RENDER_ERRORS: boolean;
+    SMARTUI_SSE_URL: string;
+    LT_SDK_SKIP_EXECUTION_LOGS: boolean;
+    MAX_CONCURRENT_PROCESSING: number;
 }
 
 export interface Snapshot {
@@ -122,13 +140,15 @@ export interface Snapshot {
             id?: Array<string>,
             class?: Array<string>,
             cssSelector?: Array<string>,
-            xpath?: Array<string>
+            xpath?: Array<string>,
+            coordinates?: Array<string>
         },
         selectDOM?: {
             id?: Array<string>,
             class?: Array<string>,
             cssSelector?: Array<string>,
-            xpath?: Array<string>
+            xpath?: Array<string>,
+            coordinates?: Array<string>
         },
         element?: {
             id?: string,
@@ -150,6 +170,11 @@ export interface Snapshot {
         sessionId?: string
         sync?: boolean;
         contextId?: string;
+        useExtendedViewport?: boolean;
+        approvalThreshold?: number;
+        rejectionThreshold?: number;
+        customCookies?: CustomCookie[];
+        customCSS?: string;
     }
 }
 
@@ -180,6 +205,8 @@ export interface Build {
     baseline: boolean;
     useKafkaFlow: boolean;
     hasDiscoveryError: boolean;
+    projectId?: string;
+    checkPendingRequests: boolean;
 }
 
 export interface WebConfig {
@@ -228,11 +255,22 @@ export interface tunnelConfig {
     dir: string;
     v: boolean;
     logFile: string;
+    environment:string;
 }
 
 export interface FigmaWebConfig {
     autoDetectViewports: Array<string>;
     configs: Array<{ figma_file_token: string, figma_ids: Array<string>, screenshot_names:Array<string> }>;
+}
+
+export interface CustomCookie {
+    name: string;
+    value: string;
+    domain: string;
+    path: string;
+    httpOnly: boolean;
+    secure: boolean;
+    sameSite: 'Strict' | 'Lax' | 'None';
 }
 
 

@@ -7,7 +7,7 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
     return {
         title: `Fetching git repo details`,
         skip: (ctx): string => {
-            return (!isGitRepo() && !ctx.env.SMARTUI_GIT_INFO_FILEPATH) ? '[SKIPPED] Fetching git repo details; not a git repo' : '';
+            return (!isGitRepo(ctx) && !ctx.env.SMARTUI_GIT_INFO_FILEPATH) ? '[SKIPPED] Fetching git repo details; not a git repo' : '';
         },
         task: async (ctx, task): Promise<void> => {
             if (ctx.env.CURRENT_BRANCH && ctx.env.CURRENT_BRANCH.trim() === '') {

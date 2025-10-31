@@ -5,6 +5,7 @@ import { color, Listr, ListrDefaultRendererLogLevels } from 'listr2'
 import startServer from '../tasks/startServer.js'
 import authExec from '../tasks/authExec.js'
 import ctxInit from '../lib/ctx.js'
+import commandOptionsInit from '../lib/execCommandOptions.js'
 import getGitInfo from '../tasks/getGitInfo.js'
 import createBuildExec from '../tasks/createBuildExec.js'
 import exec from '../tasks/exec.js'
@@ -25,6 +26,7 @@ command
     .option('--scheduled <string>', 'Specify the schedule ID')
     .option('--userName <string>', 'Specify the LT username')
     .option('--accessKey <string>', 'Specify the LT accesskey')
+    .option('--show-render-errors', 'Show render errors from SmartUI build')
     .action(async function(execCommand, _, command) {
         const options = command.optsWithGlobals();
         if (options.buildName === '') {
@@ -40,6 +42,9 @@ command
         ctx.args.execCommand = execCommand
         ctx.snapshotQueue = new snapshotQueue(ctx)
         ctx.totalSnapshots = 0
+        ctx.sourceCommand = 'exec'
+
+        commandOptionsInit(ctx);
 
         let tasks = new Listr<Context>(
             [

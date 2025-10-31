@@ -1,16 +1,31 @@
 import { Snapshot, Context, DiscoveryErrors } from "../types.js";
-import { scrollToBottomAndBackToTop, getRenderViewports, getRenderViewportsForOptions } from "./utils.js"
+import { scrollToBottomAndBackToTop, getRenderViewports, getRenderViewportsForOptions, validateCoordinates, resolveCustomCSS, parseCSSFile, validateCSSSelectors, generateCSSInjectionReport } from "./utils.js"
 import { chromium, Locator } from "@playwright/test"
 import constants from "./constants.js";
 import { updateLogContext } from '../lib/logger.js'
 import NodeCache from 'node-cache'; 
+import chalk from "chalk";
 
 const globalCache = new NodeCache({ stdTTL: 3600, checkperiod: 600 });
 const MAX_RESOURCE_SIZE = 15 * (1024 ** 2); // 15MB
 var ALLOWED_RESOURCES = ['document', 'stylesheet', 'image', 'media', 'font', 'other'];
 const ALLOWED_STATUSES = [200, 201];
-const REQUEST_TIMEOUT = 1800000;
+const REQUEST_TIMEOUT = 180000;
 const MIN_VIEWPORT_HEIGHT = 1080;
+const MAX_WAIT_FOR_REQUEST_CALL = 30000;
+
+const normalizeSameSite = (value) => {
+    if (!value) return 'Lax';
+    
+    const normalized = value.trim().toLowerCase();
+    const mapping = {
+        'lax': 'Lax',
+        'strict': 'Strict',
+        'none': 'None'
+    };
+    
+    return mapping[normalized] || value;
+};
 
 export async function prepareSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record<string, any>> {
     let processedOptions: Record<string, any> = {};
@@ -46,7 +61,9 @@ export async function prepareSnapshot(snapshot: Snapshot, ctx: Context): Promise
         if (options.loadDomContent) {
             processedOptions.loadDomContent = true;
         }
-
+        if (options.useExtendedViewport) {
+            processedOptions.useExtendedViewport = true;
+        }
         if (options.sessionId) {
             const sessionId = options.sessionId;
             processedOptions.sessionId = sessionId
@@ -126,6 +143,9 @@ export async function prepareSnapshot(snapshot: Snapshot, ctx: Context): Promise
                     case 'cssSelector':
                         selectors.push(...value);
                         break;
+                    case 'coordinates':
+                        selectors.push(...value.map(e => `coordinates=${e}`));
+                        break;
                 }
             }
         }
@@ -140,6 +160,27 @@ export async function prepareSnapshot(snapshot: Snapshot, ctx: Context): Promise
             processedOptions.tunnelAddress = tunnelAddress;
             ctx.log.debug(`Tunnel address added to processedOptions: ${tunnelAddress}`);
         }
+    }
+
+    if (ctx.config.loadDomContent) {
+        processedOptions.loadDomContent = true;
+    }
+    if (ctx.config.useExtendedViewport) {
+        processedOptions.useExtendedViewport = true;
+    }
+
+    try {
+        if (options?.customCSS) {
+            const resolvedCSS = resolveCustomCSS(options.customCSS, '', ctx.log);
+            processedOptions.customCSS = resolvedCSS;
+            ctx.log.debug('Using per-snapshot customCSS (overriding config)');
+        } else if (ctx.config.customCSS) {
+            processedOptions.customCSS = ctx.config.customCSS;
+            ctx.log.debug('Using config customCSS');
+        }
+    } catch (error: any) {
+        ctx.log.warn(`customCSS warning: ${error.message}`);
+        chalk.yellow(`[SmartUI] warning: ${error.message}`);
     }
 
     processedOptions.allowedAssets = ctx.config.allowedAssets;
@@ -231,6 +272,47 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
             ctx.log.debug('No valid cookies to add');
         }
     }
+
+    let options = snapshot.options;
+
+    // Custom cookies include those which cannot be captured by javascript function `document.cookie` like httpOnly, secure, sameSite etc.
+    // These custom cookies will be captured by the user in their automation browser and sent to CLI through the snapshot options using `customCookies` field.
+    if (options?.customCookies && Array.isArray(options.customCookies) && options.customCookies.length > 0) {
+        ctx.log.debug(`Setting ${options.customCookies.length} custom cookies`);
+        
+        const validCustomCookies = options.customCookies.filter(cookie => {
+            if (!cookie.name || !cookie.value || !cookie.domain) {
+                ctx.log.debug(`Skipping invalid custom cookie: missing required fields (name, value, or domain)`);
+                return false;
+            }
+            
+            const sameSiteValue = normalizeSameSite(cookie.sameSite);
+            if (!['Strict', 'Lax', 'None'].includes(sameSiteValue)) {
+                ctx.log.debug(`Skipping invalid custom cookie: invalid sameSite value '${cookie.sameSite}'`);
+                return false;
+            }
+            return true;
+        }).map(cookie => ({
+            name: cookie.name,
+            value: cookie.value,
+            domain: cookie.domain,
+            path: cookie.path || '/',
+            httpOnly: cookie.httpOnly || false,
+            secure: cookie.secure || false,
+            sameSite: normalizeSameSite(cookie.sameSite)
+        }));
+
+        if (validCustomCookies.length > 0) {
+            try {
+                await context.addCookies(validCustomCookies);
+                ctx.log.debug(`Successfully added ${validCustomCookies.length} custom cookies`);
+            } catch (error) {
+                ctx.log.debug(`Failed to add custom cookies: ${error}`);
+            }
+        } else {
+            ctx.log.debug('No valid custom cookies to add');
+        }
+    }
     const page = await context.newPage();
 
     // populate cache with already captured resources
@@ -245,6 +327,8 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
             }
         }
     }
+
+    const pendingRequests = new Set<string>();
 
     // Use route to intercept network requests and discover resources
     await page.route('**/*', async (route, request) => {
@@ -304,8 +388,14 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
                 body = globalCache.get(requestUrl).body;
             } else {
                 ctx.log.debug(`Resource not found in cache or global cache ${requestUrl} fetching from server`);
+                if(ctx.build.checkPendingRequests){
+                    pendingRequests.add(requestUrl);
+                }
                 response = await page.request.fetch(request, requestOptions);
                 body = await response.body();
+                if(ctx.build.checkPendingRequests){
+                    pendingRequests.delete(requestUrl);
+                }
             }
 
             // handle response
@@ -333,14 +423,25 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
 
                 let responseOfRetry, bodyOfRetry
                 ctx.log.debug(`Resource had a disallowed status ${requestUrl} fetching from server again`);
+                if(ctx.build.checkPendingRequests){
+                    pendingRequests.add(requestUrl);
+                }
                 responseOfRetry = await page.request.fetch(request, requestOptions);
                 bodyOfRetry = await responseOfRetry.body();
-
+                if(ctx.build.checkPendingRequests){
+                    pendingRequests.delete(requestUrl);
+                }
                 if (responseOfRetry && responseOfRetry.status() && ALLOWED_STATUSES.includes(responseOfRetry.status())) {
                     ctx.log.debug(`Handling request after retry ${requestUrl}\n - content-type ${responseOfRetry.headers()['content-type']}`);
                     cache[requestUrl] = {
                         body: bodyOfRetry.toString('base64'),
                         type: responseOfRetry.headers()['content-type']
+                    }
+                    if (ctx.config.useGlobalCache) {
+                        globalCache.set(requestUrl, {
+                            body: bodyOfRetry.toString('base64'),
+                            type: responseOfRetry.headers()['content-type']
+                        });
                     }
                     route.fulfill({
                         status: responseOfRetry.status(),
@@ -392,6 +493,7 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
                 }
             }
 
+
             // Continue the request with the fetched response
             route.fulfill({
                 status: response.status(),
@@ -403,8 +505,6 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
             route.abort();
         }
     });
-
-    let options = snapshot.options;
     let optionWarnings: Set<string> = new Set();
     let selectors: Array<string> = [];
     let ignoreOrSelectDOM: string;
@@ -489,16 +589,19 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
             for (const [key, value] of Object.entries(options[ignoreOrSelectDOM])) {
                 switch (key) {
                     case 'id':
-                        selectors.push(...value.map(e => '#' + e));
+                        selectors.push(...value.map(e => e.startsWith('#') ? e : '#' + e));
                         break;
                     case 'class':
-                        selectors.push(...value.map(e => '.' + e));
+                        selectors.push(...value.map(e => e.startsWith('.') ? e : '.' + e));
                         break;
                     case 'xpath':
-                        selectors.push(...value.map(e => 'xpath=' + e));
+                        selectors.push(...value.map(e => e.startsWith('xpath=') ? e : 'xpath=' + e));
                         break;
                     case 'cssSelector':
                         selectors.push(...value);
+                        break;
+                    case 'coordinates':
+                        selectors.push(...value.map(e =>`coordinates=${e}`));
                         break;
                 }
             }
@@ -515,6 +618,26 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
             ctx.log.debug(`Tunnel address added to processedOptions: ${tunnelAddress}`);
         }
     }
+
+    if (ctx.config.loadDomContent) {
+        processedOptions.loadDomContent = true;
+    }
+    if (ctx.config.useExtendedViewport) {
+        processedOptions.useExtendedViewport = true;
+    }
+
+    try {
+        if (options?.customCSS) {
+            const resolvedCSS = resolveCustomCSS(options.customCSS, '', ctx.log);
+            processedOptions.customCSS = resolvedCSS;
+        } else if (ctx.config.customCSS) {
+            processedOptions.customCSS = ctx.config.customCSS;
+        }
+    } catch (error: any) {
+        optionWarnings.add(`${error.message}`);
+    }
+
+    ctx.log.debug(`Processed options: ${JSON.stringify(processedOptions)}`);
 
     // process for every viewport
     let navigated: boolean = false;
@@ -560,6 +683,7 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
                 // adding extra timeout since domcontentloaded event is fired pretty quickly
                 await new Promise(r => setTimeout(r, 1250));
                 if (ctx.config.waitForTimeout) await page.waitForTimeout(ctx.config.waitForTimeout);
+                await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => { ctx.log.debug('networkidle event failed to fire within 10s') });
                 navigated = true;
                 ctx.log.debug(`Navigated to ${snapshot.url}`);
             } catch (error: any) {
@@ -583,11 +707,12 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
         if (ctx.config.cliEnableJavaScript && fullPage) await page.evaluate(scrollToBottomAndBackToTop, { frequency: 100, timing: ctx.config.scrollTime });
 
         try {
-            await page.waitForLoadState('networkidle', { timeout: 5000 });
+            await page.waitForLoadState('networkidle', { timeout: 15000 });
             ctx.log.debug('Network idle 500ms');
         } catch (error) {
             ctx.log.debug(`Network idle failed due to ${error}`);
         }
+        
 
 
         if (ctx.config.allowedAssets && ctx.config.allowedAssets.length) {
@@ -626,14 +751,7 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
         }
 
         // snapshot options
-        if (processedOptions.element) {
-            let l = await page.locator(processedOptions.element).all()
-            if (l.length === 0) {
-                throw new Error(`for snapshot ${snapshot.name} viewport ${viewportString}, no element found for selector ${processedOptions.element}`);
-            } else if (l.length > 1) {
-                throw new Error(`for snapshot ${snapshot.name} viewport ${viewportString}, multiple elements found for selector ${processedOptions.element}`);
-            }
-        } else if (selectors.length) {
+        if (selectors.length) {
             let height = 0;
             height = await page.evaluate(() => {
                 const DEFAULT_HEIGHT = 16384;
@@ -663,30 +781,118 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
             if (!Array.isArray(processedOptions[ignoreOrSelectBoxes][viewportString])) processedOptions[ignoreOrSelectBoxes][viewportString] = []
 
             for (const selector of selectors) {
-                let l = await page.locator(selector).all()
-                if (l.length === 0) {
-                    optionWarnings.add(`for snapshot ${snapshot.name} viewport ${viewportString}, no element found for selector ${selector}`);
+                if (selector.startsWith('coordinates=')) {
+                    const coordString = selector.replace('coordinates=', '');
+                    let pageHeight = height;
+                    if (viewport.height) {
+                      pageHeight = viewport.height;
+                    }
+                    const validation = validateCoordinates(
+                      coordString,
+                      pageHeight,
+                      viewport.width,
+                      snapshot.name
+                    );
+                    
+                    if (!validation.valid) {
+                        optionWarnings.add(validation.error!);
+                        continue;
+                    }
+
+                    if(renderViewports.length > 1){
+                        optionWarnings.add(`for snapshot ${snapshot.name} viewport ${viewportString}, coordinates may not be accurate for multiple viewports`);
+                    }
+
+
+                    const coordinateElement = { 
+                        type: 'coordinates', 
+                        ...validation.coords
+                    };
+                    locators.push(coordinateElement as any);
                     continue;
-                }
-                locators.push(...l);
-            }
-            for (const locator of locators) {
-                let bb = await locator.boundingBox();
-                if (bb) {
-                    // Calculate top and bottom from the bounding box properties
-                    const top = bb.y;
-                    const bottom = bb.y + bb.height;
-            
-                    // Only push if top and bottom are within the calculated height
-                    if (top <= height && bottom <= height) {
-                        processedOptions[ignoreOrSelectBoxes][viewportString].push({
-                            left: bb.x,
-                            top: top,
-                            right: bb.x + bb.width,
-                            bottom: bottom
-                        });
+
+                } else {
+                    const isXPath = selector.startsWith('xpath=');
+                    const selectorValue = isXPath ? selector.substring(6) : selector;
+
+                    const boxes = await page.evaluate(({ selectorValue, isXPath }) => {
+                        try {
+                            // First, determine the page height
+                            const DEFAULT_HEIGHT = 16384;
+                            const DEFAULT_WIDTH = 7680;
+                            const body = document.body;
+                            const html = document.documentElement;
+
+                            let pageHeight;
+                            let pageWidth;
+
+                            if (!body || !html) {
+                                pageHeight = DEFAULT_HEIGHT;
+                                pageWidth = DEFAULT_WIDTH;
+                            } else {
+                                const measurements = [
+                                    body?.scrollHeight || 0,
+                                    body?.offsetHeight || 0,
+                                    html?.clientHeight || 0,
+                                    html?.scrollHeight || 0,
+                                    html?.offsetHeight || 0
+                                ];
+
+                                const allMeasurementsInvalid = measurements.every(measurement => !measurement);
+
+                                if (allMeasurementsInvalid) {
+                                    pageHeight = DEFAULT_HEIGHT;
+                                } else {
+                                    pageHeight = Math.max(...measurements);
+                                }
+
+                                const measurementsWidth = [
+                                    body?.scrollWidth || 0,
+                                    body?.offsetWidth || 0,
+                                    html?.clientWidth || 0,
+                                    html?.scrollWidth || 0,
+                                    html?.offsetWidth || 0
+                                ];
+
+                                const allMeasurementsInvalidWidth = measurementsWidth.every(measurement => !measurement);
+
+                                if (allMeasurementsInvalidWidth) {
+                                    pageWidth = DEFAULT_WIDTH;
+                                } else {
+                                    pageWidth = Math.max(...measurementsWidth);
+                                }
+                            }
+
+                            let elements = [];
+
+                            if (isXPath) {
+                                // Use XPath evaluation
+                                const xpathResult = document.evaluate(
+                                    selectorValue,
+                                    document,
+                                    null,
+                                    XPathResult.ORDERED_NODE_SNAPSHOT_TYPE,
+                                    null
+                                );
+
+                                for (let i = 0; i < xpathResult.snapshotLength; i++) {
+                                    elements.push(xpathResult.snapshotItem(i));
+                                }
+                            } else {
+                                elements = Array.from(document.querySelectorAll(selectorValue));
+                            }
+
+                            return elements;
+
+                        } catch (error) {
+                        }
+
+                    }, { selectorValue, isXPath });
+
+                    if (boxes && boxes.length >= 1) {
+                        processedOptions[ignoreOrSelectBoxes][viewportString].push(...boxes);
                     } else {
-                        ctx.log.debug(`Bounding box for selector skipped due to exceeding height: ${JSON.stringify({ top, bottom, height })}`);
+                        optionWarnings.add(`for snapshot ${snapshot.name} viewport ${viewportString}, no element found for selector ${selector}`);
                     }
                 }
             }
@@ -694,6 +900,46 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
         processedOptions.ignoreDOM = options?.ignoreDOM;
         processedOptions.selectDOM = options?.selectDOM;
         ctx.log.debug(`Processed options: ${JSON.stringify(processedOptions)}`);
+    }
+
+    // Wait for pending requests to complete
+    const checkPending = async () => {
+        let startTime = Date.now();
+        ctx.log.debug(`${pendingRequests.size} Pending requests before wait for ${snapshot.name}: ${Array.from(pendingRequests)}`);
+        while (pendingRequests.size > 0) {
+          const elapsedTime = Date.now() - startTime;
+          if (elapsedTime >= MAX_WAIT_FOR_REQUEST_CALL) {
+            ctx.log.debug(`Timeout reached (${MAX_WAIT_FOR_REQUEST_CALL/1000}s). Stopping wait for pending requests.`);
+            ctx.log.debug(`${pendingRequests.size} Pending requests after wait for ${snapshot.name}: ${Array.from(pendingRequests)}`);
+            break;
+          }
+          await new Promise(resolve => setTimeout(resolve, 1000)); 
+        }
+        if(pendingRequests.size === 0) {
+            ctx.log.debug(`No pending requests for ${snapshot.name}.`);
+        }
+      };
+
+      if (ctx.build.checkPendingRequests) {
+        await checkPending();
+      }
+
+    // Validate and report CSS injection after selector processing
+    if (processedOptions.customCSS) {
+        try {
+            const cssRules = parseCSSFile(processedOptions.customCSS);
+            const validationResult = await validateCSSSelectors(page, cssRules, ctx.log);
+            const report = generateCSSInjectionReport(validationResult, ctx.log);
+            
+            if (validationResult.failedSelectors.length > 0) {
+                validationResult.failedSelectors.forEach(selector => {
+                    optionWarnings.add(`customCSS selector not found: ${selector}`);
+                });
+            }
+        } catch (error: any) {
+            ctx.log.warn(`CSS validation failed: ${error.message}`);
+            optionWarnings.add(`CSS validation error: ${error.message}`);
+        }
     }
 
     
@@ -712,7 +958,6 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
 
     if (hasBrowserErrors) {
         discoveryErrors.timestamp = new Date().toISOString();
-        // ctx.log.warn(discoveryErrors);
     }
 
     if (ctx.config.useGlobalCache) {
@@ -738,3 +983,5 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
         discoveryErrors: discoveryErrors
     }
 }
+
+

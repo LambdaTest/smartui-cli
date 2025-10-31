@@ -13,6 +13,7 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
             try {
                 await startTunnelBinary(ctx);
                 ctx.isStartExec = true;
+                ctx.autoTunnelStarted = true;
                 task.title = 'Tunnel Started';
                 task.output = chalk.gray('Tunnel started successfully');
             } catch (error: any) {
