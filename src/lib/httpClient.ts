@@ -33,7 +33,13 @@ export default class httpClient {
             baseURL: SMARTUI_CLIENT_API_URL,
             proxy: proxyUrl ? {
                 host: proxyUrl.hostname,
-                port: proxyUrl.port ? Number(proxyUrl.port) : 80
+                port: proxyUrl.port ? Number(proxyUrl.port) : 80,
+                ...(proxyUrl.username && proxyUrl.password ? {
+                    auth: {
+                        username: proxyUrl.username,
+                        password: proxyUrl.password
+                    }
+                } : {})
             } : false
         };
 
