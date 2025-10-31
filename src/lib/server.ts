@@ -76,7 +76,7 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 					throw new Error(`Invalid snapshot options; rejectionThreshold (${snapshot.options.rejectionThreshold}) must be greater than approvalThreshold (${snapshot.options.approvalThreshold})`);
 				}
 			}
-			snapshot.name=snapshot?.name?.trim().replace(/\s+/g,'_');
+			snapshot.name=snapshot?.name?.trim();
 		
 			// Fetch sessionId from snapshot options if present
 			const sessionId = snapshot?.options?.sessionId;
@@ -243,7 +243,7 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 		try {
 			ctx.log.debug(`request.query : ${JSON.stringify(request.query)}`);
 			const { contextId, pollTimeout, snapshotName: rawSnapshotName } = request.query as { contextId: string, pollTimeout: number, snapshotName: string };
-			const snapshotName = rawSnapshotName?.trim().replace(/\s+/g,'_');
+			const snapshotName = rawSnapshotName?.trim();
 			if (!contextId || !snapshotName) {
 				throw new Error('contextId and snapshotName are required parameters');
 			}
