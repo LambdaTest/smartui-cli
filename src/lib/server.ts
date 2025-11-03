@@ -306,13 +306,7 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 						}else {
 							ctx.log.debug(`Unexpected response from external API: ${JSON.stringify(externalResponse)}`);
 							replyCode = 500;
-							replyBody = { 
-								error: { 
-									message: `Unexpected response from external API: ${externalResponse.statusCode}`,
-									externalApiStatus: externalResponse.statusCode
-								}
-							};
-							return reply.code(replyCode).send(replyBody);
+							return reply.code(replyCode).send(externalResponse);
 						}
 
 						ctx.log.debug(`timeoutDuration: ${timeoutDuration}`);
