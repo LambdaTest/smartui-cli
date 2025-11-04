@@ -30,7 +30,9 @@ async function captureScreenshotsForConfig(
         ignoreHTTPSErrors: ctx.config.ignoreHTTPSErrors
     };
 
-    // Resolve proxy/tunnel from global config
+
+
+    // Resolve proxy/tunnel/geolocation-proxy from global config
     try {
         if (ctx.config.tunnel && ctx.config.tunnel.tunnelName) {
             if (ctx.tunnelDetails && ctx.tunnelDetails.tunnelPort != -1 && ctx.tunnelDetails.tunnelHost) {
@@ -55,10 +57,46 @@ async function captureScreenshotsForConfig(
                     }
                 }
             }
+        } else if (ctx.config.geolocation && ctx.config.geolocation !== '') {
+            // Use cached geolocation proxy if available for the same geolocation key
+            if (ctx.geolocationData && ctx.geolocationData.proxy && ctx.geolocationData.username && ctx.geolocationData.password && ctx.geolocationData.geoCode === ctx.config.geolocation) {
+                ctx.log.info(`URL Capture :: Using cached geolocation proxy for ${ctx.config.geolocation}`);
+                contextOptions.proxy = {
+                    server: ctx.geolocationData.proxy,
+                    username: ctx.geolocationData.username,
+                    password: ctx.geolocationData.password
+                };
+            } else {
+                const geoResp = await ctx.client.getGeolocationProxy(ctx.config.geolocation, ctx.log);
+            ctx.log.debug(`Geolocation proxy response: ${JSON.stringify(geoResp)}`);
+            if (geoResp && geoResp.data && geoResp.data.proxy && geoResp.data.username && geoResp.data.password) {
+                ctx.log.info(`URL Capture :: Using geolocation proxy for ${ctx.config.geolocation}`);
+                    ctx.geolocationData = {
+                        proxy: geoResp.data.proxy,
+                        username: geoResp.data.username,
+                        password: geoResp.data.password,
+                        geoCode: ctx.config.geolocation
+                    } as any;
+                contextOptions.proxy = {
+                    server: geoResp.data.proxy,
+                    username: geoResp.data.username,
+                    password: geoResp.data.password
+                };
+            } else {
+                ctx.log.warn(`Geolocation proxy not available for '${ctx.config.geolocation}', falling back if dedicatedProxyURL present`);
+                if (ctx.config.dedicatedProxyURL && ctx.config.dedicatedProxyURL !== '') {
+                    ctx.log.info(`URL Capture :: Using dedicated proxy: ${ctx.config.dedicatedProxyURL}`);
+                    contextOptions.proxy = { server: ctx.config.dedicatedProxyURL };
+                }
+            }
+            }
         } else if (ctx.config.dedicatedProxyURL && ctx.config.dedicatedProxyURL !== '') {
             ctx.log.info(`URL Capture :: Using dedicated proxy: ${ctx.config.dedicatedProxyURL}`);
             contextOptions.proxy = { server: ctx.config.dedicatedProxyURL };
         }
+
+        // Note: when using IP-based geolocation via proxy, browser geolocation permission is not required
+        
     } catch (e) {
         ctx.log.debug(`Failed resolving tunnel/proxy details: ${e}`);
     }

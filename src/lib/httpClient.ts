@@ -703,6 +703,19 @@ export default class httpClient {
         }, ctx.log);
     }
 
+    async getGeolocationProxy(geoLocation: string, log: Logger): Promise<{ data?: { proxy: string, username: string, password: string }, statusCode?: number }> {
+        try {
+            const resp = await this.request({
+                url: 'https://api-custom-css-dev.lambdatestinternal.com/visualui/1.0/geolocation',
+                method: 'GET',
+                params: { geoLocation }
+            }, log);
+            return resp;
+        } catch (error: any) {
+            this.handleHttpError(error, log);
+        }
+    }
+
     async uploadPdf(ctx: Context, form: FormData, buildName?: string): Promise<any> {
         form.append('projectToken', this.projectToken);
         if (ctx.build.name !== undefined && ctx.build.name !== '') {

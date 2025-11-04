@@ -268,6 +268,10 @@ const ConfigSchema = {
             type: "string",
             errorMessage: "Invalid config; dedicatedProxyURL must be a string"
         },
+        geolocation: {
+            type: "string",
+            errorMessage: "Invalid config; geolocation must be a string like 'lat,lon'"
+        },
         allowDuplicateSnapshotNames: {
             type: "boolean",
             errorMessage: "Invalid config; allowDuplicateSnapshotNames must be true/false"

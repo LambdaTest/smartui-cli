@@ -147,6 +147,7 @@ export default (options: Record<string, string>): Context => {
             skipBuildCreation: config.skipBuildCreation ?? false,
             tunnel: tunnelObj,
             dedicatedProxyURL: config.dedicatedProxyURL || '',
+            geolocation: config.geolocation || '',
             userAgent: config.userAgent || '',
             requestHeaders: config.requestHeaders || {},
             allowDuplicateSnapshotNames: allowDuplicateSnapshotNames,
