@@ -294,7 +294,10 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 
 						if (externalResponse.statusCode === 200) {
 							replyCode = 200;
-							replyBody = externalResponse.data;
+							replyBody = {
+								data: externalResponse.data,
+								error: externalResponse.error.message
+							}
 							return reply.code(replyCode).send(replyBody);
 						} else if (externalResponse.statusCode === 202 ) {
 							replyBody= externalResponse.data;
