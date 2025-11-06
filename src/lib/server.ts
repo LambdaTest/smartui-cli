@@ -318,9 +318,8 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 						if (Date.now() - startTime > timeoutDuration) {
 							replyCode = 202; 
 							replyBody = {
-								data: {
-									message: 'Request timed out-> Snapshot still processing'
-								} 
+								error: 'Request timed out, Snapshot still processing',
+								data: lastExternalResponse.data
 							};
 							return reply.code(replyCode).send(replyBody);
 						}
