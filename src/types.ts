@@ -138,6 +138,7 @@ export interface Env {
     LT_SDK_SKIP_EXECUTION_LOGS: boolean;
     MAX_CONCURRENT_PROCESSING: number;
     DO_NOT_USE_USER_AGENT: boolean;
+    CAPTURE_RENDERING_ERRORS: boolean;
 }
 
 export interface Snapshot {
