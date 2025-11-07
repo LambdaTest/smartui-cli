@@ -154,7 +154,7 @@ export default class httpClient {
             })
     }
 
-    async auth(log: Logger, env: Env): Promise<number> {
+    async auth(log: Logger, env: Env): Promise<{ authResult: number, orgId: number, userId: number }> {
         let result = 1;
         if (this.projectToken) {
             result = 0;
@@ -168,12 +168,20 @@ export default class httpClient {
             }
         }, log);
         if (response && response.projectToken) {
+            let orgId = 0;
+            let userId = 0;
             this.projectToken = response.projectToken;
             env.PROJECT_TOKEN = response.projectToken;
             if (response.message && response.message.includes('Project created successfully')) {
                 result = 2;
             }
-            return result;
+            if (response.orgId) {
+                orgId = response.orgId
+            }
+            if (response.userId) {
+                userId = response.userId
+            }
+            return { authResult : result, orgId, userId };
         } else {
             throw new Error('Authentication failed, project token not received');
         }
@@ -699,6 +707,19 @@ export default class httpClient {
                 'Content-Type': 'application/json',
             }
         }, ctx.log);
+    }
+
+    async getGeolocationProxy(geoLocation: string, log: Logger): Promise<{ data?: { proxy: string, username: string, password: string }, statusCode?: number }> {
+        try {
+            const resp = await this.request({
+                url: '/geolocation',
+                method: 'GET',
+                params: { geoLocation }
+            }, log);
+            return resp;
+        } catch (error: any) {
+            this.handleHttpError(error, log);
+        }
     }
 
     async uploadPdf(ctx: Context, form: FormData, buildName?: string): Promise<any> {

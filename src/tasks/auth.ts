@@ -10,7 +10,7 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
             updateLogContext({task: 'auth'});
 
             try {
-                const authResult = await ctx.client.auth(ctx.log, ctx.env);
+                const { authResult, orgId, userId } = await ctx.client.auth(ctx.log, ctx.env);
                 if (authResult === 2) {
                     task.output = chalk.gray(`New project '${ctx.env.PROJECT_NAME}' created successfully`);
                 } else if (authResult === 0) {
@@ -18,6 +18,8 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
                 } else if (authResult === 1) {
                     task.output = chalk.gray(`Using existing project '${ctx.env.PROJECT_NAME}'`);
                 }
+                ctx.orgId = orgId
+                ctx.userId = userId
                 task.title = 'Authenticated with SmartUI';
             } catch (error: any) {
                 ctx.log.debug(error);
