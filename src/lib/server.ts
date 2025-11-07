@@ -76,6 +76,7 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 					throw new Error(`Invalid snapshot options; rejectionThreshold (${snapshot.options.rejectionThreshold}) must be greater than approvalThreshold (${snapshot.options.approvalThreshold})`);
 				}
 			}
+			snapshot.name=snapshot?.name?.trim();
 		
 			// Fetch sessionId from snapshot options if present
 			const sessionId = snapshot?.options?.sessionId;
