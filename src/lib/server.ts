@@ -294,7 +294,10 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 
 						if (externalResponse.statusCode === 200) {
 							replyCode = 200;
-							replyBody = externalResponse.data;
+							replyBody = {
+								data: externalResponse.data,
+								error: externalResponse.error.message
+							}
 							return reply.code(replyCode).send(replyBody);
 						} else if (externalResponse.statusCode === 202 ) {
 							replyBody= externalResponse.data;
@@ -306,13 +309,7 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 						}else {
 							ctx.log.debug(`Unexpected response from external API: ${JSON.stringify(externalResponse)}`);
 							replyCode = 500;
-							replyBody = { 
-								error: { 
-									message: `Unexpected response from external API: ${externalResponse.statusCode}`,
-									externalApiStatus: externalResponse.statusCode
-								}
-							};
-							return reply.code(replyCode).send(replyBody);
+							return reply.code(replyCode).send(externalResponse);
 						}
 
 						ctx.log.debug(`timeoutDuration: ${timeoutDuration}`);
@@ -321,9 +318,8 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 						if (Date.now() - startTime > timeoutDuration) {
 							replyCode = 202; 
 							replyBody = {
-								data: {
-									message: 'Request timed out-> Snapshot still processing'
-								} 
+								error: 'Request timed out, Snapshot still processing',
+								data: lastExternalResponse.data
 							};
 							return reply.code(replyCode).send(replyBody);
 						}
