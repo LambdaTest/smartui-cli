@@ -706,7 +706,7 @@ export default class httpClient {
     async getGeolocationProxy(geoLocation: string, log: Logger): Promise<{ data?: { proxy: string, username: string, password: string }, statusCode?: number }> {
         try {
             const resp = await this.request({
-                url: 'https://api-custom-css-dev.lambdatestinternal.com/visualui/1.0/geolocation',
+                url: '/geolocation',
                 method: 'GET',
                 params: { geoLocation }
             }, log);
