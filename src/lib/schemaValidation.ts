@@ -264,6 +264,14 @@ const ConfigSchema = {
                 uniqueItems: "Invalid config; duplicates in requestHeaders"
             }
         },
+        dedicatedProxyURL: {
+            type: "string",
+            errorMessage: "Invalid config; dedicatedProxyURL must be a string"
+        },
+        geolocation: {
+            type: "string",
+            errorMessage: "Invalid config; geolocation must be a string like 'lat,lon'"
+        },
         allowDuplicateSnapshotNames: {
             type: "boolean",
             errorMessage: "Invalid config; allowDuplicateSnapshotNames must be true/false"
@@ -341,6 +349,9 @@ const WebStaticConfigSchema: JSONSchemaType<WebStaticConfig> = {
             execute: {
                 type: "object",
                 properties: {
+                    beforeNavigation: {
+                        type: "string",
+                    },
                     afterNavigation : {
                         type: "string",
                     },

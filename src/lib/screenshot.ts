@@ -17,6 +17,7 @@ async function captureScreenshotsForConfig(
     ctx.log.debug(`*** urlConfig  ${JSON.stringify(urlConfig)}`);
 
     let {name, url, waitForTimeout, execute, pageEvent, userAgent} = urlConfig;
+    let beforeNavigationScript = execute?.beforeNavigation;
     let afterNavigationScript = execute?.afterNavigation;
     let beforeSnapshotScript = execute?.beforeSnapshot;
     let waitUntilEvent = pageEvent || process.env.SMARTUI_PAGE_WAIT_UNTIL_EVENT || 'load';
@@ -28,6 +29,77 @@ async function captureScreenshotsForConfig(
     let contextOptions: Record<string, any> = {
         ignoreHTTPSErrors: ctx.config.ignoreHTTPSErrors
     };
+
+
+
+    // Resolve proxy/tunnel/geolocation-proxy from global config
+    try {
+        if (ctx.config.tunnel && ctx.config.tunnel.tunnelName) {
+            if (ctx.tunnelDetails && ctx.tunnelDetails.tunnelPort != -1 && ctx.tunnelDetails.tunnelHost) {
+                const tunnelServer = `http://${ctx.tunnelDetails.tunnelHost}:${ctx.tunnelDetails.tunnelPort}`;
+                ctx.log.info(`URL Capture :: Using tunnel address: ${tunnelServer}`);
+                contextOptions.proxy = { server: tunnelServer };
+            } else {
+                let tunnelResp = await ctx.client.getTunnelDetails(ctx, ctx.log);
+                ctx.log.debug(`Tunnel Response: ${JSON.stringify(tunnelResp)}`)
+                if (tunnelResp && tunnelResp.data && tunnelResp.data.host && tunnelResp.data.port) {
+                    ctx.tunnelDetails = {
+                        tunnelHost: tunnelResp.data.host,
+                        tunnelPort: tunnelResp.data.port,
+                        tunnelName: tunnelResp.data.tunnel_name
+                    } as any;
+                    const tunnelServer = `http://${ctx.tunnelDetails.tunnelHost}:${ctx.tunnelDetails.tunnelPort}`;
+                    ctx.log.info(`URL Capture :: Using tunnel address: ${tunnelServer}`);
+                    contextOptions.proxy = { server: tunnelServer };
+                } else if (tunnelResp && tunnelResp.error) {
+                    if (tunnelResp.error.message) {
+                        ctx.log.warn(`Error while fetching tunnel details: ${tunnelResp.error.message}`)
+                    }
+                }
+            }
+        } else if (ctx.config.geolocation && ctx.config.geolocation !== '') {
+            // Use cached geolocation proxy if available for the same geolocation key
+            if (ctx.geolocationData && ctx.geolocationData.proxy && ctx.geolocationData.username && ctx.geolocationData.password && ctx.geolocationData.geoCode === ctx.config.geolocation) {
+                ctx.log.info(`URL Capture :: Using cached geolocation proxy for ${ctx.config.geolocation}`);
+                contextOptions.proxy = {
+                    server: ctx.geolocationData.proxy,
+                    username: ctx.geolocationData.username,
+                    password: ctx.geolocationData.password
+                };
+            } else {
+                const geoResp = await ctx.client.getGeolocationProxy(ctx.config.geolocation, ctx.log);
+            ctx.log.debug(`Geolocation proxy response: ${JSON.stringify(geoResp)}`);
+            if (geoResp && geoResp.data && geoResp.data.proxy && geoResp.data.username && geoResp.data.password) {
+                ctx.log.info(`URL Capture :: Using geolocation proxy for ${ctx.config.geolocation}`);
+                    ctx.geolocationData = {
+                        proxy: geoResp.data.proxy,
+                        username: geoResp.data.username,
+                        password: geoResp.data.password,
+                        geoCode: ctx.config.geolocation
+                    } as any;
+                contextOptions.proxy = {
+                    server: geoResp.data.proxy,
+                    username: geoResp.data.username,
+                    password: geoResp.data.password
+                };
+            } else {
+                ctx.log.warn(`Geolocation proxy not available for '${ctx.config.geolocation}', falling back if dedicatedProxyURL present`);
+                if (ctx.config.dedicatedProxyURL && ctx.config.dedicatedProxyURL !== '') {
+                    ctx.log.info(`URL Capture :: Using dedicated proxy: ${ctx.config.dedicatedProxyURL}`);
+                    contextOptions.proxy = { server: ctx.config.dedicatedProxyURL };
+                }
+            }
+            }
+        } else if (ctx.config.dedicatedProxyURL && ctx.config.dedicatedProxyURL !== '') {
+            ctx.log.info(`URL Capture :: Using dedicated proxy: ${ctx.config.dedicatedProxyURL}`);
+            contextOptions.proxy = { server: ctx.config.dedicatedProxyURL };
+        }
+
+        // Note: when using IP-based geolocation via proxy, browser geolocation permission is not required
+        
+    } catch (e) {
+        ctx.log.debug(`Failed resolving tunnel/proxy details: ${e}`);
+    }
     let page: Page;
     if (browserName == constants.CHROME) contextOptions.userAgent = constants.CHROME_USER_AGENT;
     else if (browserName == constants.FIREFOX) contextOptions.userAgent = constants.FIREFOX_USER_AGENT;
@@ -46,6 +118,16 @@ async function captureScreenshotsForConfig(
         const browser = browsers[browserName];
         context = await browser?.newContext(contextOptions);
         page = await context?.newPage();
+
+        if (beforeNavigationScript && beforeNavigationScript !== "") {
+            const wrappedScript = new Function('page', `
+                return (async () => {
+                    ${beforeNavigationScript}
+                })();
+            `);
+            ctx.log.debug(`Executing before navigation script: ${wrappedScript}`);
+            await wrappedScript(page);
+        }
         const headersObject: Record<string, string> = {};
         if (ctx.config.requestHeaders && Array.isArray(ctx.config.requestHeaders)) {
             ctx.config.requestHeaders.forEach((headerObj) => {
@@ -60,6 +142,12 @@ async function captureScreenshotsForConfig(
                     headersObject[key] = value;
                 });
             });
+        }
+
+        if (ctx.config.basicAuthorization) {
+            ctx.log.debug(`Adding basic authorization to the headers for root url`);
+            let token = Buffer.from(`${ctx.config.basicAuthorization.username}:${ctx.config.basicAuthorization.password}`).toString('base64');
+            headersObject['Authorization'] = `Basic ${token}`;
         }
 
         ctx.log.debug(`Combined headers: ${JSON.stringify(headersObject)}`);

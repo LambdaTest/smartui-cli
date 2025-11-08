@@ -34,6 +34,8 @@ export interface Context {
         ignoreHTTPSErrors : boolean;
         skipBuildCreation?: boolean;
         tunnel: tunnelConfig | undefined;
+        dedicatedProxyURL?: string;
+        geolocation?: string;
         userAgent?: string;
         requestHeaders?: Array<Record<string, string>>;
         allowDuplicateSnapshotNames?: boolean;
@@ -57,6 +59,12 @@ export interface Context {
         tunnelPort: number;
         tunnelHost: string;
         tunnelName: string;
+    }
+    geolocationData?: {
+        proxy: string;
+        username: string;
+        password: string;
+        geoCode: string;
     }
     options: {
         parallel?: number,

@@ -163,6 +163,8 @@ export default (options: Record<string, string>): Context => {
             ignoreHTTPSErrors: config.ignoreHTTPSErrors ?? false,
             skipBuildCreation: config.skipBuildCreation ?? false,
             tunnel: tunnelObj,
+            dedicatedProxyURL: config.dedicatedProxyURL || '',
+            geolocation: config.geolocation || '',
             userAgent: config.userAgent || '',
             requestHeaders: config.requestHeaders || {},
             allowDuplicateSnapshotNames: allowDuplicateSnapshotNames,
