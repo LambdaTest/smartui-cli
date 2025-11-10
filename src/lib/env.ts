@@ -26,7 +26,8 @@ export default (): Env => {
         SHOW_RENDER_ERRORS,
         SMARTUI_SSE_URL='https://server-events.lambdatest.com',
         LT_SDK_SKIP_EXECUTION_LOGS,
-        MAX_CONCURRENT_PROCESSING
+        MAX_CONCURRENT_PROCESSING,
+        DO_NOT_USE_USER_AGENT,
     } = process.env
         
     return {
@@ -55,5 +56,6 @@ export default (): Env => {
         SMARTUI_SSE_URL,
         LT_SDK_SKIP_EXECUTION_LOGS: LT_SDK_SKIP_EXECUTION_LOGS === 'true',
         MAX_CONCURRENT_PROCESSING: MAX_CONCURRENT_PROCESSING ? parseInt(MAX_CONCURRENT_PROCESSING, 10) : 0,
+        DO_NOT_USE_USER_AGENT: DO_NOT_USE_USER_AGENT === 'true',
     }
 }

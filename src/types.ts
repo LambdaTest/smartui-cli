@@ -137,6 +137,7 @@ export interface Env {
     SMARTUI_SSE_URL: string;
     LT_SDK_SKIP_EXECUTION_LOGS: boolean;
     MAX_CONCURRENT_PROCESSING: number;
+    DO_NOT_USE_USER_AGENT: boolean;
 }
 
 export interface Snapshot {
