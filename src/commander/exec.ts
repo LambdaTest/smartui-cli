@@ -24,8 +24,6 @@ command
     .option('--fetch-results [filename]', 'Fetch results and optionally specify an output file, e.g., <filename>.json')
     .option('--buildName <string>', 'Specify the build name')
     .option('--scheduled <string>', 'Specify the schedule ID')
-    .option('--userName <string>', 'Specify the LT username')
-    .option('--accessKey <string>', 'Specify the LT accesskey')
     .option('--show-render-errors', 'Show render errors from SmartUI build')
     .action(async function(execCommand, _, command) {
         const options = command.optsWithGlobals();
