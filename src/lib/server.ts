@@ -294,10 +294,8 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 
 						if (externalResponse.statusCode === 200) {
 							replyCode = 200;
-							replyBody = {
-								data: externalResponse.data,
-								error: externalResponse.error.message
-							}
+							replyBody = externalResponse.data;
+							replyBody.error = externalResponse.error.message
 							return reply.code(replyCode).send(replyBody);
 						} else if (externalResponse.statusCode === 202 ) {
 							replyBody= externalResponse.data;
@@ -317,10 +315,8 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 
 						if (Date.now() - startTime > timeoutDuration) {
 							replyCode = 202; 
-							replyBody = {
-								error: 'Request timed out, Snapshot still processing',
-								data: lastExternalResponse.data
-							};
+							replyBody = lastExternalResponse.data;
+							replyBody.error = 'Request timed out, Snapshot still processing';
 							return reply.code(replyCode).send(replyBody);
 						}
 
