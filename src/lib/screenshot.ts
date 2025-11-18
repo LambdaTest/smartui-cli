@@ -205,6 +205,8 @@ async function captureScreenshotsForConfig(
                         if (discoveryErrors.browsers[globalBrowser]) {
                             discoveryErrors.browsers[globalBrowser][globalViewport]?.push(data as any);
                         }
+
+                        ctx.build.hasDiscoveryError = true;
                     }
 
                     // Continue the request with the fetched response
@@ -225,8 +227,12 @@ async function captureScreenshotsForConfig(
             globalViewport = first.viewportString;
             globalBrowser = browserName;
             if (globalViewport.toLowerCase().includes("iphone") || globalViewport.toLowerCase().includes("ipad")) {
-                globalBrowser = constants.SAFARI;
+                globalBrowser = constants.WEBKIT;
             }
+        }
+
+        if (browserName == constants.SAFARI || (globalViewport.toLowerCase().includes("iphone") || globalViewport.toLowerCase().includes("ipad"))) {
+            globalBrowser = constants.WEBKIT;
         }
 
         await page?.goto(url.trim(), pageOptions);
@@ -236,8 +242,8 @@ async function captureScreenshotsForConfig(
             globalViewport = viewportString;
             globalBrowser = browserName
             ctx.log.debug(`globalViewport : ${globalViewport}`);
-            if (globalViewport.toLowerCase().includes("iphone") || globalViewport.toLowerCase().includes("ipad")) {
-                globalBrowser = constants.SAFARI;
+            if (browserName == constants.SAFARI || (globalViewport.toLowerCase().includes("iphone") || globalViewport.toLowerCase().includes("ipad"))) {
+                globalBrowser = constants.WEBKIT;
             }
             let ssPath = `screenshots/${ssId}/${`${browserName}-${viewport.width}x${viewport.height}`}-${ssId}.png`;
             await page?.setViewportSize({ width: viewport.width, height: viewport.height || constants.MIN_VIEWPORT_HEIGHT });
