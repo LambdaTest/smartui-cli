@@ -345,6 +345,35 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 		}
 	});
 
+	// Get build info
+	server.get('/build/info', opts, async (request, reply) => {
+		let replyCode: number;
+		let replyBody: Record<string, any>;
+
+		try {
+			if (ctx.build && ctx.build.id) {
+				const buildInfo = ctx.build;
+				const data = {
+					buildId: buildInfo.id,
+					buildName: buildInfo.name,
+					baseline: buildInfo.baseline,
+					projectToken: ctx.env.PROJECT_TOKEN || '',
+				}
+				replyCode = 200;
+				replyBody = { data: data };
+			} else {
+				throw new Error('Build information is not available');
+			}
+		} catch (error: any) {
+			ctx.log.debug(`build info failed; ${error}`);
+			replyCode = 500;
+			replyBody = { error: { message: error.message } };
+		}
+
+		return reply.code(replyCode).send(replyBody);
+
+	});
+
 	// Use the helper function to find and start server on available port
 	if (ctx.sourceCommand && ctx.sourceCommand === 'exec-start') {
 
