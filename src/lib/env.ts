@@ -11,7 +11,9 @@ export default (): Env => {
         HTTPS_PROXY,
         SMARTUI_HTTP_PROXY,
         SMARTUI_HTTPS_PROXY,
-        GITHUB_ACTIONS,
+        GIT_URL,
+        BASIC_AUTH_USERNAME,
+        BASIC_AUTH_PASSWORD,
         FIGMA_TOKEN,
         LT_USERNAME,
         LT_ACCESS_KEY,
@@ -39,7 +41,9 @@ export default (): Env => {
         HTTPS_PROXY,
         SMARTUI_HTTP_PROXY,
         SMARTUI_HTTPS_PROXY,
-        GITHUB_ACTIONS,
+        GIT_URL,
+        BASIC_AUTH_USERNAME,
+        BASIC_AUTH_PASSWORD,
         FIGMA_TOKEN,
         LT_USERNAME,
         LT_ACCESS_KEY,
@@ -57,5 +61,6 @@ export default (): Env => {
         LT_SDK_SKIP_EXECUTION_LOGS: LT_SDK_SKIP_EXECUTION_LOGS === 'true',
         MAX_CONCURRENT_PROCESSING: MAX_CONCURRENT_PROCESSING ? parseInt(MAX_CONCURRENT_PROCESSING, 10) : 0,
         DO_NOT_USE_USER_AGENT: DO_NOT_USE_USER_AGENT === 'true',
+        CAPTURE_RENDERING_ERRORS: process.env.CAPTURE_RENDERING_ERRORS === 'true',
     }
 }

@@ -82,6 +82,7 @@ export interface Context {
         baselineBranch?: string,
         baselineBuild?: string,
         githubURL?: string,
+        gitURL?: string,
         showRenderErrors?: boolean,
         userName?: string,
         accessKey?: string
@@ -121,7 +122,9 @@ export interface Env {
     HTTPS_PROXY: string | undefined;
     SMARTUI_HTTP_PROXY: string | undefined;
     SMARTUI_HTTPS_PROXY: string | undefined;
-    GITHUB_ACTIONS: string | undefined;
+    GIT_URL: string | undefined;
+    BASIC_AUTH_USERNAME: string | undefined;
+    BASIC_AUTH_PASSWORD: string | undefined;
     FIGMA_TOKEN: string | undefined;
     LT_USERNAME : string | undefined;
     LT_ACCESS_KEY : string | undefined;
@@ -138,6 +141,7 @@ export interface Env {
     LT_SDK_SKIP_EXECUTION_LOGS: boolean;
     MAX_CONCURRENT_PROCESSING: number;
     DO_NOT_USE_USER_AGENT: boolean;
+    CAPTURE_RENDERING_ERRORS: boolean;
 }
 
 export interface Snapshot {

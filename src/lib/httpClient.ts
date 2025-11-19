@@ -457,7 +457,7 @@ export default class httpClient {
 
     uploadScreenshot(
         { id: buildId, name: buildName, baseline }: Build,
-        ssPath: string, ssName: string, browserName: string, viewport: string, url: string = '', log: Logger
+        ssPath: string, ssName: string, browserName: string, viewport: string, url: string = '', log: Logger, discoveryErrors?: DiscoveryErrors, ctx?: Context
     ) {
         browserName = browserName === constants.SAFARI ? constants.WEBKIT : browserName;
         const file = fs.readFileSync(ssPath);
@@ -470,6 +470,9 @@ export default class httpClient {
         form.append('screenshotName', ssName);
         form.append('baseline', baseline.toString());
         form.append('pageUrl',url)
+        if (ctx?.env.CAPTURE_RENDERING_ERRORS && discoveryErrors) {
+            form.append('discoveryErrors', JSON.stringify(discoveryErrors));
+        }
 
         return this.axiosInstance.request({
             url: `/screenshot`,

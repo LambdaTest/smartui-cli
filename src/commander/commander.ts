@@ -23,6 +23,7 @@ program
     .option('--baselineBranch <string>', 'Mark this build baseline')
     .option('--baselineBuild <string>', 'Mark this build baseline')
     .option('--githubURL <string>', 'GitHub URL including commitId')
+    .option('--gitURL <string>', 'Git URL including commitId')
     .option('--userName <string>', 'Specify the LT username')
     .option('--accessKey <string>', 'Specify the LT accesskey')
     .addCommand(exec)

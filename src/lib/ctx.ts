@@ -114,6 +114,12 @@ export default (options: Record<string, string>): Context => {
             orientation: config.mobile.orientation || constants.MOBILE_ORIENTATION_PORTRAIT,
         }
     }
+    if (env.BASIC_AUTH_USERNAME && env.BASIC_AUTH_PASSWORD) {
+        basicAuthObj = {
+            'username': env.BASIC_AUTH_USERNAME,
+            'password': env.BASIC_AUTH_PASSWORD
+        }
+    }
     if (config.basicAuthorization) {
         basicAuthObj = config.basicAuthorization;
     }
@@ -213,7 +219,7 @@ export default (options: Record<string, string>): Context => {
             fetchResultsFileName: fetchResultsFileObj,
             baselineBranch: options.baselineBranch || '',
             baselineBuild: options.baselineBuild || '',
-            githubURL : options.githubURL || '',
+            githubURL : options.gitURL || options.githubURL || '',
             showRenderErrors: options.showRenderErrors ? true : false,
             userName: options.userName || '',
             accessKey: options.accessKey || ''
