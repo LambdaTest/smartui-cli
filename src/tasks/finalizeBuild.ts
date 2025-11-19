@@ -33,7 +33,6 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
                 ctx.log.debug('Ping polling stopped immediately from Finalize Build');
             }
             
-            const totalSessions = ctx.sessionCapabilitiesMap.size;
 
             let uploadedCliLogsBuildIds = new Set<string>();
             
@@ -60,7 +59,6 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
                     }
                     ctx.log.debug(`Capabilities for sessionId ${sessionId}: ${JSON.stringify(capabilities)}`)
                     if (buildId && projectToken) {
-                        // Upload logs only on the last iteration
                         if (ctx.isSnapshotCaptured && !uploadedCliLogsBuildIds.has(buildId)) {
                             let uploadCLILogsToS3 = ctx.config.useLambdaInternal || uploadDomToS3ViaEnv;
                             if (!uploadCLILogsToS3) {
