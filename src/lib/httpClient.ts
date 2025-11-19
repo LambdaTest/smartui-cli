@@ -539,6 +539,19 @@ export default class httpClient {
         }, ctx.log)
     }
 
+    getS3PreSignedURLForCaps(ctx: Context, capsBuildId: string, capsProjectToken: string) {
+        return this.request({
+            url: `/loguploadurl`,
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json',
+                projectToken: capsProjectToken !== '' ? capsProjectToken : this.projectToken
+            },
+            data: {
+                buildId: capsBuildId
+            }
+        }, ctx.log)
+    }
+
     getS3PresignedURLForSnapshotUpload(ctx: Context, snapshotName: string, snapshotUuid: string) {
         return this.request({
             url: `/snapshotuploadurl`,
@@ -601,7 +614,7 @@ export default class httpClient {
     }
 
     uploadLogs(ctx: Context, uploadURL: string) {
-        const fileStream = fs.createReadStream(constants.LOG_FILE_PATH);
+        const logContent = fs.readFileSync(constants.LOG_FILE_PATH);
         const { size } = fs.statSync(constants.LOG_FILE_PATH);
 
         return this.request({
@@ -611,7 +624,7 @@ export default class httpClient {
                 'Content-Type': 'text/plain',
                 'Content-Length': size,
             },
-            data: fileStream,
+            data: logContent,
             maxBodyLength: Infinity, // prevent axios from limiting the body size
             maxContentLength: Infinity, // prevent axios from limiting the content size
         }, ctx.log)
@@ -625,6 +638,22 @@ export default class httpClient {
             method: 'POST',
             data: {
                 buildId: ctx.build.id,
+                logContent: logContent,
+                skipLogging: true
+            }
+        }, ctx.log);
+    }
+
+    sendCliLogsToLSRSForCaps(ctx: Context, capsBuildId: string, capsProjectToken: string) {
+        const logContent = fs.readFileSync(constants.LOG_FILE_PATH, 'utf-8');
+        return this.request({
+            url: `/upload/logs`,
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json',
+                projectToken: capsProjectToken !== '' ? capsProjectToken : this.projectToken
+            },
+            data: {
+                buildId: capsBuildId,
                 logContent: logContent,
                 skipLogging: true
             }
