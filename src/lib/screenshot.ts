@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { Browser, BrowserContext, Page } from "@playwright/test"
-import { Context } from "../types.js"
+import { Context, DiscoveryErrors } from "../types.js"
 import * as utils from "./utils.js"
 import constants from './constants.js'
 import chalk from 'chalk';
@@ -10,9 +10,9 @@ import sharp from 'sharp';
 async function captureScreenshotsForConfig(
     ctx: Context,
     browsers: Record<string, Browser>,
-    urlConfig : Record<string, any>, 
+    urlConfig: Record<string, any>,
     browserName: string,
-    renderViewports: Array<Record<string,any>>
+    renderViewports: Array<Record<string, any>>
 ): Promise<void> {
     ctx.log.debug(`*** urlConfig  ${JSON.stringify(urlConfig)}`);
 
@@ -22,7 +22,18 @@ async function captureScreenshotsForConfig(
     let beforeSnapshotScript = execute?.beforeSnapshot;
     let waitUntilEvent = pageEvent || process.env.SMARTUI_PAGE_WAIT_UNTIL_EVENT || 'load';
 
-    let pageOptions = { waitUntil: waitUntilEvent, timeout: ctx.config.waitForPageRender || constants.DEFAULT_PAGE_LOAD_TIMEOUT};
+    let discoveryErrors: DiscoveryErrors = {
+        name: "",
+        url: "",
+        timestamp: "",
+        snapshotUUID: "",
+        browsers: {}
+    };
+
+    let globalViewport = ""
+    let globalBrowser = constants.CHROME
+
+    let pageOptions = { waitUntil: waitUntilEvent, timeout: ctx.config.waitForPageRender || constants.DEFAULT_PAGE_LOAD_TIMEOUT };
     ctx.log.debug(`url:  ${url}  pageOptions: ${JSON.stringify(pageOptions)}`);
     let ssId = name.toLowerCase().replace(/\s/g, '_');
     let context: BrowserContext;
@@ -106,8 +117,8 @@ async function captureScreenshotsForConfig(
     else if (browserName == constants.SAFARI) contextOptions.userAgent = constants.SAFARI_USER_AGENT;
     else if (browserName == constants.EDGE) contextOptions.userAgent = constants.EDGE_USER_AGENT;
     if (ctx.config.userAgent || userAgent) {
-        if(ctx.config.userAgent !== ""){
-        contextOptions.userAgent = ctx.config.userAgent;
+        if (ctx.config.userAgent !== "") {
+            contextOptions.userAgent = ctx.config.userAgent;
         }
         if (userAgent && userAgent !== "") {
             contextOptions.userAgent = userAgent;
@@ -155,19 +166,104 @@ async function captureScreenshotsForConfig(
             await page.setExtraHTTPHeaders(headersObject);
         }
 
+
+        if (ctx.env.CAPTURE_RENDERING_ERRORS) {
+            await page.route('**/*', async (route, request) => {
+                const requestUrl = request.url()
+                const requestHostname = new URL(requestUrl).hostname;
+                let requestOptions: Record<string, any> = {
+                    timeout: 30000,
+                    headers: {
+                        ...await request.allHeaders(),
+                        ...constants.REQUEST_HEADERS
+                    }
+                }
+
+                try {
+
+                    // get response
+                    let response, body;
+                    response = await page.request.fetch(request, requestOptions);
+                    body = await response.body();
+
+                    let data = {
+                        statusCode: `${response.status()}`,
+                        url: requestUrl,
+                    }
+
+                    if ((response.status() >= 400 && response.status() < 600) && response.status() !== 0) {
+                        if (!discoveryErrors.browsers[globalBrowser]) {
+                            discoveryErrors.browsers[globalBrowser] = {};
+                        }
+
+                        // Check if the discoveryErrors.browsers[globalBrowser] exists, and if not, initialize it
+                        if (discoveryErrors.browsers[globalBrowser] && !discoveryErrors.browsers[globalBrowser][globalViewport]) {
+                            discoveryErrors.browsers[globalBrowser][globalViewport] = [];
+                        }
+
+                        // Dynamically push the data into the correct browser and viewport
+                        if (discoveryErrors.browsers[globalBrowser]) {
+                            discoveryErrors.browsers[globalBrowser][globalViewport]?.push(data as any);
+                        }
+
+                        ctx.build.hasDiscoveryError = true;
+                    }
+
+                    // Continue the request with the fetched response
+                    route.fulfill({
+                        status: response.status(),
+                        headers: response.headers(),
+                        body: body,
+                    });
+                } catch (error: any) {
+                    ctx.log.debug(`Handling request ${requestUrl}\n - aborted due to ${error.message}`);
+                    route.abort();
+                }
+            });
+        }
+
+        if (renderViewports && renderViewports.length > 0) {
+            const first = renderViewports[0];
+            globalViewport = first.viewportString;
+            globalBrowser = browserName;
+            if (globalViewport.toLowerCase().includes("iphone") || globalViewport.toLowerCase().includes("ipad")) {
+                globalBrowser = constants.WEBKIT;
+            }
+        }
+
+        if (browserName == constants.SAFARI || (globalViewport.toLowerCase().includes("iphone") || globalViewport.toLowerCase().includes("ipad"))) {
+            globalBrowser = constants.WEBKIT;
+        }
+
         await page?.goto(url.trim(), pageOptions);
         await executeDocumentScripts(ctx, page, "afterNavigation", afterNavigationScript)
 
         for (let { viewport, viewportString, fullPage } of renderViewports) {
+            globalViewport = viewportString;
+            globalBrowser = browserName
+            ctx.log.debug(`globalViewport : ${globalViewport}`);
+            if (browserName == constants.SAFARI || (globalViewport.toLowerCase().includes("iphone") || globalViewport.toLowerCase().includes("ipad"))) {
+                globalBrowser = constants.WEBKIT;
+            }
             let ssPath = `screenshots/${ssId}/${`${browserName}-${viewport.width}x${viewport.height}`}-${ssId}.png`;
             await page?.setViewportSize({ width: viewport.width, height: viewport.height || constants.MIN_VIEWPORT_HEIGHT });
             if (fullPage) await page?.evaluate(utils.scrollToBottomAndBackToTop);
             await page?.waitForTimeout(waitForTimeout || 0);
             await executeDocumentScripts(ctx, page, "beforeSnapshot", beforeSnapshotScript)
 
+            discoveryErrors.name = name;
+            discoveryErrors.url = url;
+            discoveryErrors.timestamp = new Date().toISOString();
             await page?.screenshot({ path: ssPath, fullPage });
 
-            await ctx.client.uploadScreenshot(ctx.build, ssPath, name, browserName, viewportString, url, ctx.log);
+            await ctx.client.uploadScreenshot(ctx.build, ssPath, name, browserName, viewportString, url, ctx.log, discoveryErrors, ctx);
+            discoveryErrors = {
+                name: "",
+                url: "",
+                timestamp: "",
+                snapshotUUID: "",
+                browsers: {}
+            };
         }
     } catch (error) {
         throw new Error(`captureScreenshotsForConfig failed for browser ${browserName}; error: ${error}`);
@@ -175,7 +271,7 @@ async function captureScreenshotsForConfig(
         await page?.close();
         await context?.close();
     }
-    
+
 }
 
 async function captureScreenshotsAsync(
@@ -185,8 +281,8 @@ async function captureScreenshotsAsync(
 ): Promise<void[]> {
     let capturePromises: Array<Promise<void>> = [];
 
-     // capture screenshots for web config
-     if (ctx.config.web) {
+    // capture screenshots for web config
+    if (ctx.config.web) {
         for (let browserName of ctx.config.web.browsers) {
             let webRenderViewports = utils.getWebRenderViewports(ctx);
             capturePromises.push(captureScreenshotsForConfig(ctx, browsers, staticConfig, browserName, webRenderViewports))
@@ -211,8 +307,8 @@ async function captureScreenshotsSync(
     staticConfig: Record<string, any>,
     browsers: Record<string, Browser>
 ): Promise<void> {
-     // capture screenshots for web config
-     if (ctx.config.web) {
+    // capture screenshots for web config
+    if (ctx.config.web) {
         for (let browserName of ctx.config.web.browsers) {
             let webRenderViewports = utils.getWebRenderViewports(ctx);
             await captureScreenshotsForConfig(ctx, browsers, staticConfig, browserName, webRenderViewports);
@@ -230,11 +326,11 @@ async function captureScreenshotsSync(
     }
 }
 
-export async function  captureScreenshots(ctx: Context): Promise<Record<string,any>> {
+export async function captureScreenshots(ctx: Context): Promise<Record<string, any>> {
     // Clean up directory to store screenshots
     utils.delDir('screenshots');
 
-    let browsers: Record<string,Browser> = {};
+    let browsers: Record<string, Browser> = {};
     let capturedScreenshots: number = 0;
     let output: string = '';
 
@@ -363,7 +459,13 @@ export async function uploadScreenshots(ctx: Context): Promise<void> {
                         }
                     }
 
-                    await ctx.client.uploadScreenshot(ctx.build, filePath, ssId, 'default', viewport,"", ctx.log);
+                    await ctx.client.uploadScreenshot(ctx.build, filePath, ssId, 'default', viewport, "", ctx.log, {
+                        name: "",
+                        url: "",
+                        timestamp: new Date().toISOString(),
+                        snapshotUUID: "",
+                        browsers: {}
+                    }, ctx);
                     ctx.log.info(`${filePath} : uploaded successfully`)
                     noOfScreenshots++;
                 } else {
@@ -374,20 +476,20 @@ export async function uploadScreenshots(ctx: Context): Promise<void> {
     }
 
     await processDirectory(ctx.uploadFilePath);
-    if(noOfScreenshots == 0){
+    if (noOfScreenshots == 0) {
         ctx.log.info(`No screenshots uploaded.`);
     } else {
         ctx.log.info(`${noOfScreenshots} screenshots uploaded successfully.`);
     }
 }
 
-export async function captureScreenshotsConcurrent(ctx: Context): Promise<Record<string,any>> {
+export async function captureScreenshotsConcurrent(ctx: Context): Promise<Record<string, any>> {
     // Clean up directory to store screenshots
     utils.delDir('screenshots');
 
     let totalSnapshots = ctx.webStaticConfig && ctx.webStaticConfig.length;
     let browserInstances = ctx.options.parallel || 1;
-    let optimizeBrowserInstances : number = 0
+    let optimizeBrowserInstances: number = 0
     optimizeBrowserInstances = Math.floor(Math.log2(totalSnapshots));
     if (optimizeBrowserInstances < 1) {
         optimizeBrowserInstances = 1;
@@ -398,11 +500,11 @@ export async function captureScreenshotsConcurrent(ctx: Context): Promise<Record
     }
 
     // If force flag is set, use the requested browser instances
-    if (ctx.options.force && browserInstances > 1){
+    if (ctx.options.force && browserInstances > 1) {
         optimizeBrowserInstances = browserInstances;
     }
 
-    let urlsPerInstance : number = 0;
+    let urlsPerInstance: number = 0;
     if (optimizeBrowserInstances == 1) {
         urlsPerInstance = totalSnapshots;
     } else {
@@ -418,9 +520,9 @@ export async function captureScreenshotsConcurrent(ctx: Context): Promise<Record
     let output: any = '';
 
     const responses = await Promise.all(staticURLChunks.map(async (urlConfig) => {
-        let { capturedScreenshots, finalOutput} =  await processChunk(ctx, urlConfig);
+        let { capturedScreenshots, finalOutput } = await processChunk(ctx, urlConfig);
         return { capturedScreenshots, finalOutput };
-      }));
+    }));
 
     responses.forEach((response: Record<string, any>) => {
         totalCapturedScreenshots += response.capturedScreenshots;
@@ -432,17 +534,17 @@ export async function captureScreenshotsConcurrent(ctx: Context): Promise<Record
     return { totalCapturedScreenshots, output };
 }
 
-function splitURLs(arr : any, chunkSize : number) {
+function splitURLs(arr: any, chunkSize: number) {
     const result = [];
     for (let i = 0; i < arr.length; i += chunkSize) {
-      result.push(arr.slice(i, i + chunkSize));
+        result.push(arr.slice(i, i + chunkSize));
     }
     return result;
 }
 
-async function processChunk(ctx: Context, urlConfig: Array<Record<string, any>>): Promise<Record<string,any>> {
-    
-    let browsers: Record<string,Browser> = {};
+async function processChunk(ctx: Context, urlConfig: Array<Record<string, any>>): Promise<Record<string, any>> {
+
+    let browsers: Record<string, Browser> = {};
     let capturedScreenshots: number = 0;
     let finalOutput: string = '';
 
@@ -454,13 +556,13 @@ async function processChunk(ctx: Context, urlConfig: Array<Record<string, any>>)
         throw new Error(`Failed launching browsers ${error}`);
     }
 
-    for (let staticConfig of urlConfig) { 
+    for (let staticConfig of urlConfig) {
         try {
             await captureScreenshotsAsync(ctx, staticConfig, browsers);
 
             utils.delDir(`screenshots/${staticConfig.name.toLowerCase().replace(/\s/g, '_')}`);
             let output = (`${chalk.gray(staticConfig.name)} ${chalk.green('\u{2713}')}\n`);
-            ctx.task.output = ctx.task.output? ctx.task.output +output : output;
+            ctx.task.output = ctx.task.output ? ctx.task.output + output : output;
             finalOutput += output;
             capturedScreenshots++;
         } catch (error) {
@@ -488,6 +590,6 @@ async function executeDocumentScripts(ctx: Context, page: Page, actionType: stri
         }
     } catch (error) {
         ctx.log.error(`Error executing script for action ${actionType}: `, error);
-        throw error;  
+        throw error;
     }
 }
