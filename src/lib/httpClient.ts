@@ -611,7 +611,7 @@ export default class httpClient {
     }
 
     uploadLogs(ctx: Context, uploadURL: string) {
-        const fileStream = fs.createReadStream(constants.LOG_FILE_PATH);
+        const logContent = fs.readFileSync(constants.LOG_FILE_PATH);
         const { size } = fs.statSync(constants.LOG_FILE_PATH);
 
         return this.request({
@@ -621,7 +621,7 @@ export default class httpClient {
                 'Content-Type': 'text/plain',
                 'Content-Length': size,
             },
-            data: fileStream,
+            data: logContent,
             maxBodyLength: Infinity, // prevent axios from limiting the body size
             maxContentLength: Infinity, // prevent axios from limiting the content size
         }, ctx.log)
