@@ -33,6 +33,9 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
                 ctx.log.debug('Ping polling stopped immediately from Finalize Build');
             }
             
+
+            let uploadedCliLogsBuildIds = new Set<string>();
+            
             for (const [sessionId, capabilities] of ctx.sessionCapabilitiesMap.entries()) {
                 try {
                     const buildId = capabilities?.buildId || '';
@@ -56,6 +59,18 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
                     }
                     ctx.log.debug(`Capabilities for sessionId ${sessionId}: ${JSON.stringify(capabilities)}`)
                     if (buildId && projectToken) {
+                        if (ctx.isSnapshotCaptured && !uploadedCliLogsBuildIds.has(buildId)) {
+                            let uploadCLILogsToS3 = ctx.config.useLambdaInternal || uploadDomToS3ViaEnv;
+                            if (!uploadCLILogsToS3) {
+                                ctx.log.debug(`Log file to be uploaded`)
+                                let resp = await ctx.client.getS3PreSignedURLForCaps(ctx, buildId, projectToken);
+                                await ctx.client.uploadLogs(ctx, resp.data.url);
+                            } else {
+                                ctx.log.debug(`Log file to be uploaded via LSRS`)
+                                ctx.client.sendCliLogsToLSRSForCaps(ctx, buildId, projectToken);
+                            }
+                            uploadedCliLogsBuildIds.add(buildId);
+                        }
                         await ctx.client.finalizeBuildForCapsWithToken(buildId, totalSnapshots, projectToken, ctx.log);
                         if (ctx.autoTunnelStarted) {
 							await startPollingForTunnel(ctx, buildId, false, projectToken, capabilities?.buildName);
