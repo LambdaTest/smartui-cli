@@ -38,6 +38,9 @@ export default (ctx: Context): Git => {
 	if (ctx.options.githubURL && ctx.options.githubURL.startsWith('https://')) {
 		githubURL = ctx.options.githubURL;
 	}
+	if (ctx.options.gitURL && ctx.options.gitURL.startsWith('https://')) {
+		githubURL = ctx.options.gitURL;
+	}
 	if (ctx.env.SMARTUI_GIT_INFO_FILEPATH) {
 		let gitInfo = JSON.parse(fs.readFileSync(ctx.env.SMARTUI_GIT_INFO_FILEPATH, 'utf-8'));
 
@@ -51,7 +54,7 @@ export default (ctx: Context): Git => {
 			commitId: gitInfo.commit_id.slice(0,6) || '',
 			commitMessage: gitInfo.commit_body || '',
 			commitAuthor: gitInfo.commit_author || '',
-			githubURL: githubURL ? githubURL : (ctx.env.GITHUB_ACTIONS) ? `${constants.GITHUB_API_HOST}/repos/${process.env.GITHUB_REPOSITORY}/statuses/${gitInfo.commit_id}` : '',
+			githubURL: githubURL ? githubURL : (ctx.env.GIT_URL) ? ctx.env.GIT_URL : `${constants.GITHUB_API_HOST}/repos/${process.env.GITHUB_REPOSITORY}/statuses/${gitInfo.commit_id}`,
 			baselineBranch: ctx.options.baselineBranch || ctx.env.BASELINE_BRANCH || ''
 		}
 	} else {
@@ -78,7 +81,7 @@ export default (ctx: Context): Git => {
 			commitId: res[0] || '',
 			commitMessage: res[2] || '',
 			commitAuthor: res[7] || '',
-			githubURL: githubURL ? githubURL : (ctx.env.GITHUB_ACTIONS) ? `${constants.GITHUB_API_HOST}/repos/${process.env.GITHUB_REPOSITORY}/statuses/${res[1]}` : '',
+			githubURL: githubURL ? githubURL : (ctx.env.GIT_URL) ? ctx.env.GIT_URL : `${constants.GITHUB_API_HOST}/repos/${process.env.GITHUB_REPOSITORY}/statuses/${res[1]}`,
 			baselineBranch: ctx.options.baselineBranch || ctx.env.BASELINE_BRANCH || ''
 		};
 	}
@@ -94,6 +97,9 @@ function setNonGitInfo(ctx: Context) {
 	let githubURL;
 	if (ctx.options.githubURL && ctx.options.githubURL.startsWith('https://')) {
 		githubURL = ctx.options.githubURL;
+	}
+	if (ctx.options.gitURL && ctx.options.gitURL.startsWith('https://')) {
+		githubURL = ctx.options.gitURL;
 	}
 
 	ctx.git = {
