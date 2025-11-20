@@ -112,10 +112,10 @@ export default class httpClient {
 
     async request(config: AxiosRequestConfig, log: Logger): Promise<Record<string, any>> {
         log.debug(`http request: ${config.method} ${config.url}`);
-        if (config && config.data && !config.data.skipLogging && !config.data.name && !config.data.snapshot) {
+        if (config && config.data && !config.data.skipLogging && !config.data.name && !config.data.snapshot && config.method!=='PUT') {
             log.debug(config.data);
         }
-        if (config && config.data && !config.data.skipLogging && config.data.snapshotUuid) {
+        if (config && config.data && !config.data.skipLogging && config.data.snapshotUuid && config.method!=='PUT') {
             log.debug(config.data);
         }
         return this.axiosInstance.request(config)
@@ -307,7 +307,8 @@ export default class httpClient {
                 git,
                 config,
                 isStartExec,
-                baselineBuild
+                baselineBuild,
+                packageVersion: pkgJSON.version,
             },
             headers: {
                 projectToken: '',
@@ -614,7 +615,24 @@ export default class httpClient {
     }
 
     uploadLogs(ctx: Context, uploadURL: string) {
-        const logContent = fs.readFileSync(constants.LOG_FILE_PATH);
+        const fileStream = fs.createReadStream(constants.LOG_FILE_PATH);
+        const { size } = fs.statSync(constants.LOG_FILE_PATH);
+
+        return this.request({
+            url: uploadURL,
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'text/plain',
+                'Content-Length': size,
+            },
+            data: fileStream,
+            maxBodyLength: Infinity, // prevent axios from limiting the body size
+            maxContentLength: Infinity, // prevent axios from limiting the content size
+        }, ctx.log)
+    }
+
+    uploadLogsForCaps(ctx: Context, uploadURL: string) {
+        const logContent = fs.readFileSync(constants.LOG_FILE_PATH)
         const { size } = fs.statSync(constants.LOG_FILE_PATH);
 
         return this.request({
