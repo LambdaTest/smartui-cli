@@ -64,7 +64,7 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
                             if (!uploadCLILogsToS3) {
                                 ctx.log.debug(`Log file to be uploaded`)
                                 let resp = await ctx.client.getS3PreSignedURLForCaps(ctx, buildId, projectToken);
-                                await ctx.client.uploadLogs(ctx, resp.data.url);
+                                await ctx.client.uploadLogsForCaps(ctx, resp.data.url);
                             } else {
                                 ctx.log.debug(`Log file to be uploaded via LSRS`)
                                 ctx.client.sendCliLogsToLSRSForCaps(ctx, buildId, projectToken);
