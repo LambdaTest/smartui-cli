@@ -307,7 +307,8 @@ export default class httpClient {
                 git,
                 config,
                 isStartExec,
-                baselineBuild
+                baselineBuild,
+                packageVersion: pkgJSON.version,
             },
             headers: {
                 projectToken: '',
