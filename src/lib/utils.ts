@@ -63,7 +63,7 @@ export async function launchBrowsers(ctx: Context): Promise<Record<string, Brows
     const isHeadless = process.env.HEADLESS?.toLowerCase() === 'false' ? false : true;
     let launchOptions: Record<string, any> = { headless: isHeadless };
     
-    const proxyServer = process.env.HTTPS_PROXY || process.env.HTTP_PROXY;
+    const proxyServer = ctx.env.SMARTUI_HTTPS_PROXY || ctx.env.SMARTUI_HTTP_PROXY || ctx.env.HTTPS_PROXY || ctx.env.HTTP_PROXY;
     if (proxyServer) {
         launchOptions.proxy = { server: proxyServer };
     }

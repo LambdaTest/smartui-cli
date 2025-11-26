@@ -22,14 +22,6 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
                     }
                     process.env.SMARTUI_BUILD_ID = resp.data.buildId;
                     process.env.SMARTUI_BUILD_NAME = resp.data.buildName;
-                    const httpProxy = ctx.env.SMARTUI_HTTP_PROXY || ctx.env.HTTP_PROXY;
-                    if (httpProxy) {
-                        process.env.HTTP_PROXY = httpProxy;
-                    }
-                    const httpsProxy = ctx.env.SMARTUI_HTTPS_PROXY || ctx.env.HTTPS_PROXY;
-                    if (httpsProxy) {
-                        process.env.HTTPS_PROXY = httpsProxy;
-                    }
                 } else if (resp && resp.error) {
                     if (resp.error.message) {
                         ctx.log.error(`Error while creation of build: ${resp.error.message}`)
