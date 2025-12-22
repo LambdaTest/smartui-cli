@@ -739,6 +739,18 @@ const FigmaWebConfigSchema: JSONSchemaType<Object> = {
                                     "type": "string"
                                 },
                                 uniqueItems: false
+                            },
+                            "screenshot_viewports": {
+                                "type": "array",
+                                "items": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "integer",
+                                        "minimum": 1
+                                    },
+                                    "minItems": 1,
+                                    "maxItems": 2
+                                }
                             }
                         },
                         "required": ["figma_file_token", "figma_ids"]

@@ -107,6 +107,9 @@ export function verifyFigmaWebConfig(ctx: Context) {
         if (c.screenshot_names && c.screenshot_names.length > 0 && c.figma_ids && c.figma_ids.length != c.screenshot_names.length) {
             throw new Error("Mismatch in Figma Ids and Screenshot Names in figma config");
         }
+        if(c.screenshot_viewports && c.screenshot_viewports.length > 0 && c.figma_ids && c.figma_ids.length != c.screenshot_viewports.length) {
+            throw new Error("Mismatch in Figma Ids and Screenshot Viewports in figma config");
+        }
         if (isValidArray(c.screenshot_names)) {
             for (const name of c.screenshot_names) {
                 screenshots.push(name);
