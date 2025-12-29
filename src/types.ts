@@ -84,6 +84,7 @@ export interface Context {
         githubURL?: string,
         gitURL?: string,
         showRenderErrors?: boolean,
+        pdfNames?: string,
         userName?: string,
         accessKey?: string
     }

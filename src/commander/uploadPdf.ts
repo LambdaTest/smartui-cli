@@ -15,6 +15,7 @@ command
     .option('--fetch-results [filename]', 'Fetch results and optionally specify an output file, e.g., <filename>.json')
     .option('--buildName <string>', 'Specify the build name')
     .option('--markBaseline', 'Mark this build baseline')
+    .option('--pdfNames <string>', 'Specify PDF names for the upload')
     .action(async function(directory, _, command) {
         const options = command.optsWithGlobals();
         if (options.buildName === '') {

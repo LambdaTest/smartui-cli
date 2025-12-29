@@ -44,13 +44,14 @@ async function uploadPdfs(ctx: Context, pdfPath: string): Promise<void> {
     }
 
     const buildName = ctx.options.buildName;
+    const pdfNames = ctx.options.pdfNames;
 
     if (buildName) {
         ctx.build.name = buildName;
     }
 
     try {
-        const response = await ctx.client.uploadPdf(ctx, formData, buildName);
+        const response = await ctx.client.uploadPdf(ctx, formData, buildName, pdfNames);
         if (response && response.buildId) {
             ctx.build.id = response.buildId;
             ctx.log.debug(`PDF upload successful. Build ID: ${ctx.build.id}`);
