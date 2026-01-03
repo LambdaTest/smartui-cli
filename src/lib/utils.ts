@@ -58,6 +58,40 @@ export function scrollToBottomAndBackToTop({
     });
 }
 
+export function smoothScrollToBottom({
+  step = 250,
+  delay = 300,
+  maxScrolls = 50,
+  jumpBackToTop = true
+} = {}): Promise<void> {
+  return new Promise((resolve) => {
+    let totalHeight = document.body.scrollHeight;
+    let currentScroll = window.scrollY;
+    let scrollCount = 0;
+
+    function scroll() {
+      if (currentScroll + window.innerHeight >= totalHeight || scrollCount >= maxScrolls) {
+        if (jumpBackToTop) {
+          window.scrollTo(0, 0);
+        }
+        resolve();
+        return;
+      }
+
+      window.scrollBy(0, step);
+      scrollCount++;
+
+      setTimeout(() => {
+        currentScroll = window.scrollY;
+        totalHeight = document.body.scrollHeight;
+        scroll();
+      }, delay);
+    }
+
+    scroll();
+  });
+}
+
 export async function launchBrowsers(ctx: Context): Promise<Record<string, Browser>> {
     let browsers: Record<string, Browser> = {};
     const isHeadless = process.env.HEADLESS?.toLowerCase() === 'false' ? false : true;

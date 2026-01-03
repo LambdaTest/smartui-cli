@@ -1,4 +1,4 @@
-import { Context, Env, WebConfig, MobileConfig, basicAuth, tunnelConfig } from '../types.js'
+import { Context, Env, WebConfig, MobileConfig, basicAuth, tunnelConfig, lazyLoadConfig } from '../types.js'
 import constants from './constants.js'
 import { version } from '../../package.json'
 import { validateConfig, validateConfigForScheduled } from './schemaValidation.js'
@@ -13,6 +13,7 @@ export default (options: Record<string, string>): Context => {
     let webConfig: WebConfig;
     let mobileConfig: MobileConfig;
     let basicAuthObj: basicAuth
+    let lazyLoadConfigObj: lazyLoadConfig
     let tunnelObj: tunnelConfig
     let config = constants.DEFAULT_CONFIG;
     let port: number;
@@ -123,6 +124,9 @@ export default (options: Record<string, string>): Context => {
     if (config.basicAuthorization) {
         basicAuthObj = config.basicAuthorization;
     }
+    if (config.lazyLoadConfiguration) {
+        lazyLoadConfigObj = config.lazyLoadConfiguration;
+    }
     if (config.tunnel) {
         tunnelObj = config.tunnel;
     }
@@ -163,6 +167,7 @@ export default (options: Record<string, string>): Context => {
             allowedHostnames: config.allowedHostnames || [],
             allowedAssets: config.allowedAssets || [],
             basicAuthorization: basicAuthObj,
+            lazyLoadConfiguration: lazyLoadConfigObj,
             smartIgnore: config.smartIgnore ?? false,
             delayedUpload: config.delayedUpload ?? false,
             useGlobalCache: config.useGlobalCache ?? false,
