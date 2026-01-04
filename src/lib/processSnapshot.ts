@@ -1,5 +1,5 @@
 import { Snapshot, Context, DiscoveryErrors } from "../types.js";
-import { scrollToBottomAndBackToTop, getRenderViewports, getRenderViewportsForOptions, validateCoordinates, resolveCustomCSS, parseCSSFile, validateCSSSelectors, generateCSSInjectionReport } from "./utils.js"
+import { scrollToBottomAndBackToTop, smoothScrollToBottom, getRenderViewports, getRenderViewportsForOptions, validateCoordinates, resolveCustomCSS, parseCSSFile, validateCSSSelectors, generateCSSInjectionReport } from "./utils.js"
 import { chromium, Locator } from "@playwright/test"
 import constants from "./constants.js";
 import { updateLogContext } from '../lib/logger.js'
@@ -167,6 +167,21 @@ export async function prepareSnapshot(snapshot: Snapshot, ctx: Context): Promise
     }
     if (ctx.config.useExtendedViewport) {
         processedOptions.useExtendedViewport = true;
+    }
+
+    if (ctx.config.lazyLoadConfiguration && ctx.config.lazyLoadConfiguration.enabled) {
+        let stepValue = ctx.config.lazyLoadConfiguration.scrollStep || 250;
+        let delayValue = ctx.config.lazyLoadConfiguration.scrollDelay || 100;
+        let maxScrollsValue = ctx.config.lazyLoadConfiguration.maxScrolls || 50;
+        let jumpBackToTopValue = ctx.config.lazyLoadConfiguration.jumpBackToTop !== false;
+        //Add this in processed options inside lazyLoadConfiguration key
+        processedOptions.lazyLoadConfiguration = {
+            enabled: true,
+            scrollStep: stepValue,
+            scrollDelay: delayValue,
+            maxScrolls: maxScrollsValue,
+            jumpBackToTop: jumpBackToTopValue
+        };
     }
 
     try {
@@ -654,6 +669,21 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
         renderViewports = getRenderViewports(ctx);
     }
 
+    if (ctx.config.lazyLoadConfiguration && ctx.config.lazyLoadConfiguration.enabled) {
+        let stepValue = ctx.config.lazyLoadConfiguration.scrollStep || 250;
+        let delayValue = ctx.config.lazyLoadConfiguration.scrollDelay || 100;
+        let maxScrollsValue = ctx.config.lazyLoadConfiguration.maxScrolls || 50;
+        let jumpBackToTopValue = ctx.config.lazyLoadConfiguration.jumpBackToTop || false;
+        //Add this in processed options inside lazyLoadConfiguration key
+        processedOptions.lazyLoadConfiguration = {
+            enabled: true,
+            scrollStep: stepValue,
+            scrollDelay: delayValue,
+            maxScrolls: maxScrollsValue,
+            jumpBackToTop: jumpBackToTopValue
+        };
+    }
+
     for (const { viewport, viewportString, fullPage, device } of renderViewports) {
 
         // Check if this is the first iteration or if the device type has changed from the previous iteration
@@ -707,7 +737,19 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
             }
 
         }
-        if (ctx.config.cliEnableJavaScript && fullPage) await page.evaluate(scrollToBottomAndBackToTop, { frequency: 100, timing: ctx.config.scrollTime });
+        if (ctx.config.cliEnableJavaScript && fullPage) { 
+            if (ctx.config.lazyLoadConfiguration && ctx.config.lazyLoadConfiguration.enabled) {
+                let stepValue = ctx.config.lazyLoadConfiguration.scrollStep || 250;
+                let delayValue = ctx.config.lazyLoadConfiguration.scrollDelay || 300;
+                let maxScrollsValue = ctx.config.lazyLoadConfiguration.maxScrolls || 50;
+                let jumpBackToTopValue = ctx.config.lazyLoadConfiguration.jumpBackToTop !== false;
+                ctx.log.debug('Starting lazy load scrolling with configuration: ' + JSON.stringify({ step: stepValue, delay: delayValue, maxScrolls: maxScrollsValue, jumpBackToTop: jumpBackToTopValue }));
+                await page.evaluate(smoothScrollToBottom, { step: stepValue, delay: delayValue, maxScrolls: maxScrollsValue, jumpBackToTop: jumpBackToTopValue });
+                ctx.log.debug('Completed lazy load scrolling');
+            } else {
+                await page.evaluate(scrollToBottomAndBackToTop, { frequency: 100, timing: ctx.config.scrollTime });
+            }
+        }
 
         try {
             await page.waitForLoadState('networkidle', { timeout: 15000 });
