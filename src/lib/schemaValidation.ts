@@ -344,6 +344,12 @@ const ConfigSchema = {
         showRenderErrors: {
             type: "boolean",
             errorMessage: "Invalid config; showRenderErrors must be true/false"
+        },
+        mismatchOpacity: {
+            type:"number",
+            minimum: 0,
+            maximum:100,
+            errorMessage: "Invalid config; mismatchOpacity must be a number"
         }
     },
     anyOf: [

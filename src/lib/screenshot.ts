@@ -71,7 +71,7 @@ async function captureScreenshotsForConfig(
         } else if (ctx.config.geolocation && ctx.config.geolocation !== '') {
             // Use cached geolocation proxy if available for the same geolocation key
             if (ctx.geolocationData && ctx.geolocationData.proxy && ctx.geolocationData.username && ctx.geolocationData.password && ctx.geolocationData.geoCode === ctx.config.geolocation) {
-                ctx.log.info(`URL Capture :: Using cached geolocation proxy for ${ctx.config.geolocation}`);
+                ctx.log.info(`URL Capture :: Using cached geolocation proxy for ${ctx.config.geolocation} with vals ${ctx.geolocationData.proxy}) }`);
                 contextOptions.proxy = {
                     server: ctx.geolocationData.proxy,
                     username: ctx.geolocationData.username,
@@ -79,7 +79,7 @@ async function captureScreenshotsForConfig(
                 };
             } else {
                 const geoResp = await ctx.client.getGeolocationProxy(ctx.config.geolocation, ctx.log);
-            ctx.log.debug(`Geolocation proxy response: ${JSON.stringify(geoResp)}`);
+                ctx.log.debug(`Geolocation proxy response: ${JSON.stringify(geoResp)}`);
             if (geoResp && geoResp.data && geoResp.data.proxy && geoResp.data.username && geoResp.data.password) {
                 ctx.log.info(`URL Capture :: Using geolocation proxy for ${ctx.config.geolocation}`);
                     ctx.geolocationData = {
