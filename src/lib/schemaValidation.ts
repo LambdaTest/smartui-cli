@@ -175,6 +175,39 @@ const ConfigSchema = {
                 },
             }
         },
+        lazyLoadConfiguration: {
+            type: "object",
+            properties: {
+                enabled: {
+                    type: "boolean",
+                    errorMessage: "Invalid config; lazyLoad enabled must be true/false"
+                },
+                scrollStep: {
+                    type: "number",
+                    minimum: 50,
+                    maximum: 2000,
+                    errorMessage: "Invalid config; lazyLoad scrollStep must be > 50 and <= 2000"
+                },
+                scrollDelay: {
+                    type: "number",
+                    minimum: 100,
+                    maximum: 5000,
+                    errorMessage: "Invalid config; lazyLoad scrollDelay must be > 100 and <= 5000"
+                },
+                maxScrolls: {
+                    type: "number",
+                    minimum: 1,
+                    maximum: 100,
+                    errorMessage: "Invalid config; lazyLoad maxScrolls must be > 1 and <= 100"
+                },
+                jumpBackToTop: {
+                    type: "boolean",    
+                    errorMessage: "Invalid config; lazyLoad jumpBackToTop must be true/false"
+                }
+            },
+            required: ["enabled"],
+            additionalProperties: false
+        },
         delayedUpload: {
             type: "boolean",
             errorMessage: "Invalid config; delayedUpload must be true/false"

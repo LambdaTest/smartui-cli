@@ -27,6 +27,7 @@ export interface Context {
         allowedHostnames: Array<string>;
         allowedAssets: Array<string>;
         basicAuthorization: basicAuth | undefined;
+        lazyLoadConfiguration: lazyLoadConfig | undefined;
         smartIgnore: boolean;
         delayedUpload: boolean;
         useGlobalCache: boolean;
@@ -254,6 +255,14 @@ export type FigmaDesignConfig = {
 export interface basicAuth {
     username: string;
     password: string;
+}
+
+export interface lazyLoadConfig {
+    enabled: boolean;
+    scrollStep: number;
+    scrollDelay: number;
+    maxScrolls: number;
+    jumpBackToTop: boolean;
 }
 
 export interface tunnelConfig {
