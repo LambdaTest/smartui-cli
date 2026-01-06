@@ -45,7 +45,6 @@ async function uploadPdfs(ctx: Context, pdfPath: string): Promise<void> {
 
     const buildName = ctx.options.buildName;
     const pdfNames = ctx.options.pdfNames;
-    ctx.log.debug(`PDF NAMES: ${pdfNames}`);
 
     if (buildName) {
         ctx.build.name = buildName;
