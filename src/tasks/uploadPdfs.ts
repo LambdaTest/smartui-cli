@@ -35,7 +35,7 @@ async function uploadPdfs(ctx: Context, pdfPath: string): Promise<void> {
         formData.append('pathToFiles', fs.createReadStream(pdfPath));
     } else {
         const files = fs.readdirSync(pdfPath);
-        const pdfFiles = files.filter(file => file.endsWith('.pdf'));
+        const pdfFiles = files.filter(file => file.endsWith('.pdf')).sort();
 
         pdfFiles.forEach(pdf => {
             const filePath = path.join(pdfPath, pdf);
