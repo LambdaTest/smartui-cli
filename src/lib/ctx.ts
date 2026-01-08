@@ -227,7 +227,8 @@ export default (options: Record<string, string>): Context => {
             githubURL : options.gitURL || options.githubURL || '',
             showRenderErrors: options.showRenderErrors ? true : false,
             userName: options.userName || '',
-            accessKey: options.accessKey || ''
+            accessKey: options.accessKey || '',
+            pdfNames: options.pdfNames || ''
         },
         cliVersion: version,
         totalSnapshots: -1,
