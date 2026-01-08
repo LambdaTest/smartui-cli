@@ -186,8 +186,7 @@ export default (options: Record<string, string>): Context => {
             approvalThreshold: config.approvalThreshold,
             rejectionThreshold: config.rejectionThreshold,
             showRenderErrors: config.showRenderErrors ?? false,
-            customCSS: (config as any).customCSS,
-            mismatchOpacity: config.mismatchOpacity
+            customCSS: (config as any).customCSS
         },
         uploadFilePath: '',
         webStaticConfig: [],
