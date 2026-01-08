@@ -48,7 +48,6 @@ export interface Context {
         rejectionThreshold?: number;
         showRenderErrors?: boolean;
         customCSS?: string;
-        mismatchOpacity?: number;
     };
     uploadFilePath: string;
     webStaticConfig: WebStaticConfig;
