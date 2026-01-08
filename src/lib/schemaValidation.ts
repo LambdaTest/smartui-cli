@@ -344,7 +344,7 @@ const ConfigSchema = {
         showRenderErrors: {
             type: "boolean",
             errorMessage: "Invalid config; showRenderErrors must be true/false"
-        },
+        }
     },
     anyOf: [
         { required: ["web"] },
