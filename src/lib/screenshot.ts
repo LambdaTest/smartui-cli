@@ -79,7 +79,7 @@ async function captureScreenshotsForConfig(
                 };
             } else {
                 const geoResp = await ctx.client.getGeolocationProxy(ctx.config.geolocation, ctx.log);
-            ctx.log.debug(`Geolocation proxy response: ${JSON.stringify(geoResp)}`);
+                ctx.log.debug(`Geolocation proxy response: ${JSON.stringify(geoResp)}`);
             if (geoResp && geoResp.data && geoResp.data.proxy && geoResp.data.username && geoResp.data.password) {
                 ctx.log.info(`URL Capture :: Using geolocation proxy for ${ctx.config.geolocation}`);
                     ctx.geolocationData = {

@@ -772,13 +772,16 @@ export default class httpClient {
         }
     }
 
-    async uploadPdf(ctx: Context, form: FormData, buildName?: string): Promise<any> {
+    async uploadPdf(ctx: Context, form: FormData, buildName?: string, pdfNames?: string): Promise<any> {
         form.append('projectToken', this.projectToken);
         if (ctx.build.name !== undefined && ctx.build.name !== '') {
             form.append('buildName', buildName);
         }
         if (ctx.options.markBaseline) {
             form.append('markBaseline', ctx.options.markBaseline.toString());
+        }
+        if (pdfNames && pdfNames !== '') {
+            form.append('pdfNames', pdfNames);
         }
 
         try {
