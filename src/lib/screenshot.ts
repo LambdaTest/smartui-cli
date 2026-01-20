@@ -7,6 +7,17 @@ import constants from './constants.js'
 import chalk from 'chalk';
 import sharp from 'sharp';
 
+async function humanLikeScroll(page: Page) {
+  // Move mouse in human like manner
+  await page.waitForTimeout(2000);
+  await page.mouse.move(100, 100);
+  await page.waitForTimeout(300);
+  await page.mouse.move(300, 200);
+  await page.waitForTimeout(300);
+  await page.mouse.move(500, 300);
+  await page.waitForTimeout(2000);
+}
+
 async function captureScreenshotsForConfig(
     ctx: Context,
     browsers: Record<string, Browser>,
@@ -253,7 +264,25 @@ async function captureScreenshotsForConfig(
             }
             let ssPath = `screenshots/${ssId}/${`${browserName}-${viewport.width}x${viewport.height}`}-${ssId}.png`;
             await page?.setViewportSize({ width: viewport.width, height: viewport.height || constants.MIN_VIEWPORT_HEIGHT });
-            if (fullPage) await page?.evaluate(utils.scrollToBottomAndBackToTop);
+            // again load page to apply viewport size properly
+            await page?.goto(url.trim(), pageOptions);
+            ctx.log.debug(`Capturing screenshot for URL: ${url} on ${browserName} with viewport: ${viewportString} (fullPage: ${fullPage})`);
+            if (page && ctx.config.lazyLoadConfiguration) {
+                await humanLikeScroll(page);
+            }
+            if (fullPage) {
+                if (ctx.config.lazyLoadConfiguration && ctx.config.lazyLoadConfiguration.enabled) {
+                    let stepValue = ctx.config.lazyLoadConfiguration.scrollStep || 250;
+                    let delayValue = ctx.config.lazyLoadConfiguration.scrollDelay || 300;
+                    let maxScrollsValue = ctx.config.lazyLoadConfiguration.maxScrolls || 50;
+                    let jumpBackToTopValue = ctx.config.lazyLoadConfiguration.jumpBackToTop !== false;
+                    ctx.log.debug('Capture: Starting lazy load scrolling with configuration: ' + JSON.stringify({ step: stepValue, delay: delayValue, maxScrolls: maxScrollsValue, jumpBackToTop: jumpBackToTopValue }));
+                    await page?.evaluate(utils.smoothScrollToBottom, { step: stepValue, delay: delayValue, maxScrolls: maxScrollsValue, jumpBackToTop: jumpBackToTopValue });
+                    ctx.log.debug('Capture: Completed lazy load scrolling');
+                } else {
+                    await page?.evaluate(utils.scrollToBottomAndBackToTop, { frequency: 100, timing: ctx.config.scrollTime });
+                }
+            }
             await page?.waitForTimeout(waitForTimeout || 0);
             await executeDocumentScripts(ctx, page, "beforeSnapshot", beforeSnapshotScript)
 
