@@ -63,13 +63,18 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
                             let uploadCLILogsToS3 = ctx.config.useLambdaInternal || uploadDomToS3ViaEnv;
                             if (!uploadCLILogsToS3) {
                                 ctx.log.debug(`Log file to be uploaded`)
-                                let resp = await ctx.client.getS3PreSignedURLForCaps(ctx, buildId, projectToken);
-                                await ctx.client.uploadLogsForCaps(ctx, resp.data.url);
+                                try {
+                                    let resp = await ctx.client.getS3PreSignedURLForCaps(ctx, buildId, projectToken);
+                                    await ctx.client.uploadLogsForCaps(ctx, resp.data.url);
+                                    uploadedCliLogsBuildIds.add(buildId);
+                                } catch (error: any) {
+                                    ctx.log.debug(`Error uploading CLI logs for build ${buildId}, session ${sessionId}: ${error.message}`);
+                                }
                             } else {
                                 ctx.log.debug(`Log file to be uploaded via LSRS`)
                                 ctx.client.sendCliLogsToLSRSForCaps(ctx, buildId, projectToken);
+                                uploadedCliLogsBuildIds.add(buildId);
                             }
-                            uploadedCliLogsBuildIds.add(buildId);
                         }
                         await ctx.client.finalizeBuildForCapsWithToken(buildId, totalSnapshots, projectToken, ctx.log);
                         if (ctx.autoTunnelStarted) {
