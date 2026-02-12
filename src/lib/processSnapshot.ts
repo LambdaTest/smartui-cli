@@ -3,7 +3,7 @@ import { scrollToBottomAndBackToTop, smoothScrollToBottom, getRenderViewports, g
 import { chromium, Locator } from "@playwright/test"
 import constants from "./constants.js";
 import { updateLogContext } from '../lib/logger.js'
-import NodeCache from 'node-cache'; 
+import NodeCache from 'node-cache';
 import chalk from "chalk";
 
 const globalCache = new NodeCache({ stdTTL: 3600, checkperiod: 600 });
@@ -16,14 +16,14 @@ const MAX_WAIT_FOR_REQUEST_CALL = 30000;
 
 const normalizeSameSite = (value) => {
     if (!value) return 'Lax';
-    
+
     const normalized = value.trim().toLowerCase();
     const mapping = {
         'lax': 'Lax',
         'strict': 'Strict',
         'none': 'None'
     };
-    
+
     return mapping[normalized] || value;
 };
 
@@ -149,7 +149,7 @@ export async function prepareSnapshot(snapshot: Snapshot, ctx: Context): Promise
                 }
             }
         }
-        if(options.ignoreType){
+        if (options.ignoreType) {
             processedOptions.ignoreType = options.ignoreType;
         }
     }
@@ -206,7 +206,7 @@ export async function prepareSnapshot(snapshot: Snapshot, ctx: Context): Promise
     ctx.log.debug(`Processed options: ${JSON.stringify(processedOptions)}`);
 
     let renderViewports;
-    if((snapshot.options && snapshot.options.web)  || (snapshot.options && snapshot.options.mobile)){
+    if ((snapshot.options && snapshot.options.web) || (snapshot.options && snapshot.options.mobile)) {
         renderViewports = getRenderViewportsForOptions(snapshot.options)
     } else {
         renderViewports = getRenderViewports(ctx);
@@ -237,7 +237,7 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
         timestamp: "",
         snapshotUUID: "",
         browsers: {}
-      };
+    };
 
     let processedOptions: Record<string, any> = {};
     if (ctx.config.requestHeaders && Array.isArray(ctx.config.requestHeaders)) {
@@ -297,13 +297,13 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
     // These custom cookies will be captured by the user in their automation browser and sent to CLI through the snapshot options using `customCookies` field.
     if (options?.customCookies && Array.isArray(options.customCookies) && options.customCookies.length > 0) {
         ctx.log.debug(`Setting ${options.customCookies.length} custom cookies`);
-        
+
         const validCustomCookies = options.customCookies.filter(cookie => {
             if (!cookie.name || !cookie.value || !cookie.domain) {
                 ctx.log.debug(`Skipping invalid custom cookie: missing required fields (name, value, or domain)`);
                 return false;
             }
-            
+
             const sameSiteValue = normalizeSameSite(cookie.sameSite);
             if (!['Strict', 'Lax', 'None'].includes(sameSiteValue)) {
                 ctx.log.debug(`Skipping invalid custom cookie: invalid sameSite value '${cookie.sameSite}'`);
@@ -359,7 +359,7 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
                 ...constants.REQUEST_HEADERS
             }
         }
-        
+
         try {
             // abort audio/video media requests
             if (/\.(mp3|mp4|wav|ogg|webm)$/i.test(request.url())) {
@@ -406,12 +406,12 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
                 body = globalCache.get(requestUrl).body;
             } else {
                 ctx.log.debug(`Resource not found in cache or global cache ${requestUrl} fetching from server`);
-                if(ctx.build.checkPendingRequests){
+                if (ctx.build.checkPendingRequests) {
                     pendingRequests.add(requestUrl);
                 }
                 response = await page.request.fetch(request, requestOptions);
                 body = await response.body();
-                if(ctx.build.checkPendingRequests){
+                if (ctx.build.checkPendingRequests) {
                     pendingRequests.delete(requestUrl);
                 }
             }
@@ -431,7 +431,7 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
                 ctx.log.debug(`Handling request ${requestUrl}\n - skipping resource larger than 15MB`);
             } else if (!ALLOWED_RESOURCES.includes(request.resourceType())) {
                 ctx.log.debug(`Handling request ${requestUrl}\n - skipping disallowed resource type [${request.resourceType()}]`);
-            }  else if (!ALLOWED_STATUSES.includes(response.status())) {
+            } else if (!ALLOWED_STATUSES.includes(response.status())) {
                 ctx.log.debug(`${globalViewport} Handling request ${requestUrl}\n - skipping disallowed status [${response.status()}]`);
 
                 if (response && response.headers()) {
@@ -441,12 +441,12 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
 
                 let responseOfRetry, bodyOfRetry
                 ctx.log.debug(`Resource had a disallowed status ${requestUrl} fetching from server again`);
-                if(ctx.build.checkPendingRequests){
+                if (ctx.build.checkPendingRequests) {
                     pendingRequests.add(requestUrl);
                 }
                 responseOfRetry = await page.request.fetch(request, requestOptions);
                 bodyOfRetry = await responseOfRetry.body();
-                if(ctx.build.checkPendingRequests){
+                if (ctx.build.checkPendingRequests) {
                     pendingRequests.delete(requestUrl);
                 }
                 if (responseOfRetry && responseOfRetry.status() && ALLOWED_STATUSES.includes(responseOfRetry.status())) {
@@ -477,18 +477,18 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
                         statusCode: `${responseOfRetry.status()}`,
                         url: requestUrl,
                         resourceType: request.resourceType(),
-                    } 
-                    
+                    }
+
                     if ((response.status() >= 400 && response.status() < 600) && response.status() !== 0) {
-                        if (!discoveryErrors.browsers[globalBrowser]){
-                            discoveryErrors.browsers[globalBrowser] = {};                
+                        if (!discoveryErrors.browsers[globalBrowser]) {
+                            discoveryErrors.browsers[globalBrowser] = {};
                         }
-        
+
                         // Check if the discoveryErrors.browsers[globalBrowser] exists, and if not, initialize it
                         if (discoveryErrors.browsers[globalBrowser] && !discoveryErrors.browsers[globalBrowser][globalViewport]) {
                             discoveryErrors.browsers[globalBrowser][globalViewport] = [];
                         }
-        
+
                         // Dynamically push the data into the correct browser and viewport
                         if (discoveryErrors.browsers[globalBrowser]) {
                             discoveryErrors.browsers[globalBrowser][globalViewport]?.push(data);
@@ -497,14 +497,14 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
                 }
             } else {
                 ctx.log.debug(`Handling request ${requestUrl}\n - content-type ${response.headers()['content-type']}`);
-                
+
                 if (ctx.config.useGlobalCache) {
                     globalCache.set(requestUrl, {
                         body: body.toString('base64'),
                         type: response.headers()['content-type']
                     });
                 }
-            
+
                 cache[requestUrl] = {
                     body: body.toString('base64'),
                     type: response.headers()['content-type']
@@ -552,14 +552,14 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
 
         if (options.web && Object.keys(options.web).length) {
             processedOptions.web = {};
-        
+
             // Check and process viewports in web
             if (options.web.viewports && options.web.viewports.length > 0) {
-                processedOptions.web.viewports = options.web.viewports.filter(viewport => 
+                processedOptions.web.viewports = options.web.viewports.filter(viewport =>
                     Array.isArray(viewport) && viewport.length > 0
                 );
             }
-        
+
             // Check and process browsers in web
             if (options.web.browsers && options.web.browsers.length > 0) {
                 processedOptions.web.browsers = options.web.browsers;
@@ -568,19 +568,19 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
 
         if (options.mobile && Object.keys(options.mobile).length) {
             processedOptions.mobile = {};
-        
+
             // Check and process devices in mobile
             if (options.mobile.devices && options.mobile.devices.length > 0) {
                 processedOptions.mobile.devices = options.mobile.devices;
             }
-            
+
             // Check if 'fullPage' is provided and is a boolean, otherwise set default to true
             if (options.mobile.hasOwnProperty('fullPage') && typeof options.mobile.fullPage === 'boolean') {
                 processedOptions.mobile.fullPage = options.mobile.fullPage;
             } else {
                 processedOptions.mobile.fullPage = true; // Default value for fullPage
             }
-        
+
             // Check if 'orientation' is provided and is valid, otherwise set default to 'portrait'
             if (options.mobile.hasOwnProperty('orientation') && (options.mobile.orientation === constants.MOBILE_ORIENTATION_PORTRAIT || options.mobile.orientation === constants.MOBILE_ORIENTATION_LANDSCAPE)) {
                 processedOptions.mobile.orientation = options.mobile.orientation;
@@ -619,12 +619,12 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
                         selectors.push(...value);
                         break;
                     case 'coordinates':
-                        selectors.push(...value.map(e =>`coordinates=${e}`));
+                        selectors.push(...value.map(e => `coordinates=${e}`));
                         break;
                 }
             }
         }
-        if(options.ignoreType){
+        if (options.ignoreType) {
             processedOptions.ignoreType = options.ignoreType;
         }
     }
@@ -663,7 +663,7 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
 
     let renderViewports;
 
-    if((snapshot.options && snapshot.options.web)  || (snapshot.options && snapshot.options.mobile)){
+    if ((snapshot.options && snapshot.options.web) || (snapshot.options && snapshot.options.mobile)) {
         renderViewports = getRenderViewportsForOptions(snapshot.options)
     } else {
         renderViewports = getRenderViewports(ctx);
@@ -737,7 +737,7 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
             }
 
         }
-        if (ctx.config.cliEnableJavaScript && fullPage) { 
+        if (ctx.config.cliEnableJavaScript && fullPage) {
             if (ctx.config.lazyLoadConfiguration && ctx.config.lazyLoadConfiguration.enabled) {
                 let stepValue = ctx.config.lazyLoadConfiguration.scrollStep || 250;
                 let delayValue = ctx.config.lazyLoadConfiguration.scrollDelay || 300;
@@ -757,7 +757,7 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
         } catch (error) {
             ctx.log.debug(`Network idle failed due to ${error}`);
         }
-        
+
 
 
         if (ctx.config.allowedAssets && ctx.config.allowedAssets.length) {
@@ -771,9 +771,9 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
                                 ...constants.REQUEST_HEADERS
                             }
                         });
-                        
+
                         const body = await response.body();
-                        
+
                         if (body && body.length) {
                             ctx.log.debug(`Caching asset ${assetUrl}`);
                             cache[assetUrl] = {
@@ -830,27 +830,27 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
                     const coordString = selector.replace('coordinates=', '');
                     let pageHeight = height;
                     if (viewport.height) {
-                      pageHeight = viewport.height;
+                        pageHeight = viewport.height;
                     }
                     const validation = validateCoordinates(
-                      coordString,
-                      pageHeight,
-                      viewport.width,
-                      snapshot.name
+                        coordString,
+                        pageHeight,
+                        viewport.width,
+                        snapshot.name
                     );
-                    
+
                     if (!validation.valid) {
                         optionWarnings.add(validation.error!);
                         continue;
                     }
 
-                    if(renderViewports.length > 1){
+                    if (renderViewports.length > 1) {
                         optionWarnings.add(`for snapshot ${snapshot.name} viewport ${viewportString}, coordinates may not be accurate for multiple viewports`);
                     }
 
 
-                    const coordinateElement = { 
-                        type: 'coordinates', 
+                    const coordinateElement = {
+                        type: 'coordinates',
                         ...validation.coords
                     };
                     locators.push(coordinateElement as any);
@@ -952,22 +952,22 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
         let startTime = Date.now();
         ctx.log.debug(`${pendingRequests.size} Pending requests before wait for ${snapshot.name}: ${Array.from(pendingRequests)}`);
         while (pendingRequests.size > 0) {
-          const elapsedTime = Date.now() - startTime;
-          if (elapsedTime >= MAX_WAIT_FOR_REQUEST_CALL) {
-            ctx.log.debug(`Timeout reached (${MAX_WAIT_FOR_REQUEST_CALL/1000}s). Stopping wait for pending requests.`);
-            ctx.log.debug(`${pendingRequests.size} Pending requests after wait for ${snapshot.name}: ${Array.from(pendingRequests)}`);
-            break;
-          }
-          await new Promise(resolve => setTimeout(resolve, 1000)); 
+            const elapsedTime = Date.now() - startTime;
+            if (elapsedTime >= MAX_WAIT_FOR_REQUEST_CALL) {
+                ctx.log.debug(`Timeout reached (${MAX_WAIT_FOR_REQUEST_CALL / 1000}s). Stopping wait for pending requests.`);
+                ctx.log.debug(`${pendingRequests.size} Pending requests after wait for ${snapshot.name}: ${Array.from(pendingRequests)}`);
+                break;
+            }
+            await new Promise(resolve => setTimeout(resolve, 1000));
         }
-        if(pendingRequests.size === 0) {
+        if (pendingRequests.size === 0) {
             ctx.log.debug(`No pending requests for ${snapshot.name}.`);
         }
-      };
+    };
 
-      if (ctx.build.checkPendingRequests) {
+    if (ctx.build.checkPendingRequests) {
         await checkPending();
-      }
+    }
 
     // Validate and report CSS injection after selector processing
     if (processedOptions.customCSS) {
@@ -975,7 +975,7 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
             const cssRules = parseCSSFile(processedOptions.customCSS);
             const validationResult = await validateCSSSelectors(page, cssRules, ctx.log);
             const report = generateCSSInjectionReport(validationResult, ctx.log);
-            
+
             if (validationResult.failedSelectors.length > 0) {
                 validationResult.failedSelectors.forEach(selector => {
                     optionWarnings.add(`customCSS selector not found: ${selector}`);
@@ -987,15 +987,15 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
         }
     }
 
-    
+
     let hasBrowserErrors = false;
     for (let browser in discoveryErrors.browsers) {
         if (discoveryErrors.browsers[browser]) {
             for (let viewport in discoveryErrors.browsers[browser]) {
                 if (discoveryErrors.browsers[browser][viewport].length > 0) {
                     hasBrowserErrors = true;
-                    ctx.build.hasDiscoveryError=true
-                    break; 
+                    ctx.build.hasDiscoveryError = true
+                    break;
                 }
             }
         }
