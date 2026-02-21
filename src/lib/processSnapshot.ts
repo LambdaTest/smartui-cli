@@ -203,6 +203,13 @@ export async function prepareSnapshot(snapshot: Snapshot, ctx: Context): Promise
 
     processedOptions.ignoreDOM = options?.ignoreDOM;
     processedOptions.selectDOM = options?.selectDOM;
+
+    //Add custom cookies in processed options
+    if (options?.customCookies && Array.isArray(options.customCookies) && options.customCookies.length > 0) {
+        ctx.log.debug(`Setting ${options.customCookies.length} custom cookies`);
+        processedOptions.customCookies = options.customCookies
+    }
+
     ctx.log.debug(`Processed options: ${JSON.stringify(processedOptions)}`);
 
     let renderViewports;
