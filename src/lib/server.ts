@@ -15,26 +15,36 @@ const uploadDomToS3ViaEnv = process.env.USE_LAMBDA_INTERNAL || false;
 async function findAvailablePort(server: FastifyInstance, startPort: number, log: Logger): Promise<number> {
 	let currentPort = startPort;
 
-	// If the default port gives error, use find-free-port with range 49100-60000
 	try {
 		await server.listen({ port: currentPort });
 		return currentPort;
 	} catch (error: any) {
 		if (error.code === 'EADDRINUSE') {
-			log.debug(`Port ${currentPort} is in use, finding available port in range 49100-60000`);
-			
-			// Use find-free-port to get an available port in the specified range
-			const availablePorts = await fp(constants.MIN_PORT_RANGE, constants.MAX_PORT_RANGE);
-			if (availablePorts.length > 0) {
-				const freePort = availablePorts[0];
-				await server.listen({ port: freePort });
-				log.debug(`Found and started server on port ${freePort}`);
-				return freePort;
-			} else {
-				throw new Error('No available ports found in range 49100-60000');
+			log.debug(`Port ${currentPort} is in use, finding available port in range ${constants.MIN_PORT_RANGE}-${constants.MAX_PORT_RANGE}`);
+
+			const maxRetries = 3;
+			for (let attempt = 1; attempt <= maxRetries; attempt++) {
+				try {
+					const availablePorts = await fp(constants.MIN_PORT_RANGE, constants.MAX_PORT_RANGE);
+					if (availablePorts.length > 0) {
+						const freePort = availablePorts[0];
+						await server.listen({ port: freePort });
+						log.debug(`Found and started server on port ${freePort}`);
+						return freePort;
+					} else {
+						throw new Error(`No available ports found in range ${constants.MIN_PORT_RANGE}-${constants.MAX_PORT_RANGE}`);
+					}
+				} catch (retryError: any) {
+					if (retryError.code === 'EADDRINUSE' && attempt < maxRetries) {
+						log.debug(`Port race condition on attempt ${attempt}, retrying...`);
+						continue;
+					}
+					throw retryError;
+				}
 			}
+
+			throw new Error('Failed to find available port after max retries');
 		} else {
-			// If it's not a port conflict error, rethrow it
 			throw error;
 		}
 	}
