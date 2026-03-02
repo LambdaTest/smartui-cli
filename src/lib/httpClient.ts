@@ -256,12 +256,19 @@ export default class httpClient {
         }, log)
     }
 
-    getScreenshotData(buildId: string, baseline: boolean, log: Logger, projectToken: string, buildName: string) {
+    getScreenshotData(buildId: string, baseline: boolean, log: Logger, projectToken: string, buildName: string, sessionId?: string, type?: string) {
         log.debug(`Fetching screenshot data for buildId: ${buildId}  having  buildName: ${buildName} with baseline: ${baseline}`);
+        const params: Record<string, any> = { buildId, baseline, buildName };
+        if (sessionId) {
+            params.sessionId = sessionId;
+        }
+        if (type) {
+            params.type = type;
+        }
         return this.request({
             url: '/screenshot',
             method: 'GET',
-            params: { buildId, baseline, buildName },
+            params,
             headers: {projectToken: projectToken}
         }, log);
     }
