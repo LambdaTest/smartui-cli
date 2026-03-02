@@ -352,16 +352,14 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 
 		try {
 			const { sessionId } = request.query as { sessionId?: string };
+			ctx.log.debug(`smartui results request: sessionId=${sessionId || 'none'}`);
 
 			// Resolve buildId from ctx using sessionId map or active build
 			let resolvedBuildId = '';
-			if (sessionId && ctx.sessionCapabilitiesMap?.has(sessionId)) {
-				const capabilities = ctx.sessionCapabilitiesMap.get(sessionId);
-				resolvedBuildId = capabilities?.buildId || '';
-			}
-			if (!resolvedBuildId && ctx.build && ctx.build.id) {
+			if (ctx.build && ctx.build.id) {
 				resolvedBuildId = ctx.build.id;
 			}
+			ctx.log.debug(`smartui results params: sessionId=${sessionId || 'none'}, buildId=${resolvedBuildId}`);
 			if (!resolvedBuildId) {
 				replyCode = 404;
 				replyBody = { error: { message: 'Unable to determine buildId. Ensure a SmartUI build is active.' } };
@@ -369,6 +367,7 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 			}
 
 			const projectToken = ctx.env.PROJECT_TOKEN || '';
+			ctx.log.debug(`smartui results params: sessionId=${sessionId || 'none'}, buildId=${resolvedBuildId}, projectToken=${projectToken ? 'present' : 'missing'}`);
 
 			const resp = await ctx.client.getScreenshotData(
 				resolvedBuildId,
@@ -383,9 +382,10 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 			replyCode = 200;
 			replyBody = resp;
 		} catch (error: any) {
-			ctx.log.debug(`smartui results failed; ${error}`);
+			const errMsg = error?.message || (typeof error === 'string' ? error : JSON.stringify(error));
+			ctx.log.debug(`smartui results failed; ${errMsg}`);
 			replyCode = 500;
-			replyBody = { error: { message: `smartui results failed; ${error.message}` } };
+			replyBody = { error: { message: `smartui results failed; ${errMsg}` } };
 		}
 
 		return reply.code(replyCode).send(replyBody);
