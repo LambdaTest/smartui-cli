@@ -1,5 +1,5 @@
 import { Snapshot, Context, DiscoveryErrors } from "../types.js";
-import { scrollToBottomAndBackToTop, smoothScrollToBottom, getRenderViewports, getRenderViewportsForOptions, validateCoordinates, resolveCustomCSS, parseCSSFile, validateCSSSelectors, generateCSSInjectionReport } from "./utils.js"
+import { scrollToBottomAndBackToTop, smoothScrollToBottom, getRenderViewports, getRenderViewportsForOptions, validateCoordinates, resolveCustomCSS, parseCSSFile, validateCSSSelectors, generateCSSInjectionReport, transformCustomViewportsToBrowserViewports } from "./utils.js"
 import { chromium, Locator } from "@playwright/test"
 import constants from "./constants.js";
 import { updateLogContext } from '../lib/logger.js'
@@ -78,17 +78,23 @@ export async function prepareSnapshot(snapshot: Snapshot, ctx: Context): Promise
         if (options.web && Object.keys(options.web).length) {
             processedOptions.web = {};
 
-            // Check and process viewports in web
-            if (options.web.viewports && options.web.viewports.length > 0) {
-                processedOptions.web.viewports = options.web.viewports.filter(viewport =>
-                    Array.isArray(viewport) && viewport.length > 0
-                );
-            }
+            if (options.web.customViewports && Array.isArray(options.web.customViewports) && options.web.customViewports.length > 0) {
+                processedOptions.web.browserViewports = transformCustomViewportsToBrowserViewports(options.web.customViewports);
+            } else {
+                // Check and process viewports in web
+                if (options.web.viewports && options.web.viewports.length > 0) {
+                    processedOptions.web.viewports = options.web.viewports.filter(viewport =>
+                        Array.isArray(viewport) && viewport.length > 0
+                    );
+                }
 
-            // Check and process browsers in web
-            if (options.web.browsers && options.web.browsers.length > 0) {
-                processedOptions.web.browsers = options.web.browsers;
+                // Check and process browsers in web
+                if (options.web.browsers && options.web.browsers.length > 0) {
+                    processedOptions.web.browsers = options.web.browsers;
+                }
             }
+        } else if (!options.web && ctx.config.web?.browserViewports) {
+            processedOptions.web = { browserViewports: ctx.config.web.browserViewports };
         }
 
         if (options.mobile && Object.keys(options.mobile).length) {
@@ -560,17 +566,23 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
         if (options.web && Object.keys(options.web).length) {
             processedOptions.web = {};
 
-            // Check and process viewports in web
-            if (options.web.viewports && options.web.viewports.length > 0) {
-                processedOptions.web.viewports = options.web.viewports.filter(viewport =>
-                    Array.isArray(viewport) && viewport.length > 0
-                );
-            }
+            if (options.web.customViewports && Array.isArray(options.web.customViewports) && options.web.customViewports.length > 0) {
+                processedOptions.web.browserViewports = transformCustomViewportsToBrowserViewports(options.web.customViewports);
+            } else {
+                // Check and process viewports in web
+                if (options.web.viewports && options.web.viewports.length > 0) {
+                    processedOptions.web.viewports = options.web.viewports.filter(viewport =>
+                        Array.isArray(viewport) && viewport.length > 0
+                    );
+                }
 
-            // Check and process browsers in web
-            if (options.web.browsers && options.web.browsers.length > 0) {
-                processedOptions.web.browsers = options.web.browsers;
+                // Check and process browsers in web
+                if (options.web.browsers && options.web.browsers.length > 0) {
+                    processedOptions.web.browsers = options.web.browsers;
+                }
             }
+        } else if (!options.web && ctx.config.web?.browserViewports) {
+            processedOptions.web = { browserViewports: ctx.config.web.browserViewports };
         }
 
         if (options.mobile && Object.keys(options.mobile).length) {

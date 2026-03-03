@@ -105,8 +105,29 @@ export default (options: Record<string, string>): Context => {
     }
 
     if (config.web) {
-        webConfig = { browsers: config.web.browsers, viewports: [] };
-        for (let viewport of config.web?.viewports) webConfig.viewports.push({ width: viewport[0], height: viewport[1] || 0 });
+        if (config.web.customViewports && Array.isArray(config.web.customViewports) && config.web.customViewports.length > 0) {
+            const browserViewports: Record<string, Array<{ width: number, height: number }>> = {};
+            for (const entry of config.web.customViewports) {
+                const vp = { width: entry.viewport[0], height: entry.viewport[1] || 0 };
+                if (!browserViewports[entry.browser]) browserViewports[entry.browser] = [];
+                if (!browserViewports[entry.browser].some(v => v.width === vp.width && v.height === vp.height)) {
+                    browserViewports[entry.browser].push(vp);
+                }
+            }
+            const browsers = Object.keys(browserViewports);
+            const allViewports: Array<{ width: number, height: number }> = [];
+            for (const vps of Object.values(browserViewports)) {
+                for (const vp of vps) {
+                    if (!allViewports.some(v => v.width === vp.width && v.height === vp.height)) {
+                        allViewports.push(vp);
+                    }
+                }
+            }
+            webConfig = { browsers, viewports: allViewports, browserViewports };
+        } else {
+            webConfig = { browsers: config.web.browsers, viewports: [] };
+            for (let viewport of config.web?.viewports) webConfig.viewports.push({ width: viewport[0], height: viewport[1] || 0 });
+        }
     }
     if (config.mobile) {
         mobileConfig = {
