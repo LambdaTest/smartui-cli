@@ -364,19 +364,30 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 			const { sessionId } = request.query as { sessionId?: string };
 			ctx.log.debug(`smartui results request: sessionId=${sessionId || 'none'}`);
 
-			// Resolve buildId from ctx using sessionId map or active build
+			// Resolve buildId and projectToken from session capabilities or active build
 			let resolvedBuildId = '';
-			if (ctx.build && ctx.build.id) {
+			let projectToken = '';
+
+			if (sessionId && ctx.sessionCapabilitiesMap?.has(sessionId)) {
+				const cachedCapabilities = ctx.sessionCapabilitiesMap.get(sessionId);
+				resolvedBuildId = cachedCapabilities?.buildId || '';
+				projectToken = cachedCapabilities?.projectToken || '';
+				ctx.log.debug(`Resolved from sessionCapabilitiesMap for sessionId ${sessionId}: buildId=${resolvedBuildId}, projectToken=${projectToken ? 'present' : 'missing'}`);
+			}
+			// Skip automation buildIds (short IDs) and fall back to ctx.build.id
+			if (!resolvedBuildId && resolvedBuildId.length <= 30 && ctx.build && ctx.build.id) {
 				resolvedBuildId = ctx.build.id;
 			}
+			if (!projectToken) {
+				projectToken = ctx.env.PROJECT_TOKEN || '';
+			}
+
 			ctx.log.debug(`smartui results params: sessionId=${sessionId || 'none'}, buildId=${resolvedBuildId}`);
 			if (!resolvedBuildId) {
 				replyCode = 404;
 				replyBody = { error: { message: 'Unable to determine buildId. Ensure a SmartUI build is active.' } };
 				return reply.code(replyCode).send(replyBody);
 			}
-
-			const projectToken = ctx.env.PROJECT_TOKEN || '';
 			ctx.log.debug(`smartui results params: sessionId=${sessionId || 'none'}, buildId=${resolvedBuildId}, projectToken=${projectToken ? 'present' : 'missing'}`);
 
 			const resp = await ctx.client.getScreenshotData(
