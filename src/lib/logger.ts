@@ -54,6 +54,14 @@ const logger = createLogger({
  * Used when --createUniqueLogFile flag is set to avoid file lock issues
  * during parallel CLI executions on Windows.
  */
+export function removeFileTransport(): void {
+	logger.transports.forEach((transport) => {
+		if (transport instanceof transports.File) {
+			logger.remove(transport);
+		}
+	});
+}
+
 export function reconfigureLogFile(newFilePath: string): void {
 	// Remove existing file transport
 	logger.transports.forEach((transport) => {

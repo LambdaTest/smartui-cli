@@ -622,7 +622,11 @@ export default class httpClient {
     }
 
     uploadLogs(ctx: Context, uploadURL: string) {
-        const logPath = ctx.logFilePath || constants.LOG_FILE_PATH;
+        if (!ctx.logFilePath) {
+            ctx.log.debug('Log file disabled, skipping log upload');
+            return Promise.resolve();
+        }
+        const logPath = ctx.logFilePath;
         const fileStream = fs.createReadStream(logPath);
         const { size } = fs.statSync(logPath);
 
@@ -640,7 +644,11 @@ export default class httpClient {
     }
 
     uploadLogsForCaps(ctx: Context, uploadURL: string) {
-        const logPath = ctx.logFilePath || constants.LOG_FILE_PATH;
+        if (!ctx.logFilePath) {
+            ctx.log.debug('Log file disabled, skipping log upload');
+            return Promise.resolve();
+        }
+        const logPath = ctx.logFilePath;
         const logContent = fs.readFileSync(logPath)
         const { size } = fs.statSync(logPath);
 
@@ -658,7 +666,11 @@ export default class httpClient {
     }
 
     sendCliLogsToLSRS(ctx: Context) {
-        const logPath = ctx.logFilePath || constants.LOG_FILE_PATH;
+        if (!ctx.logFilePath) {
+            ctx.log.debug('Log file disabled, skipping log upload');
+            return Promise.resolve();
+        }
+        const logPath = ctx.logFilePath;
         const logContent = fs.readFileSync(logPath, 'utf-8');
 
         return this.request({
@@ -673,7 +685,11 @@ export default class httpClient {
     }
 
     sendCliLogsToLSRSForCaps(ctx: Context, capsBuildId: string, capsProjectToken: string) {
-        const logPath = ctx.logFilePath || constants.LOG_FILE_PATH;
+        if (!ctx.logFilePath) {
+            ctx.log.debug('Log file disabled, skipping log upload');
+            return Promise.resolve();
+        }
+        const logPath = ctx.logFilePath;
         const logContent = fs.readFileSync(logPath, 'utf-8');
         return this.request({
             url: `/upload/logs`,

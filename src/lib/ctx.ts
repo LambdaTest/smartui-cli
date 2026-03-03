@@ -2,7 +2,7 @@ import { Context, Env, WebConfig, MobileConfig, basicAuth, tunnelConfig, lazyLoa
 import constants from './constants.js'
 import { version } from '../../package.json'
 import { validateConfig, validateConfigForScheduled } from './schemaValidation.js'
-import logger, { reconfigureLogFile } from './logger.js'
+import logger, { reconfigureLogFile, removeFileTransport } from './logger.js'
 import getEnv from './env.js'
 import httpClient from './httpClient.js'
 import fs from 'fs'
@@ -152,10 +152,17 @@ export default (options: Record<string, string>): Context => {
         config.waitForPageRender = 30000;
     }
 
+    // Disable file logging if --disableLogFile flag is set
+    let disableLogFile: boolean = options.disableLogFile ? true : false;
+    if (disableLogFile) {
+        removeFileTransport();
+        logger.debug('File logging disabled via --disableLogFile flag');
+    }
+
     // Generate unique log file path if --createUniqueLogFile flag is set
     let logFileUUID: string | undefined;
-    let logFilePath: string = constants.LOG_FILE_PATH;
-    if (options.createUniqueLogFile) {
+    let logFilePath: string | undefined = disableLogFile ? undefined : constants.LOG_FILE_PATH;
+    if (!disableLogFile && options.createUniqueLogFile) {
         logFileUUID = uuidv4();
         logFilePath = `.smartui-${logFileUUID}.log`;
         // Reconfigure the winston file transport to use the unique log file
