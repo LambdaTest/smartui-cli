@@ -3,7 +3,7 @@ import { Snapshot, Context } from "../types.js";
 import constants from "./constants.js";
 import processSnapshot, {prepareSnapshot} from "./processSnapshot.js"
 import { v4 as uuidv4 } from 'uuid';
-import { startPolling, stopTunnelHelper, calculateVariantCountFromSnapshot } from "./utils.js";
+import { startPolling, stopTunnelHelper, calculateVariantCountFromSnapshot, transformCustomViewportsToBrowserViewports } from "./utils.js";
 
 const uploadDomToS3ViaEnv = process.env.USE_LAMBDA_INTERNAL || false;
 export default class Queue {
@@ -68,15 +68,26 @@ export default class Queue {
         // Process web configurations if they exist
 
         if (config.web) {
-            const browsers = config.web.browsers || [];
-            const viewports = config.web.viewports || [];
+            if (config.web.browserViewports) {
+                for (const [browser, viewports] of Object.entries(config.web.browserViewports)) {
+                    for (const viewport of viewports as any[]) {
+                        const width = viewport.width;
+                        const height = viewport.height || 0;
+                        const variant = `${snapshot.name}_${browser}_viewport[${width}]_viewport[${height}]`;
+                        this.variants.push(variant);
+                    }
+                }
+            } else {
+                const browsers = config.web.browsers || [];
+                const viewports = config.web.viewports || [];
 
-            for (const browser of browsers) {
-                for (const viewport of viewports) {
-                    const width = viewport.width;
-                    const height = viewport.height || 0;  // Use 0 if height is not provided
-                    const variant = `${snapshot.name}_${browser}_viewport[${width}]_viewport[${height}]`;
-                    this.variants.push(variant);
+                for (const browser of browsers) {
+                    for (const viewport of viewports) {
+                        const width = viewport.width;
+                        const height = viewport.height || 0;  // Use 0 if height is not provided
+                        const variant = `${snapshot.name}_${browser}_viewport[${width}]_viewport[${height}]`;
+                        this.variants.push(variant);
+                    }
                 }
             }
         }
@@ -95,15 +106,25 @@ export default class Queue {
 
 
     private generateWebVariants(snapshot: Snapshot, webConfig: any): void {
-        const browsers = webConfig.browsers ?? this.ctx.config.web?.browsers ?? [constants.CHROME, constants.EDGE, constants.FIREFOX, constants.SAFARI];
-        const viewports = webConfig.viewports || [];
+        if (webConfig.customViewports && Array.isArray(webConfig.customViewports) && webConfig.customViewports.length > 0) {
+            const browserViewports = transformCustomViewportsToBrowserViewports(webConfig.customViewports);
+            for (const [browser, viewports] of Object.entries(browserViewports)) {
+                for (const viewport of viewports) {
+                    const variant = `${snapshot.name}_${browser}_viewport[${viewport.width}]_viewport[${viewport.height}]`;
+                    this.variants.push(variant);
+                }
+            }
+        } else {
+            const browsers = webConfig.browsers ?? this.ctx.config.web?.browsers ?? [constants.CHROME, constants.EDGE, constants.FIREFOX, constants.SAFARI];
+            const viewports = webConfig.viewports || [];
 
-        for (const browser of browsers) {
-            for (const viewport of viewports) {
-                const width = viewport[0];
-                const height = viewport[1] || 0;  // Use 0 if height is not provided
-                const variant = `${snapshot.name}_${browser}_viewport[${width}]_viewport[${height}]`;
-                this.variants.push(variant);
+            for (const browser of browsers) {
+                for (const viewport of viewports) {
+                    const width = viewport[0];
+                    const height = viewport[1] || 0;  // Use 0 if height is not provided
+                    const variant = `${snapshot.name}_${browser}_viewport[${width}]_viewport[${height}]`;
+                    this.variants.push(variant);
+                }
             }
         }
     }
@@ -148,35 +169,68 @@ export default class Queue {
 
         // Process web configurations if they exist in config
         if (config.web) {
-            const browsers = config.web.browsers || [];
-            const viewports = config.web.viewports || [];
+            if (config.web.browserViewports) {
+                for (const [browser, viewports] of Object.entries(config.web.browserViewports)) {
+                    for (const viewport of viewports as any[]) {
+                        const width = viewport.width;
+                        const height = viewport.height || 0;
+                        const variant = `${snapshot.name}_${browser}_viewport[${width}]_viewport[${height}]`;
 
-            for (const browser of browsers) {
-                for (const viewport of viewports) {
-                    const width = viewport.width;
-                    const height = viewport.height || 0;
-                    const variant = `${snapshot.name}_${browser}_viewport[${width}]_viewport[${height}]`;
+                        if (!this.variants.includes(variant)) {
+                            allVariantsDropped = false;
+                            if (!snapshot.options) snapshot.options = {};
+                            if (!snapshot.options.web) snapshot.options.web = { browsers: [], viewports: [] };
 
-                    if (!this.variants.includes(variant)) {
-                        allVariantsDropped = false; // Found a variant that needs processing
-                        if (!snapshot.options) snapshot.options = {};
-                        if (!snapshot.options.web) snapshot.options.web = { browsers: [], viewports: [] };
+                            if (!snapshot.options.web.browsers.includes(browser)) {
+                                snapshot.options.web.browsers.push(browser);
+                            }
 
-                        if (!snapshot.options.web.browsers.includes(browser)) {
-                            snapshot.options.web.browsers.push(browser);
+                            const viewportExists = snapshot.options.web.viewports.some(existingViewport =>
+                                existingViewport[0] === width &&
+                                (existingViewport.length < 2 || existingViewport[1] === height)
+                            );
+
+                            if (!viewportExists) {
+                                if (height > 0) {
+                                    snapshot.options.web.viewports.push([width, height]);
+                                } else {
+                                    snapshot.options.web.viewports.push([width]);
+                                }
+                            }
                         }
+                    }
+                }
+            } else {
+                const browsers = config.web.browsers || [];
+                const viewports = config.web.viewports || [];
 
-                        // Check for unique viewports to avoid duplicates
-                        const viewportExists = snapshot.options.web.viewports.some(existingViewport =>
-                            existingViewport[0] === width &&
-                            (existingViewport.length < 2 || existingViewport[1] === height)
-                        );
+                for (const browser of browsers) {
+                    for (const viewport of viewports) {
+                        const width = viewport.width;
+                        const height = viewport.height || 0;
+                        const variant = `${snapshot.name}_${browser}_viewport[${width}]_viewport[${height}]`;
 
-                        if (!viewportExists) {
-                            if (height > 0) {
-                                snapshot.options.web.viewports.push([width, height]);
-                            } else {
-                                snapshot.options.web.viewports.push([width]);
+                        if (!this.variants.includes(variant)) {
+                            allVariantsDropped = false; // Found a variant that needs processing
+                            if (!snapshot.options) snapshot.options = {};
+                            if (!snapshot.options.web) snapshot.options.web = { browsers: [], viewports: [] };
+
+                            if (!snapshot.options.web.browsers.includes(browser)) {
+                                snapshot.options.web.browsers.push(browser);
+                            }
+
+                            // Check for unique viewports to avoid duplicates
+                            const viewportExists = snapshot.options.web.viewports.some(existingViewport =>
+                                existingViewport[0] === width &&
+                                (existingViewport.length < 2 || existingViewport[1] === height)
+                            );
+
+                            if (!viewportExists) {
+                                if (height > 0) {
+                                    snapshot.options.web.viewports.push([width, height]);
+                                } else {
+                                    snapshot.options.web.viewports.push([width]);
+                                }
                             }
                         }
                     }
@@ -211,6 +265,38 @@ export default class Queue {
     }
 
     private filterWebVariants(snapshot: Snapshot, webConfig: any): boolean {
+        if (webConfig.customViewports && Array.isArray(webConfig.customViewports) && webConfig.customViewports.length > 0) {
+            const browserViewports = transformCustomViewportsToBrowserViewports(webConfig.customViewports);
+            let allVariantsDropped = true;
+
+            if (!snapshot.options) snapshot.options = {};
+            snapshot.options.web = { browsers: [], viewports: [] };
+
+            for (const [browser, viewports] of Object.entries(browserViewports)) {
+                for (const viewport of viewports) {
+                    const variant = `${snapshot.name}_${browser}_viewport[${viewport.width}]_viewport[${viewport.height}]`;
+                    if (!this.variants.includes(variant)) {
+                        allVariantsDropped = false;
+                        if (!snapshot.options.web.browsers.includes(browser)) {
+                            snapshot.options.web.browsers.push(browser);
+                        }
+                        const viewportExists = snapshot.options.web.viewports.some(existingViewport =>
+                            existingViewport[0] === viewport.width &&
+                            (existingViewport.length < 2 || existingViewport[1] === viewport.height)
+                        );
+                        if (!viewportExists) {
+                            if (viewport.height > 0) {
+                                snapshot.options.web.viewports.push([viewport.width, viewport.height]);
+                            } else {
+                                snapshot.options.web.viewports.push([viewport.width]);
+                            }
+                        }
+                    }
+                }
+            }
+            return allVariantsDropped;
+        }
+
         const browsers = webConfig.browsers ?? this.ctx.config.web?.browsers ?? [constants.CHROME, constants.EDGE, constants.FIREFOX, constants.SAFARI];
         const viewports = webConfig.viewports || [];
         let allVariantsDropped = true;
