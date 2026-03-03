@@ -112,6 +112,8 @@ export interface Context {
     contextToSnapshotMap?: Map<string, string>;
     sourceCommand?: string;
     autoTunnelStarted?: boolean;
+    logFileUUID?: string;
+    logFilePath?: string;
 }
 
 export interface Env {

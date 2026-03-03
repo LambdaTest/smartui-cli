@@ -2,11 +2,12 @@ import { Context, Env, WebConfig, MobileConfig, basicAuth, tunnelConfig, lazyLoa
 import constants from './constants.js'
 import { version } from '../../package.json'
 import { validateConfig, validateConfigForScheduled } from './schemaValidation.js'
-import logger from './logger.js'
+import logger, { reconfigureLogFile } from './logger.js'
 import getEnv from './env.js'
 import httpClient from './httpClient.js'
 import fs from 'fs'
 import { resolveCustomCSS } from './utils.js'
+import { v4 as uuidv4 } from 'uuid'
 
 export default (options: Record<string, string>): Context => {
     let env: Env = getEnv();
@@ -151,6 +152,25 @@ export default (options: Record<string, string>): Context => {
         config.waitForPageRender = 30000;
     }
 
+    // Generate unique log file path if --createUniqueLogFile flag is set
+    let logFileUUID: string | undefined;
+    let logFilePath: string = constants.LOG_FILE_PATH;
+    if (options.createUniqueLogFile) {
+        logFileUUID = uuidv4();
+        logFilePath = `.smartui-${logFileUUID}.log`;
+        // Reconfigure the winston file transport to use the unique log file
+        reconfigureLogFile(logFilePath);
+        // Delete the unique log file if it already exists (fresh start)
+        try {
+            if (fs.existsSync(logFilePath)) {
+                fs.unlinkSync(logFilePath);
+            }
+        } catch (error: any) {
+            logger.debug(`Could not delete existing unique log file: ${error.message}`);
+        }
+        logger.debug(`Using unique log file: ${logFilePath} (UUID: ${logFileUUID})`);
+    }
+
     return {
         env: env,
         log: logger,
@@ -247,6 +267,8 @@ export default (options: Record<string, string>): Context => {
         mergeBuildSourceId: '',
         mergeBuildTargetId: '',
         mergeByBranch: false,
-        mergeByBuild: false
+        mergeByBuild: false,
+        logFileUUID: logFileUUID,
+        logFilePath: logFilePath
     }
 }
