@@ -15,37 +15,47 @@ const uploadDomToS3ViaEnv = process.env.USE_LAMBDA_INTERNAL || false;
 async function findAvailablePort(server: FastifyInstance, startPort: number, log: Logger): Promise<number> {
 	let currentPort = startPort;
 
-	// If the default port gives error, use find-free-port with range 49100-60000
 	try {
 		await server.listen({ port: currentPort });
 		return currentPort;
 	} catch (error: any) {
 		if (error.code === 'EADDRINUSE') {
-			log.debug(`Port ${currentPort} is in use, finding available port in range 49100-60000`);
-			
-			// Use find-free-port to get an available port in the specified range
-			const availablePorts = await fp(constants.MIN_PORT_RANGE, constants.MAX_PORT_RANGE);
-			if (availablePorts.length > 0) {
-				const freePort = availablePorts[0];
-				await server.listen({ port: freePort });
-				log.debug(`Found and started server on port ${freePort}`);
-				return freePort;
-			} else {
-				throw new Error('No available ports found in range 49100-60000');
+			log.debug(`Port ${currentPort} is in use, finding available port in range ${constants.MIN_PORT_RANGE}-${constants.MAX_PORT_RANGE}`);
+
+			const maxRetries = 3;
+			for (let attempt = 1; attempt <= maxRetries; attempt++) {
+				try {
+					const availablePorts = await fp(constants.MIN_PORT_RANGE, constants.MAX_PORT_RANGE);
+					if (availablePorts.length > 0) {
+						const freePort = availablePorts[0];
+						await server.listen({ port: freePort });
+						log.debug(`Found and started server on port ${freePort}`);
+						return freePort;
+					} else {
+						throw new Error(`No available ports found in range ${constants.MIN_PORT_RANGE}-${constants.MAX_PORT_RANGE}`);
+					}
+				} catch (retryError: any) {
+					if (retryError.code === 'EADDRINUSE' && attempt < maxRetries) {
+						log.debug(`Port race condition on attempt ${attempt}, retrying...`);
+						continue;
+					}
+					throw retryError;
+				}
 			}
+
+			throw new Error('Failed to find available port after max retries');
 		} else {
-			// If it's not a port conflict error, rethrow it
 			throw error;
 		}
 	}
 }
 
 export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMessage, ServerResponse>> => {
-	
+
 	const server: FastifyInstance<Server, IncomingMessage, ServerResponse> = fastify({
 		logger: {
 			level: 'debug',
-			stream: { write: (message) => { ctx.log.debug(message) }}
+			stream: { write: (message) => { ctx.log.debug(message) } }
 		},
 		bodyLimit: 30000000
 	});
@@ -59,7 +69,7 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 
 	// send dom serializer
 	server.get('/domserializer', opts, (request, reply) => {
-		reply.code(200).send({ data: { dom: SMARTUI_DOM }});
+		reply.code(200).send({ data: { dom: SMARTUI_DOM } });
 	});
 
 	// process and upload snpashot
@@ -71,13 +81,13 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 			let { snapshot, testType } = request.body;
 			if (!validateSnapshot(snapshot)) throw new Error(validateSnapshot.errors[0].message);
 
-			if(snapshot?.options?.approvalThreshold !== undefined && snapshot?.options?.rejectionThreshold !== undefined) {
-				if(snapshot?.options?.rejectionThreshold <= snapshot?.options?.approvalThreshold) {
+			if (snapshot?.options?.approvalThreshold !== undefined && snapshot?.options?.rejectionThreshold !== undefined) {
+				if (snapshot?.options?.rejectionThreshold <= snapshot?.options?.approvalThreshold) {
 					throw new Error(`Invalid snapshot options; rejectionThreshold (${snapshot.options.rejectionThreshold}) must be greater than approvalThreshold (${snapshot.options.approvalThreshold})`);
 				}
 			}
-			snapshot.name=snapshot?.name?.trim();
-		
+			snapshot.name = snapshot?.name?.trim();
+
 			// Fetch sessionId from snapshot options if present
 			const sessionId = snapshot?.options?.sessionId;
 			let capsBuildId = ''
@@ -112,32 +122,32 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 			}
 
 			ctx.testType = testType;
-			
+
 			if (contextId && !ctx.contextToSnapshotMap) {
 				ctx.contextToSnapshotMap = new Map();
 				ctx.log.debug(`Initialized empty context mapping map for contextId: ${contextId}`);
 			}
-			
+
 			if (contextId && ctx.contextToSnapshotMap) {
 				ctx.contextToSnapshotMap.set(contextId, '0');
 				ctx.log.debug(`Marking contextId as captured and added to queue: ${contextId}`);
 			}
 
-			if(contextId){
+			if (contextId) {
 				ctx.snapshotQueue?.enqueueFront(snapshot);
-			}else{
-				ctx.snapshotQueue?.enqueue(snapshot);	
+			} else {
+				ctx.snapshotQueue?.enqueue(snapshot);
 			}
-			
+
 			ctx.isSnapshotCaptured = true;
 			replyCode = 200;
-			replyBody = { data: { message: "success", warnings: [] }};
+			replyBody = { data: { message: "success", warnings: [] } };
 		} catch (error: any) {
 			ctx.log.debug(`snapshot failed; ${error}`)
 			replyCode = 500;
-			replyBody = { error: { message: error.message }}
+			replyBody = { error: { message: error.message } }
 		}
-		
+
 		return reply.code(replyCode).send(replyBody);
 	});
 
@@ -146,7 +156,7 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 		let replyBody: Record<string, any>;
 		try {
 			ctx.log.info('Received stop command. Finalizing build ...');
-			if(ctx.config.delayedUpload){
+			if (ctx.config.delayedUpload) {
 				ctx.log.debug("started after processing because of delayedUpload")
 				ctx.snapshotQueue?.startProcessingfunc()
 			}
@@ -158,30 +168,30 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 					}
 				}, 1000);
 			})
-            let buildUrls = `build url: ${ctx.build.url}\n`;
+			let buildUrls = `build url: ${ctx.build.url}\n`;
 
 			for (const [sessionId, capabilities] of ctx.sessionCapabilitiesMap.entries()) {
-                try {
-                    const buildId = capabilities?.buildId || '';
-                    const projectToken = capabilities?.projectToken || '';
-                    const totalSnapshots = capabilities?.snapshotCount || 0;
-                    const sessionBuildUrl = capabilities?.buildURL || '';
-                    const testId = capabilities?.id || '';
+				try {
+					const buildId = capabilities?.buildId || '';
+					const projectToken = capabilities?.projectToken || '';
+					const totalSnapshots = capabilities?.snapshotCount || 0;
+					const sessionBuildUrl = capabilities?.buildURL || '';
+					const testId = capabilities?.id || '';
 					ctx.log.debug(`Capabilities for sessionId ${sessionId}: ${JSON.stringify(capabilities)}`)
-                    if (buildId && projectToken) {
-                        await ctx.client.finalizeBuildForCapsWithToken(buildId, totalSnapshots, projectToken, ctx.log);
+					if (buildId && projectToken) {
+						await ctx.client.finalizeBuildForCapsWithToken(buildId, totalSnapshots, projectToken, ctx.log);
 						if (ctx.autoTunnelStarted) {
 							await startPollingForTunnel(ctx, buildId, false, projectToken, capabilities?.buildName);
 						}
-                    }
+					}
 
-                    if (testId && buildId) {
-                        buildUrls += `TestId ${testId}: ${sessionBuildUrl}\n`;
-                    }
-                } catch (error: any) {
-                    ctx.log.debug(`Error finalizing build for session ${sessionId}: ${error.message}`);
-                }
-            }
+					if (testId && buildId) {
+						buildUrls += `TestId ${testId}: ${sessionBuildUrl}\n`;
+					}
+				} catch (error: any) {
+					ctx.log.debug(`Error finalizing build for session ${sessionId}: ${error.message}`);
+				}
+			}
 
 			if (ctx.build && ctx.build.id) {
 				await ctx.client.finalizeBuild(ctx.build.id, ctx.totalSnapshots, ctx.log);
@@ -199,14 +209,14 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 			//If Tunnel Details are present, start polling for tunnel status 
 			if (ctx.tunnelDetails && ctx.tunnelDetails.tunnelHost != "" && ctx.build?.id) {
 				await startPollingForTunnel(ctx, ctx.build.id, false, '', '');
-			} 
+			}
 			//stop the tunnel if it was auto started and no tunnel polling is active
 			if (ctx.autoTunnelStarted && isTunnelPolling === null) {
-                await stopTunnelHelper(ctx);
-            }
+				await stopTunnelHelper(ctx);
+			}
 
 			await ctx.browser?.close();
-			if (ctx.server){
+			if (ctx.server) {
 				ctx.server.close();
 			}
 
@@ -222,7 +232,7 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 			replyCode = 500;
 			replyBody = { error: { message: error.message } };
 		}
-		
+
 		ctx.log.info('Stop command processed. Tearing down server.');
 
 		// Step 5: Return the response
@@ -247,17 +257,17 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 			if (!contextId || !snapshotName) {
 				throw new Error('contextId and snapshotName are required parameters');
 			}
-			
 
-			const timeoutDuration = pollTimeout*1000 || 30000; 
+
+			const timeoutDuration = pollTimeout * 1000 || 30000;
 
 			// Check if we have stored snapshot status for this contextId
 			if (ctx.contextToSnapshotMap?.has(contextId)) {
 				let contextStatus = ctx.contextToSnapshotMap.get(contextId);
-				
-				let counter= 60;
-				while (contextStatus==='0') {
-					if(counter<=0){
+
+				let counter = 60;
+				while (contextStatus === '0') {
+					if (counter <= 0) {
 						throw new Error('Snapshot processing failed');
 					}
 					contextStatus = ctx.contextToSnapshotMap.get(contextId);
@@ -266,10 +276,10 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 					counter--;
 				}
 
-				if(contextStatus==='2'){
+				if (contextStatus === '2') {
 					throw new Error("Snapshot Failed");
 				}
-				
+
 				ctx.log.debug("Snapshot uploaded successfully");
 
 				const buildId = contextStatus;
@@ -278,8 +288,8 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 				}
 
 				// Poll external API until it returns 200 or timeout is reached
-				let lastExternalResponse: any = null; 
-				const startTime = Date.now(); 
+				let lastExternalResponse: any = null;
+				const startTime = Date.now();
 
 				while (true) {
 					try {
@@ -289,7 +299,7 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 							contextId,
 							ctx
 						);
-						
+
 						lastExternalResponse = externalResponse;
 
 						if (externalResponse.statusCode === 200) {
@@ -297,14 +307,14 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 							replyBody = externalResponse.data;
 							replyBody.error = externalResponse.error.message
 							return reply.code(replyCode).send(replyBody);
-						} else if (externalResponse.statusCode === 202 ) {
-							replyBody= externalResponse.data;
+						} else if (externalResponse.statusCode === 202) {
+							replyBody = externalResponse.data;
 							ctx.log.debug(`External API attempt: Still processing, Pending Screenshots ${externalResponse.snapshotCount}`);
 							await new Promise(resolve => setTimeout(resolve, 5000));
-						}else if(externalResponse.statusCode===404){
+						} else if (externalResponse.statusCode === 404) {
 							ctx.log.debug(`Snapshot still processing, not uploaded`);
 							await new Promise(resolve => setTimeout(resolve, 5000));
-						}else {
+						} else {
 							ctx.log.debug(`Unexpected response from external API: ${JSON.stringify(externalResponse)}`);
 							replyCode = 500;
 							return reply.code(replyCode).send(externalResponse);
@@ -314,7 +324,7 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 						ctx.log.debug(`Time passed: ${Date.now() - startTime}`);
 
 						if (Date.now() - startTime > timeoutDuration) {
-							replyCode = 202; 
+							replyCode = 202;
 							replyBody = lastExternalResponse.data;
 							replyBody.error = `Request timed out, Snapshot still processing (timeoutDuration: ${timeoutDuration / 1000}s, buildId: ${buildId}, snapshotName: ${snapshotName}, contextId: ${contextId})`;
 							return reply.code(replyCode).send(replyBody);
@@ -323,8 +333,8 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 					} catch (externalApiError: any) {
 						ctx.log.debug(`External API call failed: ${externalApiError.message}`);
 						replyCode = 500;
-						replyBody = { 
-							error: { 
+						replyBody = {
+							error: {
 								message: `External API call failed: ${externalApiError.message}`
 							}
 						};
@@ -343,6 +353,62 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 			replyBody = { error: { message: error.message } };
 			return reply.code(replyCode).send(replyBody);
 		}
+	});
+
+	// Get smartui results (aggregated visual count per session/build)
+	server.get('/smartui/results', opts, async (request, reply) => {
+		let replyCode: number;
+		let replyBody: Record<string, any>;
+
+		try {
+			const { sessionId } = request.query as { sessionId?: string };
+			ctx.log.debug(`smartui results request: sessionId=${sessionId || 'none'}`);
+
+			// Resolve buildId and projectToken from session capabilities or active build
+			let resolvedBuildId = '';
+			let projectToken = '';
+
+			if (sessionId && ctx.sessionCapabilitiesMap?.has(sessionId)) {
+				const cachedCapabilities = ctx.sessionCapabilitiesMap.get(sessionId);
+				resolvedBuildId = cachedCapabilities?.buildId || '';
+				projectToken = cachedCapabilities?.projectToken || '';
+				ctx.log.debug(`Resolved from sessionCapabilitiesMap for sessionId ${sessionId}: buildId=${resolvedBuildId}, projectToken=${projectToken ? 'present' : 'missing'}`);
+			}
+			// Skip automation buildIds (short IDs) and fall back to ctx.build.id
+			if ((!resolvedBuildId || resolvedBuildId.length <= 30) && ctx.build && ctx.build.id) {
+				resolvedBuildId = ctx.build.id;
+			}
+			if (!projectToken) {
+				projectToken = ctx.env.PROJECT_TOKEN || '';
+			}
+
+			ctx.log.debug(`smartui results params: sessionId=${sessionId || 'none'}, buildId=${resolvedBuildId}, projectToken=${projectToken ? 'present' : 'missing'}`);
+			if (!resolvedBuildId) {
+				replyCode = 404;
+				replyBody = { error: { message: 'Unable to determine buildId. Ensure a SmartUI build is active.' } };
+				return reply.code(replyCode).send(replyBody);
+			}
+
+			const resp = await ctx.client.getScreenshotData(
+				resolvedBuildId,
+				false,
+				ctx.log,
+				projectToken,
+				'',
+				sessionId || '',
+				'smartui-results'
+			);
+
+			replyCode = 200;
+			replyBody = resp;
+		} catch (error: any) {
+			const errMsg = error?.message || (typeof error === 'string' ? error : JSON.stringify(error));
+			ctx.log.debug(`smartui results failed; ${errMsg}`);
+			replyCode = 500;
+			replyBody = { error: { message: `smartui results failed; ${errMsg}` } };
+		}
+
+		return reply.code(replyCode).send(replyBody);
 	});
 
 	// Get build info
