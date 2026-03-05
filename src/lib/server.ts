@@ -375,20 +375,19 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 				ctx.log.debug(`Resolved from sessionCapabilitiesMap for sessionId ${sessionId}: buildId=${resolvedBuildId}, projectToken=${projectToken ? 'present' : 'missing'}`);
 			}
 			// Skip automation buildIds (short IDs) and fall back to ctx.build.id
-			if (!resolvedBuildId && resolvedBuildId.length <= 30 && ctx.build && ctx.build.id) {
+			if ((!resolvedBuildId || resolvedBuildId.length <= 30) && ctx.build && ctx.build.id) {
 				resolvedBuildId = ctx.build.id;
 			}
 			if (!projectToken) {
 				projectToken = ctx.env.PROJECT_TOKEN || '';
 			}
 
-			ctx.log.debug(`smartui results params: sessionId=${sessionId || 'none'}, buildId=${resolvedBuildId}`);
+			ctx.log.debug(`smartui results params: sessionId=${sessionId || 'none'}, buildId=${resolvedBuildId}, projectToken=${projectToken ? 'present' : 'missing'}`);
 			if (!resolvedBuildId) {
 				replyCode = 404;
 				replyBody = { error: { message: 'Unable to determine buildId. Ensure a SmartUI build is active.' } };
 				return reply.code(replyCode).send(replyBody);
 			}
-			ctx.log.debug(`smartui results params: sessionId=${sessionId || 'none'}, buildId=${resolvedBuildId}, projectToken=${projectToken ? 'present' : 'missing'}`);
 
 			const resp = await ctx.client.getScreenshotData(
 				resolvedBuildId,
