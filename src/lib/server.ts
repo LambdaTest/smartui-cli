@@ -368,11 +368,29 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 			let resolvedBuildId = '';
 			let projectToken = '';
 
-			if (sessionId && ctx.sessionCapabilitiesMap?.has(sessionId)) {
-				const cachedCapabilities = ctx.sessionCapabilitiesMap.get(sessionId);
-				resolvedBuildId = cachedCapabilities?.buildId || '';
-				projectToken = cachedCapabilities?.projectToken || '';
-				ctx.log.debug(`Resolved from sessionCapabilitiesMap for sessionId ${sessionId}: buildId=${resolvedBuildId}, projectToken=${projectToken ? 'present' : 'missing'}`);
+			if (sessionId) {
+				if (ctx.sessionCapabilitiesMap?.has(sessionId)) {
+					// Use cached capabilities if available
+					const cachedCapabilities = ctx.sessionCapabilitiesMap.get(sessionId);
+					resolvedBuildId = cachedCapabilities?.buildId || '';
+					projectToken = cachedCapabilities?.projectToken || '';
+					ctx.log.debug(`Resolved from sessionCapabilitiesMap for sessionId ${sessionId}: buildId=${resolvedBuildId}, projectToken=${projectToken ? 'present' : 'missing'}`);
+				} else {
+					// If not cached, fetch from API and cache it (same as snapshot flow)
+					try {
+						const fetchedCapabilitiesResp = await ctx.client.getSmartUICapabilities(sessionId, ctx.config, ctx.git, ctx.log, ctx.isStartExec, ctx.options.baselineBuild);
+						resolvedBuildId = fetchedCapabilitiesResp?.buildId || '';
+						projectToken = fetchedCapabilitiesResp?.projectToken || '';
+						ctx.log.debug(`Fetched caps for sessionId: ${sessionId} are ${JSON.stringify(fetchedCapabilitiesResp)}`);
+						if (resolvedBuildId) {
+							ctx.sessionCapabilitiesMap.set(sessionId, fetchedCapabilitiesResp);
+						} else if (fetchedCapabilitiesResp && fetchedCapabilitiesResp?.sessionId) {
+							ctx.sessionCapabilitiesMap.set(sessionId, fetchedCapabilitiesResp);
+						}
+					} catch (error: any) {
+						ctx.log.debug(`Failed to fetch capabilities for sessionId ${sessionId}: ${error.message}`);
+					}
+				}
 			}
 			// Skip automation buildIds (short IDs) and fall back to ctx.build.id
 			if ((!resolvedBuildId || resolvedBuildId.length <= 30) && ctx.build && ctx.build.id) {
