@@ -388,7 +388,7 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 							ctx.sessionCapabilitiesMap.set(sessionId, fetchedCapabilitiesResp);
 						}
 					} catch (error: any) {
-						ctx.log.debug(`Failed to fetch capabilities for sessionId ${sessionId}: ${error.message}`);
+						ctx.log.debug(`Failed to fetch capabilities for sessionId ${sessionId}: ${JSON.stringify(error)}`);
 					}
 				}
 			}
