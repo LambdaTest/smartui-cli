@@ -105,7 +105,12 @@ export default (options: Record<string, string>): Context => {
     }
 
     if (config.web) {
-        if (config.web.customViewports && Array.isArray(config.web.customViewports) && config.web.customViewports.length > 0) {
+        const hasCustomViewports = config.web.customViewports && Array.isArray(config.web.customViewports) && config.web.customViewports.length > 0;
+        const hasBrowsersAndViewports = config.web.browsers && config.web.browsers.length > 0 && config.web.viewports && config.web.viewports.length > 0;
+        if (!hasCustomViewports && !hasBrowsersAndViewports) {
+            throw new Error('Invalid config; web config must have either customViewports or both browsers and viewports');
+        }
+        if (hasCustomViewports) {
             const browserViewports: Record<string, Array<{ width: number, height: number }>> = {};
             for (const entry of config.web.customViewports) {
                 const vp = { width: entry.viewport[0], height: entry.viewport[1] || 0 };

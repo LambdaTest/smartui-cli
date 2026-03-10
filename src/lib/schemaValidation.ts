@@ -27,11 +27,16 @@ const ConfigSchema = {
                     type: "array",
                     items: { type: "string", enum: [constants.CHROME, constants.FIREFOX, constants.SAFARI, constants.EDGE] },
                     uniqueItems: true,
+                    minItems: 1,
                     maxItems: 4,
-                    errorMessage: `Invalid config; allowed browsers - ${constants.CHROME}, ${constants.FIREFOX}, ${constants.SAFARI}, ${constants.EDGE}`
+                    errorMessage: {
+                        minItems: "Invalid config; browsers must have at least one entry",
+                        _: `Invalid config; allowed browsers - ${constants.CHROME}, ${constants.FIREFOX}, ${constants.SAFARI}, ${constants.EDGE}`
+                    }
                 },
                 viewports: {
                     type: "array",
+                    minItems: 1,
                     items: {
                         type: "array",
                         oneOf: [
@@ -53,10 +58,14 @@ const ConfigSchema = {
                     },
                     uniqueItems: true,
                     maxItems: 5,
-                    errorMessage: "Invalid config; max unique viewports allowed - 5"
+                    errorMessage: {
+                        minItems: "Invalid config; viewports must have at least one entry",
+                        maxItems: "Invalid config; max unique viewports allowed - 5"
+                    }
                 },
                 customViewports: {
                     type: "array",
+                    minItems: 1,
                     items: {
                         type: "object",
                         properties: {
@@ -88,7 +97,10 @@ const ConfigSchema = {
                         required: ["browser", "viewport"],
                         additionalProperties: false
                     },
-                    errorMessage: "Invalid config; customViewports must be an array of {browser, viewport} objects"
+                    errorMessage: {
+                        minItems: "Invalid config; customViewports must have at least one entry",
+                        _: "Invalid config; customViewports must be an array of {browser, viewport} objects"
+                    }
                 }
             }
         },
