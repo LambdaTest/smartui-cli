@@ -126,7 +126,9 @@ export default (options: Record<string, string>): Context => {
             webConfig = { browsers, viewports: allViewports, browserViewports };
         } else {
             webConfig = { browsers: config.web.browsers, viewports: [] };
-            for (let viewport of config.web?.viewports) webConfig.viewports.push({ width: viewport[0], height: viewport[1] || 0 });
+            if (config.web?.viewports) {
+                for (let viewport of config.web.viewports) webConfig.viewports.push({ width: viewport[0], height: viewport[1] || 0 });
+            }
         }
     }
     if (config.mobile) {
