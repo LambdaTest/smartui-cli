@@ -49,4 +49,31 @@ const logger = createLogger({
 		})]
 });
 
+/**
+ * Reconfigure the file transport to use a different log file path.
+ * Used when --createUniqueLogFile flag is set to avoid file lock issues
+ * during parallel CLI executions on Windows.
+ */
+export function removeFileTransport(): void {
+	logger.transports.forEach((transport) => {
+		if (transport instanceof transports.File) {
+			logger.remove(transport);
+		}
+	});
+}
+
+export function reconfigureLogFile(newFilePath: string): void {
+	// Remove existing file transport
+	logger.transports.forEach((transport) => {
+		if (transport instanceof transports.File) {
+			logger.remove(transport);
+		}
+	});
+	// Add new file transport with the unique log file path
+	logger.add(new transports.File({
+		level: 'debug',
+		filename: newFilePath
+	}));
+}
+
 export default logger

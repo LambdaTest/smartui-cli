@@ -256,12 +256,19 @@ export default class httpClient {
         }, log)
     }
 
-    getScreenshotData(buildId: string, baseline: boolean, log: Logger, projectToken: string, buildName: string) {
+    getScreenshotData(buildId: string, baseline: boolean, log: Logger, projectToken: string, buildName: string, sessionId?: string, type?: string) {
         log.debug(`Fetching screenshot data for buildId: ${buildId}  having  buildName: ${buildName} with baseline: ${baseline}`);
+        const params: Record<string, any> = { buildId, baseline, buildName };
+        if (sessionId) {
+            params.sessionId = sessionId;
+        }
+        if (type) {
+            params.type = type;
+        }
         return this.request({
             url: '/screenshot',
             method: 'GET',
-            params: { buildId, baseline, buildName },
+            params,
             headers: {projectToken: projectToken}
         }, log);
     }
@@ -615,8 +622,13 @@ export default class httpClient {
     }
 
     uploadLogs(ctx: Context, uploadURL: string) {
-        const fileStream = fs.createReadStream(constants.LOG_FILE_PATH);
-        const { size } = fs.statSync(constants.LOG_FILE_PATH);
+        if (!ctx.logFilePath) {
+            ctx.log.debug('Log file disabled, skipping log upload');
+            return Promise.resolve();
+        }
+        const logPath = ctx.logFilePath;
+        const fileStream = fs.createReadStream(logPath);
+        const { size } = fs.statSync(logPath);
 
         return this.request({
             url: uploadURL,
@@ -632,8 +644,13 @@ export default class httpClient {
     }
 
     uploadLogsForCaps(ctx: Context, uploadURL: string) {
-        const logContent = fs.readFileSync(constants.LOG_FILE_PATH)
-        const { size } = fs.statSync(constants.LOG_FILE_PATH);
+        if (!ctx.logFilePath) {
+            ctx.log.debug('Log file disabled, skipping log upload');
+            return Promise.resolve();
+        }
+        const logPath = ctx.logFilePath;
+        const logContent = fs.readFileSync(logPath)
+        const { size } = fs.statSync(logPath);
 
         return this.request({
             url: uploadURL,
@@ -649,7 +666,12 @@ export default class httpClient {
     }
 
     sendCliLogsToLSRS(ctx: Context) {
-        const logContent = fs.readFileSync(constants.LOG_FILE_PATH, 'utf-8');
+        if (!ctx.logFilePath) {
+            ctx.log.debug('Log file disabled, skipping log upload');
+            return Promise.resolve();
+        }
+        const logPath = ctx.logFilePath;
+        const logContent = fs.readFileSync(logPath, 'utf-8');
 
         return this.request({
             url: `/upload/logs`,
@@ -663,7 +685,12 @@ export default class httpClient {
     }
 
     sendCliLogsToLSRSForCaps(ctx: Context, capsBuildId: string, capsProjectToken: string) {
-        const logContent = fs.readFileSync(constants.LOG_FILE_PATH, 'utf-8');
+        if (!ctx.logFilePath) {
+            ctx.log.debug('Log file disabled, skipping log upload');
+            return Promise.resolve();
+        }
+        const logPath = ctx.logFilePath;
+        const logContent = fs.readFileSync(logPath, 'utf-8');
         return this.request({
             url: `/upload/logs`,
             method: 'POST',

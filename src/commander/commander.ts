@@ -26,6 +26,8 @@ program
     .option('--gitURL <string>', 'Git URL including commitId')
     .option('--userName <string>', 'Specify the LT username')
     .option('--accessKey <string>', 'Specify the LT accesskey')
+    .option('--createUniqueLogFile', 'Create a unique log file for each CLI execution to avoid file lock issues in parallel runs')
+    .option('--disableLogFile', 'Disable writing logs to a file')
     .addCommand(exec)
     .addCommand(capture)
     .addCommand(configWeb)
