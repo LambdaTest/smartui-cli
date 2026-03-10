@@ -93,6 +93,11 @@ export async function prepareSnapshot(snapshot: Snapshot, ctx: Context): Promise
                     processedOptions.web.browsers = options.web.browsers;
                 }
             }
+
+            // Clear empty web object so global fallback can trigger
+            if (Object.keys(processedOptions.web).length === 0) {
+                delete processedOptions.web;
+            }
         }
 
         if (options.mobile && Object.keys(options.mobile).length) {
@@ -590,6 +595,11 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
                 if (options.web.browsers && options.web.browsers.length > 0) {
                     processedOptions.web.browsers = options.web.browsers;
                 }
+            }
+
+            // Clear empty web object so global fallback can trigger
+            if (Object.keys(processedOptions.web).length === 0) {
+                delete processedOptions.web;
             }
         }
 
