@@ -93,7 +93,7 @@ export async function prepareSnapshot(snapshot: Snapshot, ctx: Context): Promise
                     processedOptions.web.browsers = options.web.browsers;
                 }
             }
-        } else if (!options.web && ctx.config.web?.browserViewports) {
+        } else if (ctx.config.web?.browserViewports) {
             processedOptions.web = { browserViewports: ctx.config.web.browserViewports };
         }
 
@@ -581,7 +581,7 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
                     processedOptions.web.browsers = options.web.browsers;
                 }
             }
-        } else if (!options.web && ctx.config.web?.browserViewports) {
+        } else if (ctx.config.web?.browserViewports) {
             processedOptions.web = { browserViewports: ctx.config.web.browserViewports };
         }
 

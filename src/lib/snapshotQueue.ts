@@ -49,16 +49,19 @@ export default class Queue {
     }
 
     private processGenerateVariants(snapshot: Snapshot): void {
+        let hasWebOptions = snapshot.options?.web && Object.keys(snapshot.options.web).length > 0;
+        let hasMobileOptions = snapshot.options?.mobile && Object.keys(snapshot.options.mobile).length > 0;
+
         if (snapshot.options) {
-            if (snapshot.options.web) {
+            if (hasWebOptions) {
                 this.generateWebVariants(snapshot, snapshot.options.web);
             }
-            if (snapshot.options.mobile) {
+            if (hasMobileOptions) {
                 this.generateMobileVariants(snapshot, snapshot.options.mobile);
             }
         }
 
-        if (!snapshot.options || (snapshot.options && !snapshot.options.web && !snapshot.options.mobile)) {
+        if (!snapshot.options || (!hasWebOptions && !hasMobileOptions)) {
             this.generateVariants(snapshot, this.ctx.config);
         }
     }
@@ -142,19 +145,21 @@ export default class Queue {
     private filterExistingVariants(snapshot: Snapshot, config: any): boolean {
 
         let drop = true;
+        let hasWebOptions = snapshot.options?.web && Object.keys(snapshot.options.web).length > 0;
+        let hasMobileOptions = snapshot.options?.mobile && Object.keys(snapshot.options.mobile).length > 0;
 
-        if (snapshot.options && snapshot.options.web) {
+        if (snapshot.options && hasWebOptions) {
             const webDrop = this.filterWebVariants(snapshot, snapshot.options.web);
             if (!webDrop) drop = false;
         }
 
-        if (snapshot.options && snapshot.options.mobile) {
+        if (snapshot.options && hasMobileOptions) {
             const mobileDrop = this.filterMobileVariants(snapshot, snapshot.options.mobile);
             if (!mobileDrop) drop = false;
         }
 
         // Fallback to the global config if neither web nor mobile options are present in snapshot.options
-        if (!snapshot.options || (snapshot.options && !snapshot.options.web && !snapshot.options.mobile)) {
+        if (!snapshot.options || (!hasWebOptions && !hasMobileOptions)) {
             const configDrop = this.filterVariants(snapshot, config);
             if (!configDrop) drop = false;
         }
