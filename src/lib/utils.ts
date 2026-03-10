@@ -569,9 +569,15 @@ export function calculateVariantCount(config: any): number {
 
     // Calculate web variants
     if (config.web) {
-        const browsers = config.web.browsers || [];
-        const viewports = config.web.viewports || [];
-        variantCount += browsers.length * viewports.length;
+        if (config.web.browserViewports) {
+            for (const viewports of Object.values(config.web.browserViewports)) {
+                variantCount += (viewports as Array<any>).length;
+            }
+        } else {
+            const browsers = config.web.browsers || [];
+            const viewports = config.web.viewports || [];
+            variantCount += browsers.length * viewports.length;
+        }
     }
 
     // Calculate mobile variants
@@ -583,21 +589,20 @@ export function calculateVariantCount(config: any): number {
     return variantCount;
 }
 
-/**
- * Calculate the number of variants for a snapshot based on snapshot-specific options
- * @param snapshot - The snapshot object with options
- * @param globalConfig - The global configuration object (fallback)
- * @returns The total number of variants that would be generated
- */
 export function calculateVariantCountFromSnapshot(snapshot: any, globalConfig?: any): number {
     let variantCount = 0;
-    
 
     // Check snapshot-specific web options
     if (snapshot.options?.web) {
-        const browsers = snapshot.options.web.browsers || [];
-        const viewports = snapshot.options.web.viewports || [];
-        variantCount += browsers.length * viewports.length;
+        if (snapshot.options.web.browserViewports) {
+            for (const viewports of Object.values(snapshot.options.web.browserViewports)) {
+                variantCount += (viewports as Array<any>).length;
+            }
+        } else {
+            const browsers = snapshot.options.web.browsers || [];
+            const viewports = snapshot.options.web.viewports || [];
+            variantCount += browsers.length * viewports.length;
+        }
     }
 
     // Check snapshot-specific mobile options
