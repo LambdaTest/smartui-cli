@@ -158,9 +158,16 @@ export async function prepareSnapshot(snapshot: Snapshot, ctx: Context): Promise
         }
     }
 
-    // Global browserViewports fallback — runs when options is empty or has no web override
+    // Global config fallback — runs when options is empty or has no web/mobile override
     if (!processedOptions.web && ctx.config.web?.browserViewports) {
         processedOptions.web = { browserViewports: ctx.config.web.browserViewports };
+    }
+    if (!processedOptions.mobile && ctx.config.mobile) {
+        processedOptions.mobile = {
+            devices: ctx.config.mobile.devices,
+            fullPage: ctx.config.mobile.fullPage ?? true,
+            orientation: ctx.config.mobile.orientation || constants.MOBILE_ORIENTATION_PORTRAIT
+        };
     }
 
     if (ctx.config.tunnel) {
@@ -649,9 +656,16 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
         }
     }
 
-    // Global browserViewports fallback — runs when options is empty or has no web override
+    // Global config fallback — runs when options is empty or has no web/mobile override
     if (!processedOptions.web && ctx.config.web?.browserViewports) {
         processedOptions.web = { browserViewports: ctx.config.web.browserViewports };
+    }
+    if (!processedOptions.mobile && ctx.config.mobile) {
+        processedOptions.mobile = {
+            devices: ctx.config.mobile.devices,
+            fullPage: ctx.config.mobile.fullPage ?? true,
+            orientation: ctx.config.mobile.orientation || constants.MOBILE_ORIENTATION_PORTRAIT
+        };
     }
 
     if (ctx.config.tunnel) {
