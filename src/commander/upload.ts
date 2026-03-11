@@ -38,6 +38,11 @@ command
         let ctx: Context = ctxInit(command.optsWithGlobals());
         ctx.isSnapshotCaptured = true
 
+        if (ctx.config.web?.browserViewports) {
+            ctx.log.error('customViewports is not supported for the upload command. Use browsers and viewports instead.');
+            process.exit(1);
+        }
+
         if (!fs.existsSync(directory)) {
             console.log(`Error: The provided directory ${directory} not found.`);
             return;
