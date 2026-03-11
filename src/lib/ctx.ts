@@ -100,6 +100,10 @@ export default (options: Record<string, string>): Context => {
             // process.env.LT_USERNAME = options.userName
             // process.env.LT_ACCESS_KEY = options.accessKey
         }
+        // Block customViewports for non-exec commands
+        if (config.web?.customViewports && !constants.ALLOWED_CUSTOM_VIEWPORT_COMMANDS.includes(options.commandType)) {
+            throw new Error('customViewports is only supported for the exec command. Use browsers and viewports instead.');
+        }
     } catch (error: any) {
         console.log(`[smartui] Error: ${error.message}`);
         process.exit(1);
