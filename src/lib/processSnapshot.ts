@@ -1,5 +1,5 @@
 import { Snapshot, Context, DiscoveryErrors } from "../types.js";
-import { scrollToBottomAndBackToTop, smoothScrollToBottom, getRenderViewports, getRenderViewportsForOptions, validateCoordinates, resolveCustomCSS, parseCSSFile, validateCSSSelectors, generateCSSInjectionReport } from "./utils.js"
+import { scrollToBottomAndBackToTop, smoothScrollToBottom, getRenderViewports, getRenderViewportsForOptions, validateCoordinates, resolveCustomCSS, parseCSSFile, validateCSSSelectors, generateCSSInjectionReport, transformCustomViewportsToBrowserViewports } from "./utils.js"
 import { chromium, Locator } from "@playwright/test"
 import constants from "./constants.js";
 import { updateLogContext } from '../lib/logger.js'
@@ -78,16 +78,25 @@ export async function prepareSnapshot(snapshot: Snapshot, ctx: Context): Promise
         if (options.web && Object.keys(options.web).length) {
             processedOptions.web = {};
 
-            // Check and process viewports in web
-            if (options.web.viewports && options.web.viewports.length > 0) {
-                processedOptions.web.viewports = options.web.viewports.filter(viewport =>
-                    Array.isArray(viewport) && viewport.length > 0
-                );
+            if (options.web.customViewports && Array.isArray(options.web.customViewports) && options.web.customViewports.length > 0) {
+                processedOptions.web.browserViewports = transformCustomViewportsToBrowserViewports(options.web.customViewports);
+            } else {
+                // Check and process viewports in web
+                if (options.web.viewports && options.web.viewports.length > 0) {
+                    processedOptions.web.viewports = options.web.viewports.filter(viewport =>
+                        Array.isArray(viewport) && viewport.length > 0
+                    );
+                }
+
+                // Check and process browsers in web
+                if (options.web.browsers && options.web.browsers.length > 0) {
+                    processedOptions.web.browsers = options.web.browsers;
+                }
             }
 
-            // Check and process browsers in web
-            if (options.web.browsers && options.web.browsers.length > 0) {
-                processedOptions.web.browsers = options.web.browsers;
+            // Clear empty web object so global fallback can trigger
+            if (Object.keys(processedOptions.web).length === 0) {
+                delete processedOptions.web;
             }
         }
 
@@ -152,6 +161,18 @@ export async function prepareSnapshot(snapshot: Snapshot, ctx: Context): Promise
         if (options.ignoreType) {
             processedOptions.ignoreType = options.ignoreType;
         }
+    }
+
+    // Global config fallback — runs when options is empty or has no web/mobile override
+    if (!processedOptions.web && ctx.config.web?.browserViewports) {
+        processedOptions.web = { browserViewports: ctx.config.web.browserViewports };
+    }
+    if (!processedOptions.mobile && ctx.config.mobile) {
+        processedOptions.mobile = {
+            devices: ctx.config.mobile.devices,
+            fullPage: ctx.config.mobile.fullPage ?? true,
+            orientation: ctx.config.mobile.orientation || constants.MOBILE_ORIENTATION_PORTRAIT
+        };
     }
 
     if (ctx.config.tunnel) {
@@ -560,16 +581,25 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
         if (options.web && Object.keys(options.web).length) {
             processedOptions.web = {};
 
-            // Check and process viewports in web
-            if (options.web.viewports && options.web.viewports.length > 0) {
-                processedOptions.web.viewports = options.web.viewports.filter(viewport =>
-                    Array.isArray(viewport) && viewport.length > 0
-                );
+            if (options.web.customViewports && Array.isArray(options.web.customViewports) && options.web.customViewports.length > 0) {
+                processedOptions.web.browserViewports = transformCustomViewportsToBrowserViewports(options.web.customViewports);
+            } else {
+                // Check and process viewports in web
+                if (options.web.viewports && options.web.viewports.length > 0) {
+                    processedOptions.web.viewports = options.web.viewports.filter(viewport =>
+                        Array.isArray(viewport) && viewport.length > 0
+                    );
+                }
+
+                // Check and process browsers in web
+                if (options.web.browsers && options.web.browsers.length > 0) {
+                    processedOptions.web.browsers = options.web.browsers;
+                }
             }
 
-            // Check and process browsers in web
-            if (options.web.browsers && options.web.browsers.length > 0) {
-                processedOptions.web.browsers = options.web.browsers;
+            // Clear empty web object so global fallback can trigger
+            if (Object.keys(processedOptions.web).length === 0) {
+                delete processedOptions.web;
             }
         }
 
@@ -634,6 +664,18 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
         if (options.ignoreType) {
             processedOptions.ignoreType = options.ignoreType;
         }
+    }
+
+    // Global config fallback — runs when options is empty or has no web/mobile override
+    if (!processedOptions.web && ctx.config.web?.browserViewports) {
+        processedOptions.web = { browserViewports: ctx.config.web.browserViewports };
+    }
+    if (!processedOptions.mobile && ctx.config.mobile) {
+        processedOptions.mobile = {
+            devices: ctx.config.mobile.devices,
+            fullPage: ctx.config.mobile.fullPage ?? true,
+            orientation: ctx.config.mobile.orientation || constants.MOBILE_ORIENTATION_PORTRAIT
+        };
     }
 
     if (ctx.config.tunnel) {
