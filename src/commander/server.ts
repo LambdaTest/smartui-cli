@@ -24,7 +24,9 @@ command
             console.log(`Error: The '--buildName' option cannot be an empty string.`);
             process.exit(1);
         }
-        let ctx: Context = ctxInit(command.optsWithGlobals());
+        let opts = command.optsWithGlobals();
+        opts.commandType = 'exec-start';
+        let ctx: Context = ctxInit(opts);
         ctx.snapshotQueue = new snapshotQueue(ctx);
         ctx.totalSnapshots = 0
         ctx.isStartExec = true

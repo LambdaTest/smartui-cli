@@ -31,7 +31,9 @@ command
             console.log(`Error: The '--buildName' option cannot be an empty string.`);
             process.exit(1);
         }
-        let ctx: Context = ctxInit(command.optsWithGlobals());
+        let opts = command.optsWithGlobals();
+        opts.commandType = 'exec';
+        let ctx: Context = ctxInit(opts);
 
         if (!which.sync(execCommand[0], { nothrow: true })) {
             ctx.log.error(`Error: Command not found "${execCommand[0]}"`);

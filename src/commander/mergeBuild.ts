@@ -16,7 +16,9 @@ command
     .requiredOption('--target <string>', 'Target build to merge into')
     .action(async function(this: Command, options: { source: string, target: string }) {
         const { source, target } = options;
-        let ctx: Context = ctxInit(command.optsWithGlobals());
+        let opts = command.optsWithGlobals();
+        opts.commandType = 'merge';
+        let ctx: Context = ctxInit(opts);
 
         if (!source || source.trim() === '') {
             ctx.log.error('Error: The --source option cannot be empty.');

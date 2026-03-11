@@ -35,13 +35,10 @@ command
             console.log(`Error: The '--buildName' option cannot be an empty string.`);
             process.exit(1);
         }
-        let ctx: Context = ctxInit(command.optsWithGlobals());
+        let opts = command.optsWithGlobals();
+        opts.commandType = 'upload';
+        let ctx: Context = ctxInit(opts);
         ctx.isSnapshotCaptured = true
-
-        if (ctx.config.web?.browserViewports) {
-            ctx.log.error('customViewports is not supported for the upload command. Use browsers and viewports instead.');
-            process.exit(1);
-        }
 
         if (!fs.existsSync(directory)) {
             console.log(`Error: The provided directory ${directory} not found.`);

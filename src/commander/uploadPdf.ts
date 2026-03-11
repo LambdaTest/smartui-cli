@@ -22,7 +22,9 @@ command
             console.log(`Error: The '--buildName' option cannot be an empty string.`);
             process.exit(1);
         }
-        let ctx: Context = ctxInit(command.optsWithGlobals());
+        let opts = command.optsWithGlobals();
+        opts.commandType = 'upload-pdf';
+        let ctx: Context = ctxInit(opts);
 
         if (!fs.existsSync(directory)) {
             console.log(`Error: The provided directory ${directory} not found.`);
