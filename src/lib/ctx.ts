@@ -101,8 +101,7 @@ export default (options: Record<string, string>): Context => {
             // process.env.LT_ACCESS_KEY = options.accessKey
         }
         // Block customViewports for non-exec commands
-        const allowedCustomViewportCommands = ['exec', 'exec-start'];
-        if (config.web?.customViewports && !allowedCustomViewportCommands.includes(options.commandType)) {
+        if (config.web?.customViewports && !constants.ALLOWED_CUSTOM_VIEWPORT_COMMANDS.includes(options.commandType)) {
             throw new Error('customViewports is only supported for the exec command. Use browsers and viewports instead.');
         }
     } catch (error: any) {

@@ -36,7 +36,7 @@ command
             process.exit(1);
         }
         let opts = command.optsWithGlobals();
-        opts.commandType = 'upload';
+        opts.commandType = constants.COMMAND_TYPE_UPLOAD;
         let ctx: Context = ctxInit(opts);
         ctx.isSnapshotCaptured = true
 

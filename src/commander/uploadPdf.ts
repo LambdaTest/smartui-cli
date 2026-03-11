@@ -6,6 +6,7 @@ import fs from 'fs';
 import auth from '../tasks/auth.js';
 import uploadPdfs from '../tasks/uploadPdfs.js';
 import {startPdfPolling} from "../lib/utils.js";
+import constants from '../lib/constants.js';
 const command = new Command();
 
 command
@@ -23,7 +24,7 @@ command
             process.exit(1);
         }
         let opts = command.optsWithGlobals();
-        opts.commandType = 'upload-pdf';
+        opts.commandType = constants.COMMAND_TYPE_UPLOAD_PDF;
         let ctx: Context = ctxInit(opts);
 
         if (!fs.existsSync(directory)) {

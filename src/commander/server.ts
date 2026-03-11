@@ -9,6 +9,7 @@ import createBuildExec from '../tasks/createBuildExec.js';
 import snapshotQueue from '../lib/snapshotQueue.js';
 import { startPolling, startPingPolling } from '../lib/utils.js';
 import startTunnel from '../tasks/startTunnel.js'
+import constants from '../lib/constants.js'
 
 const command = new Command();
 
@@ -25,7 +26,7 @@ command
             process.exit(1);
         }
         let opts = command.optsWithGlobals();
-        opts.commandType = 'exec-start';
+        opts.commandType = constants.COMMAND_TYPE_EXEC_START;
         let ctx: Context = ctxInit(opts);
         ctx.snapshotQueue = new snapshotQueue(ctx);
         ctx.totalSnapshots = 0

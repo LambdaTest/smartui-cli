@@ -6,6 +6,7 @@ import ctxInit from '../lib/ctx.js';
 import fetchBuildInfo from '../tasks/fetchBuildInfo.js'
 import mergeBuilds from '../tasks/mergeBuilds.js'
 import getGitInfo from '../tasks/getGitInfo.js'
+import constants from '../lib/constants.js'
 
 const command = new Command();
 
@@ -17,7 +18,7 @@ command
     .action(async function(this: Command, options: { source: string, target: string }) {
         const { source, target } = options;
         let opts = command.optsWithGlobals();
-        opts.commandType = 'merge';
+        opts.commandType = constants.COMMAND_TYPE_MERGE;
         let ctx: Context = ctxInit(opts);
 
         if (!source || source.trim() === '') {

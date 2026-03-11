@@ -12,6 +12,7 @@ import uploadWebFigma from '../tasks/uploadWebFigma.js'
 import uploadAppFigma from '../tasks/uploadAppFigma.js'     
 import { verifyFigmaWebConfig } from '../lib/config.js'
 import chalk from 'chalk';
+import constants from '../lib/constants.js';
 
 
 const uploadFigma = new Command();
@@ -27,7 +28,7 @@ uploadFigma
     .option('--buildName <buildName>', 'Name of the build')
     .action(async function (file, _, command) {
         let opts = command.optsWithGlobals();
-        opts.commandType = 'upload-figma';
+        opts.commandType = constants.COMMAND_TYPE_UPLOAD_FIGMA;
         let ctx: Context = ctxInit(opts);
         ctx.isSnapshotCaptured = true;
 
@@ -80,7 +81,7 @@ uploadWebFigmaCommand
     .option('--fetch-results [filename]', 'Fetch results and optionally specify an output file, e.g., <filename>.json')
     .action(async function (file, _, command) {
         let opts = command.optsWithGlobals();
-        opts.commandType = 'upload-figma';
+        opts.commandType = constants.COMMAND_TYPE_UPLOAD_FIGMA;
         let ctx: Context = ctxInit(opts);
 
         if (!fs.existsSync(file)) {
@@ -149,7 +150,7 @@ uploadWebFigmaCommand
     .option('--fetch-results [filename]', 'Fetch results and optionally specify an output file, e.g., <filename>.json')
     .action(async function (file, _, command) {
         let opts = command.optsWithGlobals();
-        opts.commandType = 'upload-figma';
+        opts.commandType = constants.COMMAND_TYPE_UPLOAD_FIGMA;
         let ctx: Context = ctxInit(opts);
 
         if (!fs.existsSync(file)) {

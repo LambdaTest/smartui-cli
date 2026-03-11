@@ -9,6 +9,7 @@ import createBuild from '../tasks/createBuild.js'
 import captureScreenshots from '../tasks/captureScreenshots.js'
 import finalizeBuild from '../tasks/finalizeBuild.js'
 import { validateWebStaticConfig } from '../lib/schemaValidation.js'
+import constants from '../lib/constants.js'
 
 const command = new Command();
 
@@ -30,7 +31,7 @@ command
             process.exit(1);
         }
         let opts = command.optsWithGlobals();
-        opts.commandType = 'capture';
+        opts.commandType = constants.COMMAND_TYPE_CAPTURE;
         let ctx: Context = ctxInit(opts);
         ctx.isSnapshotCaptured = true
         
