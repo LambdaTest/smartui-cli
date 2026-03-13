@@ -163,9 +163,16 @@ export async function prepareSnapshot(snapshot: Snapshot, ctx: Context): Promise
         }
     }
 
-    // Global config fallback — runs when options is empty or has no web/mobile override
-    if (!processedOptions.web && ctx.config.web?.browserViewports) {
-        processedOptions.web = { browserViewports: ctx.config.web.browserViewports };
+    // Fall back to global web/mobile config when snapshot options don't specify overrides
+    if (!processedOptions.web && ctx.config.web) {
+        if (ctx.config.web.browserViewports) {
+            processedOptions.web = { browserViewports: ctx.config.web.browserViewports };
+        } else if (ctx.config.web.browsers && ctx.config.web.viewports) {
+            processedOptions.web = {
+                browsers: ctx.config.web.browsers,
+                viewports: ctx.config.web.viewports
+            };
+        }
     }
     if (!processedOptions.mobile && ctx.config.mobile) {
         processedOptions.mobile = {
@@ -666,9 +673,16 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
         }
     }
 
-    // Global config fallback — runs when options is empty or has no web/mobile override
-    if (!processedOptions.web && ctx.config.web?.browserViewports) {
-        processedOptions.web = { browserViewports: ctx.config.web.browserViewports };
+    // Fall back to global web/mobile config when snapshot options don't specify overrides
+    if (!processedOptions.web && ctx.config.web) {
+        if (ctx.config.web.browserViewports) {
+            processedOptions.web = { browserViewports: ctx.config.web.browserViewports };
+        } else if (ctx.config.web.browsers && ctx.config.web.viewports) {
+            processedOptions.web = {
+                browsers: ctx.config.web.browsers,
+                viewports: ctx.config.web.viewports
+            };
+        }
     }
     if (!processedOptions.mobile && ctx.config.mobile) {
         processedOptions.mobile = {
