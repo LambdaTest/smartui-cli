@@ -6,7 +6,6 @@ import startServer from '../tasks/startServer.js'
 import authExec from '../tasks/authExec.js'
 import ctxInit from '../lib/ctx.js'
 import commandOptionsInit from '../lib/execCommandOptions.js'
-import constants from '../lib/constants.js'
 import getGitInfo from '../tasks/getGitInfo.js'
 import createBuildExec from '../tasks/createBuildExec.js'
 import exec from '../tasks/exec.js'
@@ -32,9 +31,7 @@ command
             console.log(`Error: The '--buildName' option cannot be an empty string.`);
             process.exit(1);
         }
-        let opts = command.optsWithGlobals();
-        opts.commandType = constants.COMMAND_TYPE_EXEC;
-        let ctx: Context = ctxInit(opts);
+        let ctx: Context = ctxInit(command.optsWithGlobals());
 
         if (!which.sync(execCommand[0], { nothrow: true })) {
             ctx.log.error(`Error: Command not found "${execCommand[0]}"`);

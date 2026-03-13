@@ -139,31 +139,13 @@ export function getWebRenderViewports(ctx: Context): Array<Record<string, any>> 
     let webRenderViewports: Array<Record<string, any>> = [];
 
     if (ctx.config.web) {
-        if (ctx.config.web.browserViewports) {
-            const seen = new Set<string>();
-            for (const viewports of Object.values(ctx.config.web.browserViewports)) {
-                for (const viewport of viewports as Array<{ width: number, height: number }>) {
-                    const key = `${viewport.width}x${viewport.height}`;
-                    if (!seen.has(key)) {
-                        seen.add(key);
-                        webRenderViewports.push({
-                            viewport,
-                            viewportString: `${viewport.width}${viewport.height ? 'x' + viewport.height : ''}`,
-                            fullPage: viewport.height ? false : true,
-                            device: false
-                        });
-                    }
-                }
-            }
-        } else {
-            for (const viewport of ctx.config.web.viewports) {
-                webRenderViewports.push({
-                    viewport,
-                    viewportString: `${viewport.width}${viewport.height ? 'x'+viewport.height : ''}`,
-                    fullPage: viewport.height ? false : true,
-                    device: false
-                })
-            }
+        for (const viewport of ctx.config.web.viewports) {
+            webRenderViewports.push({
+                viewport,
+                viewportString: `${viewport.width}${viewport.height ? 'x' + viewport.height : ''}`,
+                fullPage: viewport.height ? false : true,
+                device: false
+            })
         }
     }
 
@@ -173,24 +155,7 @@ export function getWebRenderViewports(ctx: Context): Array<Record<string, any>> 
 export function getWebRenderViewportsForOptions(options: any): Array<Record<string, any>> {
     let webRenderViewports: Array<Record<string, any>> = [];
 
-    if (options.web && Array.isArray(options.web.customViewports) && options.web.customViewports.length > 0) {
-        const browserViewports = transformCustomViewportsToBrowserViewports(options.web.customViewports);
-        const seen = new Set<string>();
-        for (const viewports of Object.values(browserViewports)) {
-            for (const vp of viewports as Array<{ width: number, height: number }>) {
-                const key = `${vp.width}x${vp.height}`;
-                if (!seen.has(key)) {
-                    seen.add(key);
-                    webRenderViewports.push({
-                        viewport: vp,
-                        viewportString: `${vp.width}${vp.height ? 'x' + vp.height : ''}`,
-                        fullPage: vp.height ? false : true,
-                        device: false
-                    });
-                }
-            }
-        }
-    } else if (options.web && Array.isArray(options.web.viewports)) {
+    if (options.web && Array.isArray(options.web.viewports)) {
         for (const viewport of options.web.viewports) {
             if (Array.isArray(viewport) && viewport.length > 0) {
                 let viewportObj: { width: number; height?: number } = {
@@ -203,7 +168,7 @@ export function getWebRenderViewportsForOptions(options: any): Array<Record<stri
 
                 webRenderViewports.push({
                     viewport: viewportObj,
-                    viewportString: `${viewport[0]}${viewport[1] ? 'x'+viewport[1] : ''}`,
+                    viewportString: `${viewport[0]}${viewport[1] ? 'x' + viewport[1] : ''}`,
                     fullPage: viewport.length === 1,
                     device: false
                 });
@@ -212,25 +177,6 @@ export function getWebRenderViewportsForOptions(options: any): Array<Record<stri
     }
 
     return webRenderViewports;
-}
-
-export function transformCustomViewportsToBrowserViewports(
-    customViewports: Array<{ browser: string, viewport: [number] | [number, number] }>
-): Record<string, Array<{ width: number, height: number }>> {
-    const browserViewports: Record<string, Array<{ width: number, height: number }>> = {};
-    for (const entry of customViewports) {
-        if (!browserViewports[entry.browser]) {
-            browserViewports[entry.browser] = [];
-        }
-        const vp = { width: entry.viewport[0], height: entry.viewport[1] || 0 };
-        const exists = browserViewports[entry.browser].some(
-            existing => existing.width === vp.width && existing.height === vp.height
-        );
-        if (!exists) {
-            browserViewports[entry.browser].push(vp);
-        }
-    }
-    return browserViewports;
 }
 
 export function getMobileRenderViewports(ctx: Context): Record<string, any> {
@@ -569,15 +515,9 @@ export function calculateVariantCount(config: any): number {
 
     // Calculate web variants
     if (config.web) {
-        if (config.web.browserViewports) {
-            for (const viewports of Object.values(config.web.browserViewports)) {
-                variantCount += (viewports as Array<any>).length;
-            }
-        } else {
-            const browsers = config.web.browsers || [];
-            const viewports = config.web.viewports || [];
-            variantCount += browsers.length * viewports.length;
-        }
+        const browsers = config.web.browsers || [];
+        const viewports = config.web.viewports || [];
+        variantCount += browsers.length * viewports.length;
     }
 
     // Calculate mobile variants
@@ -589,20 +529,21 @@ export function calculateVariantCount(config: any): number {
     return variantCount;
 }
 
+/**
+ * Calculate the number of variants for a snapshot based on snapshot-specific options
+ * @param snapshot - The snapshot object with options
+ * @param globalConfig - The global configuration object (fallback)
+ * @returns The total number of variants that would be generated
+ */
 export function calculateVariantCountFromSnapshot(snapshot: any, globalConfig?: any): number {
     let variantCount = 0;
+    
 
     // Check snapshot-specific web options
     if (snapshot.options?.web) {
-        if (snapshot.options.web.browserViewports) {
-            for (const viewports of Object.values(snapshot.options.web.browserViewports)) {
-                variantCount += (viewports as Array<any>).length;
-            }
-        } else {
-            const browsers = snapshot.options.web.browsers || [];
-            const viewports = snapshot.options.web.viewports || [];
-            variantCount += browsers.length * viewports.length;
-        }
+        const browsers = snapshot.options.web.browsers || [];
+        const viewports = snapshot.options.web.viewports || [];
+        variantCount += browsers.length * viewports.length;
     }
 
     // Check snapshot-specific mobile options

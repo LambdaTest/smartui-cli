@@ -9,7 +9,6 @@ import createBuildExec from '../tasks/createBuildExec.js';
 import snapshotQueue from '../lib/snapshotQueue.js';
 import { startPolling, startPingPolling } from '../lib/utils.js';
 import startTunnel from '../tasks/startTunnel.js'
-import constants from '../lib/constants.js'
 
 const command = new Command();
 
@@ -25,9 +24,7 @@ command
             console.log(`Error: The '--buildName' option cannot be an empty string.`);
             process.exit(1);
         }
-        let opts = command.optsWithGlobals();
-        opts.commandType = constants.COMMAND_TYPE_EXEC_START;
-        let ctx: Context = ctxInit(opts);
+        let ctx: Context = ctxInit(command.optsWithGlobals());
         ctx.snapshotQueue = new snapshotQueue(ctx);
         ctx.totalSnapshots = 0
         ctx.isStartExec = true
