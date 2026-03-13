@@ -175,7 +175,8 @@ export interface Snapshot {
         },
         web?: {
             browsers?: string[],
-            viewports: ([number] | [number, number])[]
+            viewports: ([number] | [number, number])[],
+            customViewports?: Array<{ browser: string, viewport: [number] | [number, number] }>
         },
         mobile?: {
             devices: string[],
@@ -226,9 +227,15 @@ export interface Build {
     checkPendingRequests: boolean;
 }
 
+export interface CustomViewportEntry {
+    browser: string;
+    viewport: { width: number, height?: number };
+}
+
 export interface WebConfig {
     browsers: Array<string>;
     viewports: Array<{ width: number, height: number }>;
+    browserViewports?: Record<string, Array<{ width: number, height: number }>>;
 }
 
 export interface MobileConfig {

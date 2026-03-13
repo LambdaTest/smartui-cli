@@ -35,7 +35,9 @@ command
             console.log(`Error: The '--buildName' option cannot be an empty string.`);
             process.exit(1);
         }
-        let ctx: Context = ctxInit(command.optsWithGlobals());
+        let opts = command.optsWithGlobals();
+        opts.commandType = constants.COMMAND_TYPE_UPLOAD;
+        let ctx: Context = ctxInit(opts);
         ctx.isSnapshotCaptured = true
 
         if (!fs.existsSync(directory)) {
