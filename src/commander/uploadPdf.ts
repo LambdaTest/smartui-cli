@@ -6,7 +6,6 @@ import fs from 'fs';
 import auth from '../tasks/auth.js';
 import uploadPdfs from '../tasks/uploadPdfs.js';
 import {startPdfPolling} from "../lib/utils.js";
-import constants from '../lib/constants.js';
 const command = new Command();
 
 command
@@ -23,9 +22,7 @@ command
             console.log(`Error: The '--buildName' option cannot be an empty string.`);
             process.exit(1);
         }
-        let opts = command.optsWithGlobals();
-        opts.commandType = constants.COMMAND_TYPE_UPLOAD_PDF;
-        let ctx: Context = ctxInit(opts);
+        let ctx: Context = ctxInit(command.optsWithGlobals());
 
         if (!fs.existsSync(directory)) {
             console.log(`Error: The provided directory ${directory} not found.`);

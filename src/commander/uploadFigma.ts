@@ -12,7 +12,6 @@ import uploadWebFigma from '../tasks/uploadWebFigma.js'
 import uploadAppFigma from '../tasks/uploadAppFigma.js'     
 import { verifyFigmaWebConfig } from '../lib/config.js'
 import chalk from 'chalk';
-import constants from '../lib/constants.js';
 
 
 const uploadFigma = new Command();
@@ -27,9 +26,7 @@ uploadFigma
     .option('--markBaseline', 'Mark the uploaded images as baseline')
     .option('--buildName <buildName>', 'Name of the build')
     .action(async function (file, _, command) {
-        let opts = command.optsWithGlobals();
-        opts.commandType = constants.COMMAND_TYPE_UPLOAD_FIGMA;
-        let ctx: Context = ctxInit(opts);
+        let ctx: Context = ctxInit(command.optsWithGlobals());
         ctx.isSnapshotCaptured = true;
 
         if (!fs.existsSync(file)) {
@@ -80,9 +77,7 @@ uploadWebFigmaCommand
     .option('--buildName <buildName>', 'Name of the build')
     .option('--fetch-results [filename]', 'Fetch results and optionally specify an output file, e.g., <filename>.json')
     .action(async function (file, _, command) {
-        let opts = command.optsWithGlobals();
-        opts.commandType = constants.COMMAND_TYPE_UPLOAD_FIGMA;
-        let ctx: Context = ctxInit(opts);
+        let ctx: Context = ctxInit(command.optsWithGlobals());
 
         if (!fs.existsSync(file)) {
             console.log(`Error: figma-web config file ${file} not found.`);
@@ -149,9 +144,7 @@ uploadWebFigmaCommand
     .option('--buildName <buildName>', 'Name of the build')
     .option('--fetch-results [filename]', 'Fetch results and optionally specify an output file, e.g., <filename>.json')
     .action(async function (file, _, command) {
-        let opts = command.optsWithGlobals();
-        opts.commandType = constants.COMMAND_TYPE_UPLOAD_FIGMA;
-        let ctx: Context = ctxInit(opts);
+        let ctx: Context = ctxInit(command.optsWithGlobals());
 
         if (!fs.existsSync(file)) {
             console.log(`Error: figma-app config file ${file} not found.`);

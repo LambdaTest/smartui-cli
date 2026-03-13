@@ -140,16 +140,6 @@ export default {
     FILE_EXTENSION_ZIP: '.zip',
     FILE_EXTENSION_GIFS: 'gif',
 
-    // command types
-    COMMAND_TYPE_EXEC: 'exec',
-    COMMAND_TYPE_EXEC_START: 'exec-start',
-    COMMAND_TYPE_CAPTURE: 'capture',
-    COMMAND_TYPE_UPLOAD: 'upload',
-    COMMAND_TYPE_UPLOAD_FIGMA: 'upload-figma',
-    COMMAND_TYPE_UPLOAD_PDF: 'upload-pdf',
-    COMMAND_TYPE_MERGE: 'merge',
-    ALLOWED_CUSTOM_VIEWPORT_COMMANDS: ['exec', 'exec-start'],
-
     // Default scrollTime
     DEFAULT_SCROLL_TIME: 8,
 
