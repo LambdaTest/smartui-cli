@@ -6,6 +6,7 @@ import ctxInit from '../lib/ctx.js';
 import fetchBranchInfo from '../tasks/fetchBranchInfo.js'
 import mergeBuilds from '../tasks/mergeBuilds.js'
 import getGitInfo from '../tasks/getGitInfo.js'
+import constants from '../lib/constants.js'
 
 const command = new Command();
 
@@ -16,7 +17,9 @@ command
     .requiredOption('--target <string>', 'Target branch to merge into')
     .action(async function(this: Command, options: { source: string, target: string }) {
         const { source, target } = options;
-        let ctx: Context = ctxInit(command.optsWithGlobals());
+        let opts = command.optsWithGlobals();
+        opts.commandType = constants.COMMAND_TYPE_MERGE;
+        let ctx: Context = ctxInit(opts);
 
         if (!source || source.trim() === '') {
             ctx.log.error('Error: The --source option cannot be empty.');

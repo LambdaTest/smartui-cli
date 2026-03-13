@@ -27,11 +27,16 @@ const ConfigSchema = {
                     type: "array",
                     items: { type: "string", enum: [constants.CHROME, constants.FIREFOX, constants.SAFARI, constants.EDGE] },
                     uniqueItems: true,
+                    minItems: 1,
                     maxItems: 4,
-                    errorMessage: `Invalid config; allowed browsers - ${constants.CHROME}, ${constants.FIREFOX}, ${constants.SAFARI}, ${constants.EDGE}`
+                    errorMessage: {
+                        minItems: "Invalid config; browsers must have at least one entry",
+                        _: `Invalid config; allowed browsers - ${constants.CHROME}, ${constants.FIREFOX}, ${constants.SAFARI}, ${constants.EDGE}`
+                    }
                 },
                 viewports: {
                     type: "array",
+                    minItems: 1,
                     items: {
                         type: "array",
                         oneOf: [
@@ -53,11 +58,51 @@ const ConfigSchema = {
                     },
                     uniqueItems: true,
                     maxItems: 5,
-                    errorMessage: "Invalid config; max unique viewports allowed - 5"
+                    errorMessage: {
+                        minItems: "Invalid config; viewports must have at least one entry",
+                        maxItems: "Invalid config; max unique viewports allowed - 5"
+                    }
+                },
+                customViewports: {
+                    type: "array",
+                    minItems: 1,
+                    items: {
+                        type: "object",
+                        properties: {
+                            browser: {
+                                type: "string",
+                                enum: [constants.CHROME, constants.FIREFOX, constants.SAFARI, constants.EDGE],
+                                errorMessage: `Invalid config; allowed browsers - ${constants.CHROME}, ${constants.FIREFOX}, ${constants.SAFARI}, ${constants.EDGE}`
+                            },
+                            viewport: {
+                                type: "array",
+                                oneOf: [
+                                    {
+                                        items: [{ type: "number", minimum: 320, maximum: 7680 }],
+                                        minItems: 1,
+                                        maxItems: 1
+                                    },
+                                    {
+                                        items: [
+                                            { type: "number", minimum: 320, maximum: 7680 },
+                                            { type: "number", minimum: 320, maximum: 7680 }
+                                        ],
+                                        minItems: 2,
+                                        maxItems: 2
+                                    }
+                                ],
+                                errorMessage: "Invalid config; customViewports viewport width/height must be >= 320 and <= 7680"
+                            }
+                        },
+                        required: ["browser", "viewport"],
+                        additionalProperties: false
+                    },
+                    errorMessage: {
+                        minItems: "Invalid config; customViewports must have at least one entry",
+                        _: "Invalid config; customViewports must be an array of {browser, viewport} objects"
+                    }
                 }
-            },
-            required: ["browsers", "viewports"],
-            additionalProperties: false
+            }
         },
         mobile: {
             type: "object",
@@ -570,10 +615,30 @@ const SnapshotSchema: JSONSchemaType<Snapshot> = {
                             },
                             uniqueItems: true,
                             errorMessage: "Invalid snapshot options; viewports must be an array of unique arrays."
+                        },
+                        customViewports: {
+                            type: "array",
+                            items: {
+                                type: "object",
+                                properties: {
+                                    browser: {
+                                        type: "string",
+                                        enum: [constants.CHROME, constants.FIREFOX, constants.SAFARI, constants.EDGE],
+                                    },
+                                    viewport: {
+                                        type: "array",
+                                        items: { type: "number", minimum: 1 },
+                                        minItems: 1,
+                                        maxItems: 2,
+                                    }
+                                },
+                                required: ["browser", "viewport"],
+                                additionalProperties: false
+                            },
+                            errorMessage: "Invalid snapshot options; customViewports must be an array of {browser, viewport} objects"
                         }
                     },
-                    required: ["viewports"],
-                    errorMessage: "Invalid snapshot options; web must include viewports property."
+                    errorMessage: "Invalid snapshot options; web must include viewports or customViewports property."
                 },
                 mobile: {
                     type: "object",
