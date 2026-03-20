@@ -54,7 +54,7 @@ export default (ctx: Context): Git => {
 			commitId: gitInfo.commit_id.slice(0,6) || '',
 			commitMessage: gitInfo.commit_body || '',
 			commitAuthor: gitInfo.commit_author || '',
-			githubURL: githubURL ? githubURL : (ctx.env.GIT_URL) ? ctx.env.GIT_URL : `${constants.GITHUB_API_HOST}/repos/${process.env.GITHUB_REPOSITORY}/statuses/${gitInfo.commit_id}`,
+			githubURL: githubURL ? githubURL : (ctx.env.GIT_URL) ? ctx.env.GIT_URL : process.env.GITHUB_REPOSITORY ? `${constants.GITHUB_API_HOST}/repos/${process.env.GITHUB_REPOSITORY}/statuses/${gitInfo.commit_id}` : '',
 			baselineBranch: ctx.options.baselineBranch || ctx.env.BASELINE_BRANCH || ''
 		}
 	} else {
@@ -81,7 +81,7 @@ export default (ctx: Context): Git => {
 			commitId: res[0] || '',
 			commitMessage: res[2] || '',
 			commitAuthor: res[7] || '',
-			githubURL: githubURL ? githubURL : (ctx.env.GIT_URL) ? ctx.env.GIT_URL : `${constants.GITHUB_API_HOST}/repos/${process.env.GITHUB_REPOSITORY}/statuses/${res[1]}`,
+			githubURL: githubURL ? githubURL : (ctx.env.GIT_URL) ? ctx.env.GIT_URL : process.env.GITHUB_REPOSITORY ? `${constants.GITHUB_API_HOST}/repos/${process.env.GITHUB_REPOSITORY}/statuses/${res[1]}` : '',
 			baselineBranch: ctx.options.baselineBranch || ctx.env.BASELINE_BRANCH || ''
 		};
 	}
