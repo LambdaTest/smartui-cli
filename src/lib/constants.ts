@@ -290,6 +290,7 @@ export default {
         'iPad 10.2 (2019)': { os: 'ios', viewport: { width: 810, height: 1080 } },
         'iPad 10.2 (2020)': { os: 'ios', viewport: { width: 834, height: 1194 } },
         'iPad 10.2 (2021)': { os: 'ios', viewport: { width: 810, height: 1080 } },
+        'iPad (9th generation)': { os: 'ios', viewport: { width: 810, height: 1080 } },
         'iPad 9.7 (2017)': { os: 'ios', viewport: { width: 768, height: 1024 } },
         'iPad Air (2019)': { os: 'ios', viewport: { width: 834, height: 1112 } },
         'iPad Air (2020)': { os: 'ios', viewport: { width: 820, height: 1180 } },
