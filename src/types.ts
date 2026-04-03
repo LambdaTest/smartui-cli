@@ -133,6 +133,7 @@ export interface Env {
     LT_USERNAME : string | undefined;
     LT_ACCESS_KEY : string | undefined;
     LT_SDK_DEBUG: boolean;
+    LT_SDK_DEBUG_SMARTUI_CLI: boolean;
     BASELINE_BRANCH: string | undefined;
     CURRENT_BRANCH: string | undefined;
     PROJECT_NAME: string | undefined;
