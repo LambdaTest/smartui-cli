@@ -27,6 +27,20 @@ const normalizeSameSite = (value) => {
     return mapping[normalized] || value;
 };
 
+function cacheSerializedResources(domResources: Array<any>): Record<string, any> {
+    let cache: Record<string, any> = {};
+    if (domResources && domResources.length) {
+        for (let resource of domResources) {
+            let body = resource.mimetype == 'text/css' ? Buffer.from(resource.content).toString('base64') : resource.content;
+            cache[resource.url] = {
+                body: body,
+                type: resource.mimetype
+            }
+        }
+    }
+    return cache;
+}
+
 export async function prepareSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record<string, any>> {
     let processedOptions: Record<string, any> = {};
     processedOptions.cliEnableJavascript = ctx.config.cliEnableJavaScript;
@@ -235,26 +249,12 @@ export async function prepareSnapshot(snapshot: Snapshot, ctx: Context): Promise
 
     processedOptions.doRemoteDiscovery = true;
 
-    // Pre-populate resources from DOM serializer (e.g. __serialized__ images from CSS)
-    // These are synthetic URLs that don't exist on the actual server, so remote discovery
-    // must receive them from the CLI to serve them during page rendering.
-    let resources: Record<string, any> = {};
-    if (snapshot.dom.resources && snapshot.dom.resources.length) {
-        for (let resource of snapshot.dom.resources) {
-            let body = resource.mimetype == 'text/css' ? Buffer.from(resource.content).toString('base64') : resource.content;
-            resources[resource.url] = {
-                body: body,
-                type: resource.mimetype
-            }
-        }
-    }
-
     return {
         processedSnapshot: {
             name: snapshot.name,
             url: snapshot.url,
             dom: Buffer.from(snapshot.dom.html).toString('base64'),
-            resources: resources,
+            resources: cacheSerializedResources(snapshot.dom.resources),
             options: processedOptions,
             cookies: Buffer.from(snapshot.dom.cookies).toString('base64'),
             renderViewports: renderViewports,
@@ -370,17 +370,7 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
     const page = await context.newPage();
 
     // populate cache with already captured resources
-    let cache: Record<string, any> = {};
-    if (snapshot.dom.resources.length) {
-        for (let resource of snapshot.dom.resources) {
-            // convert text/css content to base64
-            let body = resource.mimetype == 'text/css' ? Buffer.from(resource.content).toString('base64') : resource.content;
-            cache[resource.url] = {
-                body: body,
-                type: resource.mimetype
-            }
-        }
-    }
+    let cache: Record<string, any> = cacheSerializedResources(snapshot.dom.resources);
 
     const pendingRequests = new Set<string>();
 
