@@ -234,12 +234,27 @@ export async function prepareSnapshot(snapshot: Snapshot, ctx: Context): Promise
     }
 
     processedOptions.doRemoteDiscovery = true;
+
+    // Pre-populate resources from DOM serializer (e.g. __serialized__ images from CSS)
+    // These are synthetic URLs that don't exist on the actual server, so remote discovery
+    // must receive them from the CLI to serve them during page rendering.
+    let resources: Record<string, any> = {};
+    if (snapshot.dom.resources && snapshot.dom.resources.length) {
+        for (let resource of snapshot.dom.resources) {
+            let body = resource.mimetype == 'text/css' ? Buffer.from(resource.content).toString('base64') : resource.content;
+            resources[resource.url] = {
+                body: body,
+                type: resource.mimetype
+            }
+        }
+    }
+
     return {
         processedSnapshot: {
             name: snapshot.name,
             url: snapshot.url,
             dom: Buffer.from(snapshot.dom.html).toString('base64'),
-            resources: {},
+            resources: resources,
             options: processedOptions,
             cookies: Buffer.from(snapshot.dom.cookies).toString('base64'),
             renderViewports: renderViewports,
