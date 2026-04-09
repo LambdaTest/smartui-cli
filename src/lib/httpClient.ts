@@ -811,6 +811,11 @@ export default class httpClient {
             form.append('pdfNames', pdfNames);
         }
 
+        if (ctx.git?.branch) form.append('branch', ctx.git.branch);
+        if (ctx.git?.commitId) form.append('commitId', ctx.git.commitId);
+        if (ctx.git?.commitAuthor) form.append('commitAuthor', ctx.git.commitAuthor);
+        if (ctx.git?.commitMessage) form.append('commitMessage', ctx.git.commitMessage);
+
         try {
             const response = await this.axiosInstance.request({
                 url: ctx.env.SMARTUI_UPLOAD_URL + '/pdf/upload',

@@ -5,6 +5,7 @@ import { color, Listr, ListrDefaultRendererLogLevels, LoggerFormat } from 'listr
 import fs from 'fs';
 import auth from '../tasks/auth.js';
 import uploadPdfs from '../tasks/uploadPdfs.js';
+import getGitInfo from '../tasks/getGitInfo.js';
 import {startPdfPolling} from "../lib/utils.js";
 import constants from '../lib/constants.js';
 const command = new Command();
@@ -37,6 +38,7 @@ command
         let tasks = new Listr<Context>(
             [
                 auth(ctx),
+                getGitInfo(ctx),
                 uploadPdfs(ctx)
             ],
             {
