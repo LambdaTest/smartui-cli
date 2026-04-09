@@ -94,25 +94,32 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 			const contextId = snapshot?.options?.contextId;
 
 			if (sessionId) {
-				// Check if sessionId exists in the map
-				if (ctx.sessionCapabilitiesMap?.has(sessionId)) {
+				if (ctx.sessionTestIdMap?.has(sessionId)) {
+					// Already have testId from LTMS fallback, skip getSmartUICapabilities
+					snapshot.options.testId = ctx.sessionTestIdMap.get(sessionId);
+					ctx.log.debug(`Using cached testId for sessionId ${sessionId}: ${snapshot.options.testId}`);
+				} else if (ctx.sessionCapabilitiesMap?.has(sessionId)) {
 					// Use cached capabilities if available
 					const cachedCapabilities = ctx.sessionCapabilitiesMap.get(sessionId);
 					capsBuildId = cachedCapabilities?.buildId || ''
 				} else {
 					// If not cached, fetch from API and cache it
 					try {
-						let fetchedCapabilitiesResp = await ctx.client.getSmartUICapabilities(sessionId, ctx.config, ctx.git, ctx.log, ctx.isStartExec, ctx.options.baselineBuild);
+						let fetchedCapabilitiesResp = await ctx.client.getSmartUICapabilities(sessionId, ctx.config, ctx.git, ctx.log, ctx.isStartExec, ctx.options.baselineBuild, ctx.env);
 						capsBuildId = fetchedCapabilitiesResp?.buildId || ''
 						ctx.log.debug(`fetch caps for sessionId: ${sessionId} are ${JSON.stringify(fetchedCapabilitiesResp)}`)
 						if (capsBuildId) {
 							ctx.sessionCapabilitiesMap.set(sessionId, fetchedCapabilitiesResp);
 						} else if (fetchedCapabilitiesResp && fetchedCapabilitiesResp?.sessionId) {
 							ctx.sessionCapabilitiesMap.set(sessionId, fetchedCapabilitiesResp);
+						} else if (fetchedCapabilitiesResp?.testId && !capsBuildId) {
+							// LTMS fallback: only testId returned, no buildId
+							ctx.sessionTestIdMap?.set(sessionId, fetchedCapabilitiesResp.testId);
+							snapshot.options.testId = fetchedCapabilitiesResp.testId;
+							ctx.log.debug(`Cached LTMS fallback testId for sessionId ${sessionId}: ${fetchedCapabilitiesResp.testId}`);
 						}
 					} catch (error: any) {
 						ctx.log.debug(`Failed to fetch capabilities for sessionId ${sessionId}: ${error.message}`);
-						// console.log(`Failed to fetch capabilities for sessionId ${sessionId}: ${error.message}`);
 					}
 				}
 
@@ -378,7 +385,7 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 				} else {
 					// If not cached, fetch from API and cache it (same as snapshot flow)
 					try {
-						const fetchedCapabilitiesResp = await ctx.client.getSmartUICapabilities(sessionId, ctx.config, ctx.git, ctx.log, ctx.isStartExec, ctx.options.baselineBuild);
+						const fetchedCapabilitiesResp = await ctx.client.getSmartUICapabilities(sessionId, ctx.config, ctx.git, ctx.log, ctx.isStartExec, ctx.options.baselineBuild, ctx.env);
 						resolvedBuildId = fetchedCapabilitiesResp?.buildId || '';
 						projectToken = fetchedCapabilitiesResp?.projectToken || '';
 						ctx.log.debug(`Fetched caps for sessionId: ${sessionId} are ${JSON.stringify(fetchedCapabilitiesResp)}`);
