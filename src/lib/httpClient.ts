@@ -303,20 +303,24 @@ export default class httpClient {
     }
 
 
-    getSmartUICapabilities(sessionId: string, config: any, git: any, log: Logger, isStartExec: boolean, baselineBuild: string) {
+    getSmartUICapabilities(sessionId: string, config: any, git: any, log: Logger, isStartExec: boolean, baselineBuild: string, env?: any) {
+        const data: any = {
+            git,
+            config,
+            isStartExec,
+            baselineBuild,
+            packageVersion: pkgJSON.version,
+        };
+        if (env?.LT_USERNAME) data.username = env.LT_USERNAME;
+        if (env?.LT_ACCESS_KEY) data.accessKey = env.LT_ACCESS_KEY;
+
         return this.request({
             url: '/sessions/capabilities',
             method: 'GET',
             params: {
                 sessionId: sessionId,
             },
-            data: {
-                git,
-                config,
-                isStartExec,
-                baselineBuild,
-                packageVersion: pkgJSON.version,
-            },
+            data,
             headers: {
                 projectToken: '',
                 projectName: '',
@@ -810,6 +814,11 @@ export default class httpClient {
         if (pdfNames && pdfNames !== '') {
             form.append('pdfNames', pdfNames);
         }
+
+        if (ctx.git?.branch) form.append('branch', ctx.git.branch);
+        if (ctx.git?.commitId) form.append('commitId', ctx.git.commitId);
+        if (ctx.git?.commitAuthor) form.append('commitAuthor', ctx.git.commitAuthor);
+        if (ctx.git?.commitMessage) form.append('commitMessage', ctx.git.commitMessage);
 
         try {
             const response = await this.axiosInstance.request({
