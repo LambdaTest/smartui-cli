@@ -81,7 +81,9 @@ export async function prepareSnapshot(snapshot: Snapshot, ctx: Context): Promise
         if (options.sessionId) {
             const sessionId = options.sessionId;
             processedOptions.sessionId = sessionId
-            if (ctx.sessionCapabilitiesMap && ctx.sessionCapabilitiesMap.has(sessionId)) {
+            if (options.testId) {
+                processedOptions.testId = options.testId;
+            } else if (ctx.sessionCapabilitiesMap && ctx.sessionCapabilitiesMap.has(sessionId)) {
                 const sessionCapabilities = ctx.sessionCapabilitiesMap.get(sessionId);
                 if (sessionCapabilities && sessionCapabilities.id) {
                     processedOptions.testId = sessionCapabilities.id;
@@ -568,7 +570,9 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
         if (options.sessionId) {
             const sessionId = options.sessionId;
             processedOptions.sessionId = sessionId
-            if (ctx.sessionCapabilitiesMap && ctx.sessionCapabilitiesMap.has(sessionId)) {
+            if (options.testId) {
+                processedOptions.testId = options.testId;
+            } else if (ctx.sessionCapabilitiesMap && ctx.sessionCapabilitiesMap.has(sessionId)) {
                 const sessionCapabilities = ctx.sessionCapabilitiesMap.get(sessionId);
                 if (sessionCapabilities && sessionCapabilities.id) {
                     processedOptions.testId = sessionCapabilities.id;

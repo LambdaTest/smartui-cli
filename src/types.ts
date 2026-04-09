@@ -96,6 +96,7 @@ export interface Context {
     isStartExec ?: boolean;
     isSnapshotCaptured ?: boolean;
     sessionCapabilitiesMap?: Map<string, any[]>;
+    sessionTestIdMap?: Map<string, string>;
     buildToSnapshotCountMap?: Map<string, number>;
     fetchResultsForBuild?: Array<string>;
     sessionIdToSnapshotNameMap?: Map<string, string[]>;
@@ -187,6 +188,7 @@ export interface Snapshot {
         loadDomContent?: boolean;
         ignoreType?: string[],
         sessionId?: string
+        testId?: string
         sync?: boolean;
         contextId?: string;
         useExtendedViewport?: boolean;
