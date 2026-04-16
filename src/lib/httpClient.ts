@@ -330,6 +330,8 @@ export default class httpClient {
         browserName = browserName === constants.SAFARI ? constants.WEBKIT : browserName;
         const file = fs.readFileSync(ssPath);
         const form = new FormData();
+        // form-data defaults maxDataSize to 2MB; disable to allow large screenshots
+        (form as any).maxDataSize = Infinity;
         form.append('screenshot', file, { filename: `${ssName}.png`, contentType: 'image/png' });
         form.append('browser', browserName);
         form.append('viewport', viewport);
@@ -343,7 +345,9 @@ export default class httpClient {
             method: 'POST',
             headers: form.getHeaders(),
             data: form,
-            timeout: 30000
+            timeout: 30000,
+            maxBodyLength: Infinity, // prevent axios from limiting the body size
+            maxContentLength: Infinity, // prevent axios from limiting the content size
         })
             .then(() => {
                 log.debug(`${ssName} for ${browserName} ${viewport} uploaded successfully`);
