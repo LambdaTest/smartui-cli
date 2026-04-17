@@ -841,38 +841,17 @@ export default class httpClient {
     }
 
     async fetchPdfResults(ctx: Context): Promise<any> {
-        const params: Record<string, string> = {};
+        const params: Record<string, any> = {
+            buildId: ctx.build.id,
+            baseline: false,
+            buildName: ''
+        };
 
-        if (ctx.build.projectId) {
-            params.project_id = ctx.build.projectId;
-        } else {
-            throw new Error('Project ID not found to fetch PDF results');
-        }
-        params.build_id = ctx.build.id;
-
-        const auth = Buffer.from(`${this.username}:${this.accessKey}`).toString('base64');
-
-        try {
-            const response = await axios.request({
-                url: ctx.env.SMARTUI_UPLOAD_URL + '/smartui/2.0/build/screenshots',
-                method: 'GET',
-                params: params,
-                headers: {
-                    'accept': 'application/json',
-                    'Authorization': `Basic ${auth}`
-                }
-            });
-
-            ctx.log.debug(`http response: ${JSON.stringify({
-                status: response.status,
-                headers: response.headers,
-                body: response.data
-            })}`);
-
-            return response.data;
-        } catch (error: any) {
-            this.handleHttpError(error, ctx.log);
-        }
+        return this.request({
+            url: '/screenshot',
+            method: 'GET',
+            params,
+        }, ctx.log);
     }
 }
 
