@@ -1,6 +1,6 @@
 {
   "name": "@lambdatest/smartui-cli",
-  "version": "4.1.63",
+  "version": "4.1.64",
   "description": "A command line interface (CLI) to run SmartUI tests on LambdaTest",
   "files": [
     "dist/**/*"
@@ -20,6 +20,9 @@
     "smartui",
     "cli"
   ],
+  "engines": {
+    "node": ">=20"
+  },
   "author": "LambdaTest <keys@lambdatest.com>",
   "license": "MIT",
   "dependencies": {
