@@ -7,6 +7,17 @@ import constants from './constants.js'
 import chalk from 'chalk';
 import sharp from 'sharp';
 
+async function getMaxPageHeight(page: Page): Promise<number> {
+    return await page.evaluate(() => {
+        return Math.max(
+            document.body.scrollHeight,
+            document.body.offsetHeight,
+            document.documentElement.scrollHeight,
+            document.documentElement.offsetHeight
+        );
+    });
+}
+
 async function humanLikeScroll(page: Page) {
   // Move mouse in human like manner
   await page.waitForTimeout(2000);
@@ -255,50 +266,78 @@ async function captureScreenshotsForConfig(
         await page?.goto(url.trim(), pageOptions);
         await executeDocumentScripts(ctx, page, "afterNavigation", afterNavigationScript)
 
+        let viewportErrors: Array<{ viewportString: string, error: any }> = [];
+
         for (let { viewport, viewportString, fullPage } of renderViewports) {
-            globalViewport = viewportString;
-            globalBrowser = browserName
-            ctx.log.debug(`globalViewport : ${globalViewport}`);
-            if (browserName == constants.SAFARI || (globalViewport.toLowerCase().includes("iphone") || globalViewport.toLowerCase().includes("ipad"))) {
-                globalBrowser = constants.WEBKIT;
-            }
-            let ssPath = `screenshots/${ssId}/${`${browserName}-${viewport.width}x${viewport.height}`}-${ssId}.png`;
-            await page?.setViewportSize({ width: viewport.width, height: viewport.height || constants.MIN_VIEWPORT_HEIGHT });
-            // again load page to apply viewport size properly
-            await page?.goto(url.trim(), pageOptions);
-            ctx.log.debug(`Capturing screenshot for URL: ${url} on ${browserName} with viewport: ${viewportString} (fullPage: ${fullPage})`);
-            if (page && ctx.config.lazyLoadConfiguration) {
-                await humanLikeScroll(page);
-            }
-            if (fullPage) {
-                if (ctx.config.lazyLoadConfiguration && ctx.config.lazyLoadConfiguration.enabled) {
-                    let stepValue = ctx.config.lazyLoadConfiguration.scrollStep || 250;
-                    let delayValue = ctx.config.lazyLoadConfiguration.scrollDelay || 300;
-                    let maxScrollsValue = ctx.config.lazyLoadConfiguration.maxScrolls || 50;
-                    let jumpBackToTopValue = ctx.config.lazyLoadConfiguration.jumpBackToTop !== false;
-                    ctx.log.debug('Capture: Starting lazy load scrolling with configuration: ' + JSON.stringify({ step: stepValue, delay: delayValue, maxScrolls: maxScrollsValue, jumpBackToTop: jumpBackToTopValue }));
-                    await page?.evaluate(utils.smoothScrollToBottom, { step: stepValue, delay: delayValue, maxScrolls: maxScrollsValue, jumpBackToTop: jumpBackToTopValue });
-                    ctx.log.debug('Capture: Completed lazy load scrolling');
-                } else {
-                    await page?.evaluate(utils.scrollToBottomAndBackToTop, { frequency: 100, timing: ctx.config.scrollTime });
+            try {
+                globalViewport = viewportString;
+                globalBrowser = browserName
+                ctx.log.debug(`globalViewport : ${globalViewport}`);
+                if (browserName == constants.SAFARI || (globalViewport.toLowerCase().includes("iphone") || globalViewport.toLowerCase().includes("ipad"))) {
+                    globalBrowser = constants.WEBKIT;
                 }
+                let ssPath = `screenshots/${ssId}/${`${browserName}-${viewport.width}x${viewport.height}`}-${ssId}.png`;
+                await page?.setViewportSize({ width: viewport.width, height: viewport.height || constants.MIN_VIEWPORT_HEIGHT });
+                // again load page to apply viewport size properly
+                await page?.goto(url.trim(), pageOptions);
+                ctx.log.debug(`Capturing screenshot for URL: ${url} on ${browserName} with viewport: ${viewportString} (fullPage: ${fullPage})`);
+                if (page && ctx.config.lazyLoadConfiguration) {
+                    await humanLikeScroll(page);
+                }
+                if (fullPage) {
+                    if (ctx.config.lazyLoadConfiguration && ctx.config.lazyLoadConfiguration.enabled) {
+                        let stepValue = ctx.config.lazyLoadConfiguration.scrollStep || 250;
+                        let delayValue = ctx.config.lazyLoadConfiguration.scrollDelay || 300;
+                        let maxScrollsValue = ctx.config.lazyLoadConfiguration.maxScrolls || 50;
+                        let jumpBackToTopValue = ctx.config.lazyLoadConfiguration.jumpBackToTop !== false;
+                        ctx.log.debug('Capture: Starting lazy load scrolling with configuration: ' + JSON.stringify({ step: stepValue, delay: delayValue, maxScrolls: maxScrollsValue, jumpBackToTop: jumpBackToTopValue }));
+                        await page?.evaluate(utils.smoothScrollToBottom, { step: stepValue, delay: delayValue, maxScrolls: maxScrollsValue, jumpBackToTop: jumpBackToTopValue });
+                        ctx.log.debug('Capture: Completed lazy load scrolling');
+                    } else {
+                        await page?.evaluate(utils.scrollToBottomAndBackToTop, { frequency: 100, timing: ctx.config.scrollTime });
+                    }
+                }
+                await page?.waitForTimeout(waitForTimeout || 0);
+                await executeDocumentScripts(ctx, page, "beforeSnapshot", beforeSnapshotScript)
+
+                discoveryErrors.name = name;
+                discoveryErrors.url = url;
+                discoveryErrors.timestamp = new Date().toISOString();
+
+                // Handle browser height limitation (32767px max for Safari/Firefox)
+                let screenshotFullPage = fullPage;
+                if (fullPage && page) {
+                    const maxPageHeight = await getMaxPageHeight(page);
+                    if (maxPageHeight > constants.MAXIMUM_POSSIBLE_PAGE_HEIGHT) {
+                        ctx.log.warn(`Page height (${maxPageHeight}px) exceeds maximum allowed screenshot height (${constants.MAXIMUM_POSSIBLE_PAGE_HEIGHT}px) for ${browserName} at viewport ${viewportString}. Capping to ${constants.MAXIMUM_POSSIBLE_PAGE_HEIGHT}px.`);
+                        await page.setViewportSize({
+                            width: viewport.width,
+                            height: constants.MAXIMUM_POSSIBLE_PAGE_HEIGHT
+                        });
+                        screenshotFullPage = false;
+                    }
+                }
+
+                await page?.screenshot({ path: ssPath, fullPage: screenshotFullPage });
+
+                await ctx.client.uploadScreenshot(ctx.build, ssPath, name, browserName, viewportString, url, ctx.log, discoveryErrors, ctx);
+                discoveryErrors = {
+                    name: "",
+                    url: "",
+                    timestamp: "",
+                    snapshotUUID: "",
+                    browsers: {}
+                };
+            } catch (viewportError) {
+                ctx.log.debug(`screenshot capture failed for viewport ${viewportString} on ${browserName} for URL ${url}; error: ${viewportError}`);
+                viewportErrors.push({ viewportString, error: viewportError });
             }
-            await page?.waitForTimeout(waitForTimeout || 0);
-            await executeDocumentScripts(ctx, page, "beforeSnapshot", beforeSnapshotScript)
+        }
 
-            discoveryErrors.name = name;
-            discoveryErrors.url = url;
-            discoveryErrors.timestamp = new Date().toISOString();
-            await page?.screenshot({ path: ssPath, fullPage });
-
-            await ctx.client.uploadScreenshot(ctx.build, ssPath, name, browserName, viewportString, url, ctx.log, discoveryErrors, ctx);
-            discoveryErrors = {
-                name: "",
-                url: "",
-                timestamp: "",
-                snapshotUUID: "",
-                browsers: {}
-            };
+        if (viewportErrors.length === renderViewports.length) {
+            throw new Error(`captureScreenshotsForConfig failed for browser ${browserName}; all viewports failed. First error: ${viewportErrors[0]?.error}`);
+        } else if (viewportErrors.length > 0) {
+            ctx.log.warn(`${viewportErrors.length}/${renderViewports.length} viewport(s) failed for browser ${browserName} on URL ${url}: ${viewportErrors.map(e => e.viewportString).join(', ')}`);
         }
     } catch (error) {
         throw new Error(`captureScreenshotsForConfig failed for browser ${browserName}; error: ${error}`);
@@ -313,7 +352,7 @@ async function captureScreenshotsAsync(
     ctx: Context,
     staticConfig: Record<string, any>,
     browsers: Record<string, Browser>
-): Promise<void[]> {
+): Promise<void> {
     let capturePromises: Array<Promise<void>> = [];
 
     // capture screenshots for web config
@@ -334,7 +373,15 @@ async function captureScreenshotsAsync(
         }
     }
 
-    return Promise.all(capturePromises);
+    const results = await Promise.allSettled(capturePromises);
+    const failures = results.filter((r): r is PromiseRejectedResult => r.status === 'rejected');
+
+    if (failures.length > 0) {
+        ctx.log.debug(`${failures.length}/${results.length} browser capture(s) failed for ${staticConfig.name}: ${failures.map(f => f.reason).join('; ')}`);
+    }
+    if (failures.length === results.length) {
+        throw new Error(`All browser captures failed for ${staticConfig.name}: ${failures.map(f => f.reason).join('; ')}`);
+    }
 }
 
 async function captureScreenshotsSync(
