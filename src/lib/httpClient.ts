@@ -852,9 +852,12 @@ export default class httpClient {
 
         const auth = Buffer.from(`${this.username}:${this.accessKey}`).toString('base64');
 
+        const url = ctx.env.SMARTUI_UPLOAD_URL + '/smartui/2.0/build/screenshots';
+        ctx.log.debug(`Fetching PDF results from URL: ${url} with params: ${JSON.stringify(params)}`);
+
         try {
             const response = await axios.request({
-                url: ctx.env.SMARTUI_UPLOAD_URL + '/smartui/2.0/build/screenshots',
+                url: url,
                 method: 'GET',
                 params: params,
                 headers: {
