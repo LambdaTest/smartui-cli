@@ -304,21 +304,24 @@ async function captureScreenshotsForConfig(
                 discoveryErrors.url = url;
                 discoveryErrors.timestamp = new Date().toISOString();
 
-                // Handle browser height limitation (32767px max for Safari/Firefox)
-                let screenshotFullPage = fullPage;
-                if (fullPage && page) {
-                    const maxPageHeight = await getMaxPageHeight(page);
-                    if (maxPageHeight > constants.MAXIMUM_POSSIBLE_PAGE_HEIGHT) {
-                        ctx.log.warn(`${ssId} - Page height (${maxPageHeight}px) exceeds maximum allowed screenshot height (${constants.MAXIMUM_POSSIBLE_PAGE_HEIGHT}px) for ${browserName} at viewport ${viewportString}. Capping to ${constants.MAXIMUM_POSSIBLE_PAGE_HEIGHT}px.`);
+                // Try full-page screenshot first; if it fails due to the software-rendering
+                // texture limit on headless Linux (32767px), retry with capped height.
+                try {
+                    await page?.screenshot({ path: ssPath, fullPage });
+                } catch (screenshotError: any) {
+                    const isTextureLimitError = screenshotError?.message?.includes(constants.SCREENSHOT_TOO_LARGE_ERROR);
+                    if (fullPage && page && isTextureLimitError) {
+                        const maxPageHeight = await getMaxPageHeight(page);
+                        ctx.log.warn(`${ssId} - Full-page screenshot failed for ${browserName} at viewport ${viewportString} (page height: ${maxPageHeight}px). Retrying with capped height ${constants.MAXIMUM_POSSIBLE_PAGE_HEIGHT}px.`);
                         await page.setViewportSize({
                             width: viewport.width,
                             height: constants.MAXIMUM_POSSIBLE_PAGE_HEIGHT
                         });
-                        screenshotFullPage = false;
+                        await page.screenshot({ path: ssPath, fullPage: false });
+                    } else {
+                        throw screenshotError;
                     }
                 }
-
-                await page?.screenshot({ path: ssPath, fullPage: screenshotFullPage });
 
                 await ctx.client.uploadScreenshot(ctx.build, ssPath, name, browserName, viewportString, url, ctx.log, discoveryErrors, ctx);
                 discoveryErrors = {
