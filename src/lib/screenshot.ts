@@ -309,7 +309,7 @@ async function captureScreenshotsForConfig(
                 if (fullPage && page) {
                     const maxPageHeight = await getMaxPageHeight(page);
                     if (maxPageHeight > constants.MAXIMUM_POSSIBLE_PAGE_HEIGHT) {
-                        ctx.log.warn(`Page height (${maxPageHeight}px) exceeds maximum allowed screenshot height (${constants.MAXIMUM_POSSIBLE_PAGE_HEIGHT}px) for ${browserName} at viewport ${viewportString}. Capping to ${constants.MAXIMUM_POSSIBLE_PAGE_HEIGHT}px.`);
+                        ctx.log.warn(`${ssId} - Page height (${maxPageHeight}px) exceeds maximum allowed screenshot height (${constants.MAXIMUM_POSSIBLE_PAGE_HEIGHT}px) for ${browserName} at viewport ${viewportString}. Capping to ${constants.MAXIMUM_POSSIBLE_PAGE_HEIGHT}px.`);
                         await page.setViewportSize({
                             width: viewport.width,
                             height: constants.MAXIMUM_POSSIBLE_PAGE_HEIGHT
