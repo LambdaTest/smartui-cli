@@ -118,6 +118,8 @@ export default {
 
     // viewports
     MIN_VIEWPORT_HEIGHT: 1080,
+    MAXIMUM_POSSIBLE_PAGE_HEIGHT: 32767,
+    SCREENSHOT_TOO_LARGE_ERROR: 'Cannot take screenshot larger than 32767',
 
     // mobile
     MOBILE_OS_ANDROID: 'android',
