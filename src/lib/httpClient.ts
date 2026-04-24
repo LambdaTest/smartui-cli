@@ -118,6 +118,7 @@ export default class httpClient {
         if (config && config.data && !config.data.skipLogging && config.data.snapshotUuid && config.method!=='PUT') {
             log.debug(config.data);
         }
+
         return this.axiosInstance.request(config)
             .then(resp => {
                 if (resp) {
@@ -258,7 +259,7 @@ export default class httpClient {
 
     getScreenshotData(buildId: string, baseline: boolean, log: Logger, projectToken: string, buildName: string, sessionId?: string, type?: string) {
         log.debug(`Fetching screenshot data for buildId: ${buildId}  having  buildName: ${buildName} with baseline: ${baseline}`);
-        const params: Record<string, any> = { buildId, baseline, buildName };
+        const params: Record<string, any> = { buildId, baseline: false, buildName };
         if (sessionId) {
             params.sessionId = sessionId;
         }

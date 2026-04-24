@@ -56,7 +56,7 @@ command
         try {
             await tasks.run(ctx);
 
-            if (ctx.options.fetchResults) {
+            if (ctx.options.fetchResults && ctx.build && ctx.build.id) {
                 startPdfPolling(ctx);
             }
         } catch (error) {
