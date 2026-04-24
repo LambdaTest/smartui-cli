@@ -258,7 +258,7 @@ export async function prepareSnapshot(snapshot: Snapshot, ctx: Context): Promise
             dom: Buffer.from(snapshot.dom.html).toString('base64'),
             resources: cacheSerializedResources(snapshot.dom.resources),
             options: processedOptions,
-            cookies: Buffer.from(snapshot.dom.cookies).toString('base64'),
+            cookies:  Buffer.from(snapshot.dom.cookies ?? '').toString('base64'),
             renderViewports: renderViewports,
         },
         warnings: [...optionWarnings, ...snapshot.dom.warnings],
