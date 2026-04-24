@@ -96,18 +96,36 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 			if (sessionId) {
 				if (ctx.sessionTestIdMap?.has(sessionId)) {
 					// Already have testId from LTMS fallback, skip getSmartUICapabilities
-					snapshot.options.testId = ctx.sessionTestIdMap.get(sessionId);
+					const cachedTestId = ctx.sessionTestIdMap.get(sessionId);
+					snapshot.options.testId = cachedTestId;
 					ctx.log.debug(`Using cached testId for sessionId ${sessionId}: ${snapshot.options.testId}`);
+					if (cachedTestId && ctx.testIdTestNameMap?.has(cachedTestId)) {
+						snapshot.options.testName = ctx.testIdTestNameMap.get(cachedTestId);
+						ctx.log.debug(`Using cached testName for testId ${cachedTestId}: ${snapshot.options.testName}`);
+					}
 				} else if (ctx.sessionCapabilitiesMap?.has(sessionId)) {
 					// Use cached capabilities if available
 					const cachedCapabilities = ctx.sessionCapabilitiesMap.get(sessionId);
 					capsBuildId = cachedCapabilities?.buildId || ''
+					if (cachedCapabilities?.name) {
+						snapshot.options.testName = cachedCapabilities.name;
+						if (cachedCapabilities?.id) {
+							ctx.testIdTestNameMap?.set(cachedCapabilities.id, cachedCapabilities.name);
+						}
+					}
 				} else {
 					// If not cached, fetch from API and cache it
 					try {
 						let fetchedCapabilitiesResp = await ctx.client.getSmartUICapabilities(sessionId, ctx.config, ctx.git, ctx.log, ctx.isStartExec, ctx.options.baselineBuild, ctx.env);
 						capsBuildId = fetchedCapabilitiesResp?.buildId || ''
 						ctx.log.debug(`fetch caps for sessionId: ${sessionId} are ${JSON.stringify(fetchedCapabilitiesResp)}`)
+						if (fetchedCapabilitiesResp?.name) {
+							snapshot.options.testName = fetchedCapabilitiesResp.name;
+							const testIdForCache = fetchedCapabilitiesResp?.id || fetchedCapabilitiesResp?.testId;
+							if (testIdForCache) {
+								ctx.testIdTestNameMap?.set(testIdForCache, fetchedCapabilitiesResp.name);
+							}
+						}
 						if (capsBuildId) {
 							ctx.sessionCapabilitiesMap.set(sessionId, fetchedCapabilitiesResp);
 						} else if (fetchedCapabilitiesResp && fetchedCapabilitiesResp?.sessionId) {
@@ -116,6 +134,9 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 							// LTMS fallback: only testId returned, no buildId
 							ctx.sessionTestIdMap?.set(sessionId, fetchedCapabilitiesResp.testId);
 							snapshot.options.testId = fetchedCapabilitiesResp.testId;
+							if (fetchedCapabilitiesResp?.name) {
+								ctx.testIdTestNameMap?.set(fetchedCapabilitiesResp.testId, fetchedCapabilitiesResp.name);
+							}
 							ctx.log.debug(`Cached LTMS fallback testId for sessionId ${sessionId}: ${fetchedCapabilitiesResp.testId}`);
 						}
 					} catch (error: any) {
