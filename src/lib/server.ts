@@ -107,10 +107,11 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 					// Use cached capabilities if available
 					const cachedCapabilities = ctx.sessionCapabilitiesMap.get(sessionId);
 					capsBuildId = cachedCapabilities?.buildId || ''
-					if (cachedCapabilities?.name) {
-						snapshot.options.testName = cachedCapabilities.name;
+					const cachedTestName = cachedCapabilities?.testName || cachedCapabilities?.name;
+					if (cachedTestName) {
+						snapshot.options.testName = cachedTestName;
 						if (cachedCapabilities?.id) {
-							ctx.testIdTestNameMap?.set(cachedCapabilities.id, cachedCapabilities.name);
+							ctx.testIdTestNameMap?.set(cachedCapabilities.id, cachedTestName);
 						}
 					}
 				} else {
@@ -119,11 +120,12 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 						let fetchedCapabilitiesResp = await ctx.client.getSmartUICapabilities(sessionId, ctx.config, ctx.git, ctx.log, ctx.isStartExec, ctx.options.baselineBuild, ctx.env);
 						capsBuildId = fetchedCapabilitiesResp?.buildId || ''
 						ctx.log.debug(`fetch caps for sessionId: ${sessionId} are ${JSON.stringify(fetchedCapabilitiesResp)}`)
-						if (fetchedCapabilitiesResp?.name) {
-							snapshot.options.testName = fetchedCapabilitiesResp.name;
+						const fetchedTestName = fetchedCapabilitiesResp?.testName || fetchedCapabilitiesResp?.name;
+						if (fetchedTestName) {
+							snapshot.options.testName = fetchedTestName;
 							const testIdForCache = fetchedCapabilitiesResp?.id || fetchedCapabilitiesResp?.testId;
 							if (testIdForCache) {
-								ctx.testIdTestNameMap?.set(testIdForCache, fetchedCapabilitiesResp.name);
+								ctx.testIdTestNameMap?.set(testIdForCache, fetchedTestName);
 							}
 						}
 						if (capsBuildId) {
@@ -134,8 +136,8 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 							// LTMS fallback: only testId returned, no buildId
 							ctx.sessionTestIdMap?.set(sessionId, fetchedCapabilitiesResp.testId);
 							snapshot.options.testId = fetchedCapabilitiesResp.testId;
-							if (fetchedCapabilitiesResp?.name) {
-								ctx.testIdTestNameMap?.set(fetchedCapabilitiesResp.testId, fetchedCapabilitiesResp.name);
+							if (fetchedTestName) {
+								ctx.testIdTestNameMap?.set(fetchedCapabilitiesResp.testId, fetchedTestName);
 							}
 							ctx.log.debug(`Cached LTMS fallback testId for sessionId ${sessionId}: ${fetchedCapabilitiesResp.testId}`);
 						}
