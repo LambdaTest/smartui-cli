@@ -724,8 +724,11 @@ export function startPdfPolling(ctx: Context) {
                         }
                     };
 
-                    if (ctx.options.fetchResults && ctx.options.fetchResultsFileName) {
-                        const filename = ctx.options.fetchResultsFileName !== '' ? ctx.options.fetchResultsFileName : 'results.json';
+                    if (ctx.options.fetchResults) {
+                        let filename = `${response.build.build_id}.json`;
+                        if (ctx.options.fetchResultsFileName) {
+                            filename = `${ctx.options.fetchResultsFileName}`;
+                        }
                         fs.writeFileSync(filename, JSON.stringify(formattedResults, null, 2));
                         console.log(chalk.green(`\nResults saved to ${filename}`));
                     }
@@ -779,8 +782,11 @@ export function startPdfPolling(ctx: Context) {
                         }
                     };
 
-                    if (ctx.options.fetchResults && ctx.options.fetchResultsFileName) {
-                        const filename = ctx.options.fetchResultsFileName !== '' ? ctx.options.fetchResultsFileName : 'pdf-results.json';
+                    if (ctx.options.fetchResults) {
+                        let filename = `${response.build.build_id}.json`;
+                        if (ctx.options.fetchResultsFileName) {
+                            filename = `${ctx.options.fetchResultsFileName}`;
+                        }
                         fs.writeFileSync(filename, JSON.stringify(formattedResults, null, 2));
                         console.log(chalk.green(`\nResults saved to ${filename}`));
                     }
