@@ -95,8 +95,9 @@ export async function prepareSnapshot(snapshot: Snapshot, ctx: Context): Promise
                 processedOptions.testName = ctx.testIdTestNameMap.get(processedOptions.testId);
             } else if (ctx.sessionCapabilitiesMap && ctx.sessionCapabilitiesMap.has(sessionId)) {
                 const sessionCapabilities = ctx.sessionCapabilitiesMap.get(sessionId);
-                if (sessionCapabilities && sessionCapabilities.name) {
-                    processedOptions.testName = sessionCapabilities.name;
+                const sessionTestName = sessionCapabilities?.testName || sessionCapabilities?.name;
+                if (sessionTestName) {
+                    processedOptions.testName = sessionTestName;
                 }
             }
         }
@@ -594,8 +595,9 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
                 processedOptions.testName = ctx.testIdTestNameMap.get(processedOptions.testId);
             } else if (ctx.sessionCapabilitiesMap && ctx.sessionCapabilitiesMap.has(sessionId)) {
                 const sessionCapabilities = ctx.sessionCapabilitiesMap.get(sessionId);
-                if (sessionCapabilities && sessionCapabilities.name) {
-                    processedOptions.testName = sessionCapabilities.name;
+                const sessionTestName = sessionCapabilities?.testName || sessionCapabilities?.name;
+                if (sessionTestName) {
+                    processedOptions.testName = sessionTestName;
                 }
             }
         }
