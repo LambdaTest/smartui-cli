@@ -360,7 +360,13 @@ export async function startPolling(ctx: Context, build_id: string, baseline: boo
             if (ctx.options.fetchResults && ctx.options.fetchResultsFileName && ctx.build && ctx.build.id && resp.build.build_id === ctx.build.id) {
                 fileName = `${ctx.options.fetchResultsFileName}`
             }
-            fs.writeFileSync(`${fileName}`, JSON.stringify(resp, null, 2));
+            let output: any = resp;
+            if (resp.build.build_type === constants.BUILD_TYPE_OMNI) {
+                const pdfScreenshotsGroup = buildPdfScreenshotsGroup(resp.screenshots || {});
+                const { normalScreenshots: filteredScreenshots } = separateScreenshots(resp.screenshots || {});
+                output = { ...resp, screenshots: filteredScreenshots, pdfScreenshots: pdfScreenshotsGroup };
+            }
+            fs.writeFileSync(`${fileName}`, JSON.stringify(output, null, 2));
             ctx.log.debug(`Updated results in ${fileName}`);
 
             if (resp.build.build_status_ind === constants.BUILD_COMPLETE || resp.build.build_status_ind === constants.BUILD_ERROR) {
@@ -710,26 +716,14 @@ export function startPdfPolling(ctx: Context) {
                     const buildResult = response.build.build_status?.toLowerCase() === 'approved' ? 'Passed' : 'Failed';
                     const resultColor = buildResult === 'Passed' ? chalk.green : chalk.red;
 
-                    const formattedResults = {
-                        status: 'success',
-                        data: {
-                            buildId: response.build.build_id,
-                            buildName: response.build.build_name,
-                            projectName: response.project.name,
-                            buildStatus: response.build.build_status,
-                            buildResult,
-                            branchName: response.build.branch,
-                            pdfs: formatPdfsForOutput(pdfGroups),
-                            screenshots: formatScreenshotsForOutput(normalScreenshots)
-                        }
-                    };
-
                     if (ctx.options.fetchResults) {
                         let filename = `${response.build.build_id}.json`;
                         if (ctx.options.fetchResultsFileName) {
                             filename = `${ctx.options.fetchResultsFileName}`;
                         }
-                        fs.writeFileSync(filename, JSON.stringify(formattedResults, null, 2));
+                        const pdfScreenshotsGroup = buildPdfScreenshotsGroup(response.screenshots || {});
+                        const output = { ...response, screenshots: normalScreenshots, pdfScreenshots: pdfScreenshotsGroup };
+                        fs.writeFileSync(filename, JSON.stringify(output, null, 2));
                         console.log(chalk.green(`\nResults saved to ${filename}`));
                     }
                     console.log(resultColor.bold(`\nResult of Build ${response.build.build_name} : ${buildResult}`));
@@ -771,23 +765,15 @@ export function startPdfPolling(ctx: Context) {
                         });
                     });
 
-                    const formattedResults = {
-                        status: 'success',
-                        data: {
-                            buildId: response.build.build_id,
-                            buildName: response.build.build_name,
-                            projectName: response.project.name,
-                            buildStatus: response.build.build_status,
-                            pdfs: formatPdfsForOutput(pdfGroups)
-                        }
-                    };
-
                     if (ctx.options.fetchResults) {
                         let filename = `${response.build.build_id}.json`;
                         if (ctx.options.fetchResultsFileName) {
                             filename = `${ctx.options.fetchResultsFileName}`;
                         }
-                        fs.writeFileSync(filename, JSON.stringify(formattedResults, null, 2));
+                        const pdfScreenshotsGroup = buildPdfScreenshotsGroup(response.screenshots || {});
+                        const { normalScreenshots: filteredScreenshots } = separateScreenshots(response.screenshots || {});
+                        const output = { ...response, screenshots: filteredScreenshots, pdfScreenshots: pdfScreenshotsGroup };
+                        fs.writeFileSync(filename, JSON.stringify(output, null, 2));
                         console.log(chalk.green(`\nResults saved to ${filename}`));
                     }
                 }
@@ -838,6 +824,29 @@ function extractPdfNameAndPage(screenshotName: string, browserName: string): { p
     }
     // Fallback: use browser_name as pdf name
     return { pdfName: browserName, pageNumber: '1' };
+}
+
+function buildPdfScreenshotsGroup(screenshots: Record<string, any[]>): Record<string, any[]> {
+    const grouped: Record<string, any[]> = {};
+
+    for (const [, variants] of Object.entries(screenshots || {})) {
+        for (const variant of variants) {
+            if (isPdfScreenshot(variant)) {
+                const { pdfName, pageNumber } = extractPdfNameAndPage(variant.screenshot_name, variant.browser_name);
+                if (!grouped[pdfName]) {
+                    grouped[pdfName] = [];
+                }
+                const { browser_name, screenshot_name, ...rest } = variant;
+                grouped[pdfName].push({
+                    ...rest,
+                    documentName: pdfName,
+                    pageNo: parseInt(pageNumber, 10)
+                });
+            }
+        }
+    }
+
+    return grouped;
 }
 
 function separateScreenshots(screenshots: Record<string, any[]>): { normalScreenshots: Record<string, any[]>, pdfScreenshots: any[] } {

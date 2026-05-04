@@ -75,6 +75,7 @@ export default class httpClient {
                     config.headers['accessKey'] = this.accessKey;
                 }
             }
+            
             return config;
         });
 
