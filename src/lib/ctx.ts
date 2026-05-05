@@ -295,6 +295,7 @@ export default (options: Record<string, string>): Context => {
         isSnapshotCaptured: false,
         sessionCapabilitiesMap: new Map<string, any[]>(),
         sessionTestIdMap: new Map<string, string>(),
+        testIdTestNameMap: new Map<string, string>(),
         buildToSnapshotCountMap: new Map<string, number>(),
         sessionIdToSnapshotNameMap: new Map<string, string[]>(),
         fetchResultsForBuild: new Array<string>,

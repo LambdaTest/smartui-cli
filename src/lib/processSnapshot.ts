@@ -89,6 +89,17 @@ export async function prepareSnapshot(snapshot: Snapshot, ctx: Context): Promise
                     processedOptions.testId = sessionCapabilities.id;
                 }
             }
+            if (options.testName) {
+                processedOptions.testName = options.testName;
+            } else if (processedOptions.testId && ctx.testIdTestNameMap?.has(processedOptions.testId)) {
+                processedOptions.testName = ctx.testIdTestNameMap.get(processedOptions.testId);
+            } else if (ctx.sessionCapabilitiesMap && ctx.sessionCapabilitiesMap.has(sessionId)) {
+                const sessionCapabilities = ctx.sessionCapabilitiesMap.get(sessionId);
+                const sessionTestName = sessionCapabilities?.testName || sessionCapabilities?.name;
+                if (sessionTestName) {
+                    processedOptions.testName = sessionTestName;
+                }
+            }
         }
 
         if (options.web && Object.keys(options.web).length) {
@@ -576,6 +587,17 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
                 const sessionCapabilities = ctx.sessionCapabilitiesMap.get(sessionId);
                 if (sessionCapabilities && sessionCapabilities.id) {
                     processedOptions.testId = sessionCapabilities.id;
+                }
+            }
+            if (options.testName) {
+                processedOptions.testName = options.testName;
+            } else if (processedOptions.testId && ctx.testIdTestNameMap?.has(processedOptions.testId)) {
+                processedOptions.testName = ctx.testIdTestNameMap.get(processedOptions.testId);
+            } else if (ctx.sessionCapabilitiesMap && ctx.sessionCapabilitiesMap.has(sessionId)) {
+                const sessionCapabilities = ctx.sessionCapabilitiesMap.get(sessionId);
+                const sessionTestName = sessionCapabilities?.testName || sessionCapabilities?.name;
+                if (sessionTestName) {
+                    processedOptions.testName = sessionTestName;
                 }
             }
         }

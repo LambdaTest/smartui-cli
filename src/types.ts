@@ -97,6 +97,7 @@ export interface Context {
     isSnapshotCaptured ?: boolean;
     sessionCapabilitiesMap?: Map<string, any[]>;
     sessionTestIdMap?: Map<string, string>;
+    testIdTestNameMap?: Map<string, string>;
     buildToSnapshotCountMap?: Map<string, number>;
     fetchResultsForBuild?: Array<string>;
     sessionIdToSnapshotNameMap?: Map<string, string[]>;
@@ -189,6 +190,7 @@ export interface Snapshot {
         ignoreType?: string[],
         sessionId?: string
         testId?: string
+        testName?: string
         sync?: boolean;
         contextId?: string;
         useExtendedViewport?: boolean;
