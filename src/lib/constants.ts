@@ -131,6 +131,7 @@ export default {
     BUILD_RUNNING: 'running',
     BUILD_COMPLETE: 'completed',
     BUILD_ERROR: 'error',
+    BUILD_TYPE_OMNI: 'omni',
 
     // CI
     GITHUB_API_HOST: 'https://api.github.com',

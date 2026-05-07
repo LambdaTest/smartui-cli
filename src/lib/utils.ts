@@ -360,50 +360,97 @@ export async function startPolling(ctx: Context, build_id: string, baseline: boo
             if (ctx.options.fetchResults && ctx.options.fetchResultsFileName && ctx.build && ctx.build.id && resp.build.build_id === ctx.build.id) {
                 fileName = `${ctx.options.fetchResultsFileName}`
             }
-            fs.writeFileSync(`${fileName}`, JSON.stringify(resp, null, 2));
+            let output: any = resp;
+            if (resp.build.build_type === constants.BUILD_TYPE_OMNI) {
+                const pdfScreenshotsGroup = buildPdfScreenshotsGroup(resp.screenshots || {});
+                const { normalScreenshots: filteredScreenshots } = separateScreenshots(resp.screenshots || {});
+                output = { ...resp, screenshots: filteredScreenshots, pdfScreenshots: pdfScreenshotsGroup };
+            }
+            fs.writeFileSync(`${fileName}`, JSON.stringify(output, null, 2));
             ctx.log.debug(`Updated results in ${fileName}`);
 
             if (resp.build.build_status_ind === constants.BUILD_COMPLETE || resp.build.build_status_ind === constants.BUILD_ERROR) {
                 clearInterval(intervalId);
                 ctx.log.info(`Fetching results completed. Final results written to ${fileName}`);
 
+                if (resp.build.build_type === constants.BUILD_TYPE_OMNI) {
+                    // Omni build: separate PDFs from normal screenshots and display both
+                    const { normalScreenshots, pdfScreenshots } = separateScreenshots(resp.screenshots || {});
 
-                // Evaluating Summary
-                let totalScreenshotsWithMismatches = 0;
-                let totalVariantsWithMismatches = 0;
-                const totalScreenshots = Object.keys(resp.screenshots || {}).length;
-                let totalVariants = 0;
+                    printOmniHeader(resp.build, resp.project);
 
-                for (const [screenshot, variants] of Object.entries(resp.screenshots || {})) {
-                    let screenshotHasMismatch = false;
-                    let variantMismatchCount = 0;
+                    let pdfGroups: Record<string, any[]> = {};
+                    if (pdfScreenshots.length > 0) {
+                        const pdfResult = printPdfSection(pdfScreenshots);
+                        pdfGroups = pdfResult.pdfGroups;
+                    }
 
-                    totalVariants += variants.length; // Add to total variants count
+                    if (Object.keys(normalScreenshots).length > 0) {
+                        printScreenshotSection(normalScreenshots);
+                    }
 
-                    for (const variant of variants) {
-                        if (variant.mismatch_percentage > 0) {
-                            screenshotHasMismatch = true;
-                            variantMismatchCount++;
+                    const buildResult = resp.build.build_status?.toLowerCase() === 'approved' ? 'Passed' : 'Failed';
+                    const resultColor = buildResult === 'Passed' ? chalk.green : chalk.red;
+
+                    // Write formatted omni results
+                    const formattedResults = {
+                        status: 'success',
+                        data: {
+                            buildId: resp.build.build_id,
+                            buildName: resp.build.build_name,
+                            projectName: resp.project.name,
+                            buildStatus: resp.build.build_status,
+                            buildResult,
+                            branchName: resp.build.branch,
+                            pdfs: formatPdfsForOutput(pdfGroups),
+                            screenshots: formatScreenshotsForOutput(normalScreenshots)
+                        }
+                    };
+
+                    if (ctx.options.fetchResults && ctx.options.fetchResultsFileName) {
+                        const omniFileName = ctx.options.fetchResultsFileName !== '' ? ctx.options.fetchResultsFileName : 'results.json';
+                        fs.writeFileSync(omniFileName, JSON.stringify(formattedResults, null, 2));
+                        console.log(chalk.green(`\nResults saved to ${omniFileName}`));
+                    }
+                    console.log(resultColor.bold(`\nResult of Build ${resp.build.build_name} : ${buildResult}`));
+                } else {
+                    // Non-omni build: existing behavior
+                    let totalScreenshotsWithMismatches = 0;
+                    let totalVariantsWithMismatches = 0;
+                    const totalScreenshots = Object.keys(resp.screenshots || {}).length;
+                    let totalVariants = 0;
+
+                    for (const [screenshot, variants] of Object.entries(resp.screenshots || {})) {
+                        let screenshotHasMismatch = false;
+                        let variantMismatchCount = 0;
+
+                        totalVariants += (variants as any[]).length;
+
+                        for (const variant of (variants as any[])) {
+                            if (variant.mismatch_percentage > 0) {
+                                screenshotHasMismatch = true;
+                                variantMismatchCount++;
+                            }
+                        }
+
+                        if (screenshotHasMismatch) {
+                            totalScreenshotsWithMismatches++;
+                            totalVariantsWithMismatches += variantMismatchCount;
                         }
                     }
 
-                    if (screenshotHasMismatch) {
-                        totalScreenshotsWithMismatches++;
-                        totalVariantsWithMismatches += variantMismatchCount;
-                    }
+                    // Display summary
+                    ctx.log.info(
+                        chalk.green.bold(
+                            `\nSummary of Mismatches for buildId: ${build_id}\n` +
+                            `${chalk.yellow('Total Variants with Mismatches:')} ${chalk.white(totalVariantsWithMismatches)} out of ${chalk.white(totalVariants)}\n` +
+                            `${chalk.yellow('Total Screenshots with Mismatches:')} ${chalk.white(totalScreenshotsWithMismatches)} out of ${chalk.white(totalScreenshots)}\n` +
+                            `${chalk.yellow('Branch Name:')} ${chalk.white(resp.build.branch)}\n` +
+                            `${chalk.yellow('Project Name:')} ${chalk.white(resp.project.name)}\n` +
+                            `${chalk.yellow('Build ID:')} ${chalk.white(resp.build.build_id)}\n`
+                        )
+                    );
                 }
-
-                // Display summary
-                ctx.log.info(
-                    chalk.green.bold(
-                        `\nSummary of Mismatches for buildId: ${build_id}\n` +
-                        `${chalk.yellow('Total Variants with Mismatches:')} ${chalk.white(totalVariantsWithMismatches)} out of ${chalk.white(totalVariants)}\n` +
-                        `${chalk.yellow('Total Screenshots with Mismatches:')} ${chalk.white(totalScreenshotsWithMismatches)} out of ${chalk.white(totalScreenshots)}\n` +
-                        `${chalk.yellow('Branch Name:')} ${chalk.white(resp.build.branch)}\n` +
-                        `${chalk.yellow('Project Name:')} ${chalk.white(resp.project.name)}\n` +
-                        `${chalk.yellow('Build ID:')} ${chalk.white(resp.build.build_id)}\n`
-                    )
-                );
             }
         } catch (error: any) {
             if (error.message.includes('ENOTFOUND')) {
@@ -628,70 +675,107 @@ export function startPdfPolling(ctx: Context) {
         return
     }
 
-    if (!ctx.env.LT_USERNAME || !ctx.env.LT_ACCESS_KEY) {
-        console.log(chalk.red('Error: LT_USERNAME and LT_ACCESS_KEY environment variables are required for fetching results'));
-        return;
-    }
-
     let attempts = 0;
-    const maxAttempts = 60; // 5 minutes (10 seconds * 30)
+    const maxAttempts = 60; // 10 minutes (10 seconds * 60)
 
     console.log(chalk.yellow('Waiting for results...'));
+
+    const projectToken = ctx.env.PROJECT_TOKEN || '';
 
     const interval = setInterval(async () => {
         attempts++;
 
         try {
-            const response = await ctx.client.fetchPdfResults(ctx);
+            const response = await ctx.client.getScreenshotData(ctx.build.id, false, ctx.log, projectToken, '');
 
-            if (response.screenshots && response.build?.build_status !== constants.BUILD_RUNNING) {
+            if (!response || !response.build) {
+                if (attempts >= maxAttempts) {
+                    clearInterval(interval);
+                    console.log(chalk.red('\nTimeout: Could not fetch PDF results after 10 minutes'));
+                }
+                return;
+            }
+
+            if (response.screenshots && (response.build.build_status_ind === constants.BUILD_COMPLETE || response.build.build_status_ind === constants.BUILD_ERROR)) {
                 clearInterval(interval);
 
-                const pdfGroups = groupScreenshotsByPdf(response.screenshots);
-                const pdfsWithMismatches = countPdfsWithMismatches(pdfGroups);
-                const pagesWithMismatches = countPagesWithMismatches(response.screenshots);
+                if (response.build.build_type === constants.BUILD_TYPE_OMNI) {
+                    const { normalScreenshots, pdfScreenshots } = separateScreenshots(response.screenshots || {});
+                    printOmniHeader(response.build, response.project);
 
-                console.log(chalk.green('\n✓ PDF Test Results:'));
-                console.log(chalk.green(`Build Name: ${response.build.name}`));
-                console.log(chalk.green(`Project Name: ${response.project.name}`));
-                console.log(chalk.green(`Total PDFs: ${Object.keys(pdfGroups).length}`));
-                console.log(chalk.green(`Total Pages: ${response.screenshots.length}`));
-
-                if (pdfsWithMismatches > 0 || pagesWithMismatches > 0) {
-                    console.log(chalk.yellow(`${pdfsWithMismatches} PDFs and ${pagesWithMismatches} Pages in build ${response.build.name} have changes present.`));
-                } else {
-                    console.log(chalk.green('All PDFs match the baseline.'));
-                }
-
-                Object.entries(pdfGroups).forEach(([pdfName, pages]) => {
-                    const hasMismatch = pages.some(page => page.mismatch_percentage > 0);
-                    const statusColor = hasMismatch ? chalk.yellow : chalk.green;
-
-                    console.log(statusColor(`\n📄 ${pdfName} (${pages.length} pages)`));
-
-                    pages.forEach(page => {
-                        const pageStatusColor = page.mismatch_percentage > 0 ? chalk.yellow : chalk.green;
-                        console.log(pageStatusColor(`  - Page ${getPageNumber(page.screenshot_name)}: ${page.status} (Mismatch: ${page.mismatch_percentage}%)`));
-                    });
-                });
-
-                const formattedResults = {
-                    status: 'success',
-                    data: {
-                        buildId: response.build.id,
-                        buildName: response.build.name,
-                        projectName: response.project.name,
-                        buildStatus: response.build.build_satus,
-                        pdfs: formatPdfsForOutput(pdfGroups)
+                    let pdfGroups: Record<string, any[]> = {};
+                    if (pdfScreenshots.length > 0) {
+                        const pdfResult = printPdfSection(pdfScreenshots);
+                        pdfGroups = pdfResult.pdfGroups;
                     }
-                };
 
-                // Save results to file if filename provided
-                if (ctx.options.fetchResults && ctx.options.fetchResultsFileName) {
-                    const filename = ctx.options.fetchResultsFileName !== '' ? ctx.options.fetchResultsFileName : 'pdf-results.json';
+                    if (Object.keys(normalScreenshots).length > 0) {
+                        printScreenshotSection(normalScreenshots);
+                    }
 
-                    fs.writeFileSync(filename, JSON.stringify(formattedResults, null, 2));
-                    console.log(chalk.green(`\nResults saved to ${filename}`));
+                    const buildResult = response.build.build_status?.toLowerCase() === 'approved' ? 'Passed' : 'Failed';
+                    const resultColor = buildResult === 'Passed' ? chalk.green : chalk.red;
+
+                    if (ctx.options.fetchResults) {
+                        let filename = `${response.build.build_id}.json`;
+                        if (ctx.options.fetchResultsFileName) {
+                            filename = `${ctx.options.fetchResultsFileName}`;
+                        }
+                        const pdfScreenshotsGroup = buildPdfScreenshotsGroup(response.screenshots || {});
+                        const output = { ...response, screenshots: normalScreenshots, pdfScreenshots: pdfScreenshotsGroup };
+                        fs.writeFileSync(filename, JSON.stringify(output, null, 2));
+                        console.log(chalk.green(`\nResults saved to ${filename}`));
+                    }
+                    console.log(resultColor.bold(`\nResult of Build ${response.build.build_name} : ${buildResult}`));
+                } else {
+                    // Non-omni build: existing PDF-only behavior
+                    const screenshotsArray: any[] = [];
+                    for (const [, variants] of Object.entries(response.screenshots || {})) {
+                        for (const variant of (variants as any[])) {
+                            screenshotsArray.push(variant);
+                        }
+                    }
+
+                    const pdfGroups = groupScreenshotsByPdf(screenshotsArray);
+                    const pdfsWithMismatches = countPdfsWithMismatches(pdfGroups);
+                    const pagesWithMismatches = countPagesWithMismatches(screenshotsArray);
+
+                    console.log(chalk.green('\n✓ PDF Test Results:'));
+                    console.log(chalk.green(`Build Name: ${response.build.build_name}`));
+                    console.log(chalk.green(`Project Name: ${response.project.name}`));
+                    console.log(chalk.green(`Total PDFs: ${Object.keys(pdfGroups).length}`));
+                    console.log(chalk.green(`Total Pages: ${screenshotsArray.length}`));
+
+                    if (pdfsWithMismatches > 0 || pagesWithMismatches > 0) {
+                        console.log(chalk.yellow(`${pdfsWithMismatches} PDFs and ${pagesWithMismatches} Pages in build ${response.build.build_name} have changes present.`));
+                    } else {
+                        console.log(chalk.green('All PDFs match the baseline.'));
+                    }
+
+                    Object.entries(pdfGroups).forEach(([pdfName, pages]) => {
+                        const hasMismatch = pages.some(page => isPageMismatch(page));
+                        const statusColor = hasMismatch ? chalk.yellow : chalk.green;
+
+                        console.log(statusColor(`\n📄 ${pdfName} (${pages.length} pages)`));
+
+                        pages.forEach(page => {
+                            const pageStatusColor = isPageMismatch(page) ? chalk.yellow : chalk.green;
+                            const mismatchInfo = page.mismatch_percentage !== undefined ? ` (Mismatch: ${page.mismatch_percentage}%)` : '';
+                            console.log(pageStatusColor(`  - Page ${getPageNumber(page.screenshot_name, page.browser_name)}: ${page.status}${mismatchInfo}`));
+                        });
+                    });
+
+                    if (ctx.options.fetchResults) {
+                        let filename = `${response.build.build_id}.json`;
+                        if (ctx.options.fetchResultsFileName) {
+                            filename = `${ctx.options.fetchResultsFileName}`;
+                        }
+                        const pdfScreenshotsGroup = buildPdfScreenshotsGroup(response.screenshots || {});
+                        const { normalScreenshots: filteredScreenshots } = separateScreenshots(response.screenshots || {});
+                        const output = { ...response, screenshots: filteredScreenshots, pdfScreenshots: pdfScreenshotsGroup };
+                        fs.writeFileSync(filename, JSON.stringify(output, null, 2));
+                        console.log(chalk.green(`\nResults saved to ${filename}`));
+                    }
                 }
 
                 return;
@@ -699,7 +783,7 @@ export function startPdfPolling(ctx: Context) {
 
             if (attempts >= maxAttempts) {
                 clearInterval(interval);
-                console.log(chalk.red('\nTimeout: Could not fetch PDF results after 5 minutes'));
+                console.log(chalk.red('\nTimeout: Could not fetch PDF results after 10 minutes'));
                 return;
             }
 
@@ -708,7 +792,7 @@ export function startPdfPolling(ctx: Context) {
 
             if (attempts >= maxAttempts) {
                 clearInterval(interval);
-                console.log(chalk.red('\nTimeout: Could not fetch PDF results after 5 minutes'));
+                console.log(chalk.red('\nTimeout: Could not fetch PDF results after 10 minutes'));
                 if (error.response && error.response.data) {
                     console.log(chalk.red(`Error details: ${JSON.stringify(error.response.data)}`));
                 } else {
@@ -721,12 +805,127 @@ export function startPdfPolling(ctx: Context) {
     }, 10000);
 }
 
+// --- PDF/Screenshot detection and extraction helpers ---
+
+function isPdfScreenshot(variant: any): boolean {
+    return variant.browser_name && variant.browser_name.endsWith('.pdf');
+}
+
+function extractPdfNameAndPage(screenshotName: string, browserName: string): { pdfName: string, pageNumber: string } {
+    // Find the last occurrence of ".pdf#" to handle hashes in user-provided names
+    // e.g., "my#report.pdf#3" → pdfName: "my#report.pdf", pageNumber: "3"
+    const marker = '.pdf#';
+    const lastIdx = screenshotName.lastIndexOf(marker);
+    if (lastIdx !== -1) {
+        return {
+            pdfName: screenshotName.substring(0, lastIdx + 4), // include ".pdf"
+            pageNumber: screenshotName.substring(lastIdx + 5)  // after "#"
+        };
+    }
+    // Fallback: use browser_name as pdf name
+    return { pdfName: browserName, pageNumber: '1' };
+}
+
+function buildPdfScreenshotsGroup(screenshots: Record<string, any[]>): Record<string, any[]> {
+    const grouped: Record<string, any[]> = {};
+
+    for (const [, variants] of Object.entries(screenshots || {})) {
+        for (const variant of variants) {
+            if (isPdfScreenshot(variant)) {
+                const { pdfName, pageNumber } = extractPdfNameAndPage(variant.screenshot_name, variant.browser_name);
+                if (!grouped[pdfName]) {
+                    grouped[pdfName] = [];
+                }
+                const { browser_name, screenshot_name, ...rest } = variant;
+                grouped[pdfName].push({
+                    ...rest,
+                    documentName: pdfName,
+                    pageNo: parseInt(pageNumber, 10)
+                });
+            }
+        }
+    }
+
+    return grouped;
+}
+
+function separateScreenshots(screenshots: Record<string, any[]>): { normalScreenshots: Record<string, any[]>, pdfScreenshots: any[] } {
+    const normalScreenshots: Record<string, any[]> = {};
+    const pdfScreenshots: any[] = [];
+
+    for (const [name, variants] of Object.entries(screenshots || {})) {
+        if (variants.length > 0 && isPdfScreenshot(variants[0])) {
+            for (const variant of variants) {
+                pdfScreenshots.push(variant);
+            }
+        } else {
+            normalScreenshots[name] = variants;
+        }
+    }
+
+    return { normalScreenshots, pdfScreenshots };
+}
+
+// --- Status helpers ---
+
+const NON_MISMATCH_STATUSES = ['Approved', 'moved', 'new-screenshot'];
+
+function isPageMismatch(page: any): boolean {
+    return !NON_MISMATCH_STATUSES.includes(page.status);
+}
+
+interface StatusCounts {
+    total: number;
+    mismatches: number;
+    new: number;
+    changesFound: number;
+    approved: number;
+    rejected: number;
+    addedToBaseline: number;
+}
+
+function getStatusCategory(status: string): keyof Omit<StatusCounts, 'total' | 'mismatches'> | null {
+    switch (status) {
+        case 'new-screenshot': return 'new';
+        case 'Changes Found':
+        case 'Under Screening': return 'changesFound';
+        case 'Approved': return 'approved';
+        case 'Rejected': return 'rejected';
+        case 'moved': return 'addedToBaseline';
+        default: return null;
+    }
+}
+
+function countItemsByStatus(items: any[]): StatusCounts {
+    const counts: StatusCounts = { total: items.length, mismatches: 0, new: 0, changesFound: 0, approved: 0, rejected: 0, addedToBaseline: 0 };
+    for (const item of items) {
+        if (isPageMismatch(item)) counts.mismatches++;
+        const cat = getStatusCategory(item.status);
+        if (cat) counts[cat]++;
+    }
+    return counts;
+}
+
+function countGroupsByStatus(groups: Record<string, any[]>): StatusCounts {
+    const counts: StatusCounts = { total: Object.keys(groups).length, mismatches: 0, new: 0, changesFound: 0, approved: 0, rejected: 0, addedToBaseline: 0 };
+    for (const items of Object.values(groups)) {
+        if (items.some(i => isPageMismatch(i))) counts.mismatches++;
+        if (items.some(i => i.status === 'new-screenshot')) counts.new++;
+        if (items.some(i => i.status === 'Changes Found' || i.status === 'Under Screening')) counts.changesFound++;
+        if (items.every(i => i.status === 'Approved')) counts.approved++;
+        if (items.some(i => i.status === 'Rejected')) counts.rejected++;
+        if (items.some(i => i.status === 'moved')) counts.addedToBaseline++;
+    }
+    return counts;
+}
+
+// --- PDF grouping and formatting ---
+
 function groupScreenshotsByPdf(screenshots: any[]): Record<string, any[]> {
     const pdfGroups: Record<string, any[]> = {};
 
     screenshots.forEach(screenshot => {
-        // screenshot name format: "pdf-name.pdf#page-number"
-        const pdfName = screenshot.screenshot_name.split('#')[0];
+        const { pdfName } = extractPdfNameAndPage(screenshot.screenshot_name, screenshot.browser_name);
 
         if (!pdfGroups[pdfName]) {
             pdfGroups[pdfName] = [];
@@ -742,7 +941,7 @@ function countPdfsWithMismatches(pdfGroups: Record<string, any[]>): number {
     let count = 0;
 
     Object.values(pdfGroups).forEach(pages => {
-        if (pages.some(page => page.mismatch_percentage > 0)) {
+        if (pages.some(page => isPageMismatch(page))) {
             count++;
         }
     });
@@ -751,7 +950,7 @@ function countPdfsWithMismatches(pdfGroups: Record<string, any[]>): number {
 }
 
 function countPagesWithMismatches(screenshots: any[]): number {
-    return screenshots.filter(screenshot => screenshot.mismatch_percentage > 0).length;
+    return screenshots.filter(screenshot => isPageMismatch(screenshot)).length;
 }
 
 function formatPdfsForOutput(pdfGroups: Record<string, any[]>): any[] {
@@ -760,7 +959,7 @@ function formatPdfsForOutput(pdfGroups: Record<string, any[]>): any[] {
             pdfName,
             pageCount: pages.length,
             pages: pages.map(page => ({
-                pageNumber: getPageNumber(page.screenshot_name),
+                pageNumber: extractPdfNameAndPage(page.screenshot_name, page.browser_name).pageNumber,
                 screenshotId: page.captured_image_id,
                 mismatchPercentage: page.mismatch_percentage,
                 status: page.status,
@@ -770,9 +969,90 @@ function formatPdfsForOutput(pdfGroups: Record<string, any[]>): any[] {
     });
 }
 
-function getPageNumber(screenshotName: string): string {
-    const parts = screenshotName.split('#');
-    return parts.length > 1 ? parts[1] : '1';
+function formatScreenshotsForOutput(screenshots: Record<string, any[]>): any[] {
+    return Object.entries(screenshots).map(([name, variants]) => {
+        return {
+            screenshotName: name,
+            variantCount: variants.length,
+            variants: variants.map(variant => ({
+                variantId: variant.captured_image_id,
+                browser: variant.browser_name,
+                viewport: variant.viewport,
+                os: variant.os,
+                mismatchPercentage: variant.mismatch_percentage,
+                status: variant.status,
+                screenshotUrl: variant.shareable_link
+            }))
+        };
+    });
+}
+
+// --- Omni display helpers ---
+
+function printOmniHeader(build: any, project: any) {
+    console.log(chalk.green.bold(`\nProject Name: ${project.name}`));
+    console.log(chalk.green.bold(`Build Name: ${build.build_name}`));
+    console.log(chalk.green.bold(`Build ID: ${build.build_id}`));
+    console.log(chalk.green.bold(`Build Status: ${build.build_status}`));
+    const buildResult = build.build_status?.toLowerCase() === 'approved' ? 'Passed' : 'Failed';
+    const resultColor = buildResult === 'Passed' ? chalk.green : chalk.red;
+    console.log(resultColor.bold(`Build Result : ${buildResult}`));
+    console.log(chalk.green.bold(`Branch Name: ${build.branch}`));
+    console.log(chalk.white('-----'));
+}
+
+function printPdfSection(pdfScreenshots: any[]) {
+    const pdfGroups = groupScreenshotsByPdf(pdfScreenshots);
+    const pageCounts = countItemsByStatus(pdfScreenshots);
+    const pdfCounts = countGroupsByStatus(pdfGroups);
+
+    console.log(chalk.green.bold('\nPDF Test Results:'));
+    console.log(chalk.green(`Total PDFs: ${pdfCounts.total}`));
+    console.log(chalk.green(`Total Pages: ${pageCounts.total}`));
+
+    if (pageCounts.mismatches > 0 || pdfCounts.mismatches > 0) {
+        console.log(chalk.yellow(`\n${pageCounts.mismatches} page(s) and ${pdfCounts.mismatches} PDF(s) have mismatches`));
+    }
+
+    if (pageCounts.new > 0 || pdfCounts.new > 0) console.log(chalk.cyan(`${pageCounts.new} page(s) and ${pdfCounts.new} PDF(s) are new`));
+    if (pageCounts.changesFound > 0 || pdfCounts.changesFound > 0) console.log(chalk.yellow(`${pageCounts.changesFound} page(s) and ${pdfCounts.changesFound} PDF(s) have changes found`));
+    if (pageCounts.approved > 0 || pdfCounts.approved > 0) console.log(chalk.green(`${pageCounts.approved} page(s) and ${pdfCounts.approved} PDF(s) are approved`));
+    if (pageCounts.addedToBaseline > 0 || pdfCounts.addedToBaseline > 0) console.log(chalk.green(`${pageCounts.addedToBaseline} page(s) and ${pdfCounts.addedToBaseline} PDF(s) are added to baseline`));
+    if (pageCounts.rejected > 0 || pdfCounts.rejected > 0) console.log(chalk.red(`${pageCounts.rejected} page(s) and ${pdfCounts.rejected} PDF(s) have been rejected`));
+
+    console.log(chalk.white('-----'));
+
+    return { pdfGroups, pageCounts, pdfCounts };
+}
+
+function printScreenshotSection(normalScreenshots: Record<string, any[]>) {
+    const allVariants: any[] = [];
+    for (const variants of Object.values(normalScreenshots)) {
+        for (const v of variants) allVariants.push(v);
+    }
+
+    const variantCounts = countItemsByStatus(allVariants);
+    const screenshotCounts = countGroupsByStatus(normalScreenshots);
+
+    console.log(chalk.green.bold('\nScreenshot Test Results:'));
+    console.log(chalk.green(`Total Screenshots: ${screenshotCounts.total}`));
+    console.log(chalk.green(`Total Variants: ${variantCounts.total}`));
+
+    if (variantCounts.mismatches > 0 || screenshotCounts.mismatches > 0) {
+        console.log(chalk.yellow(`\n${variantCounts.mismatches} variant(s) and ${screenshotCounts.mismatches} screenshot(s) have mismatches`));
+    }
+
+    if (variantCounts.new > 0 || screenshotCounts.new > 0) console.log(chalk.cyan(`${variantCounts.new} variant(s) and ${screenshotCounts.new} screenshot(s) are new`));
+    if (variantCounts.changesFound > 0 || screenshotCounts.changesFound > 0) console.log(chalk.yellow(`${variantCounts.changesFound} variant(s) and ${screenshotCounts.changesFound} screenshot(s) have changes found`));
+    if (variantCounts.approved > 0 || screenshotCounts.approved > 0) console.log(chalk.green(`${variantCounts.approved} variant(s) and ${screenshotCounts.approved} screenshot(s) are approved`));
+    if (variantCounts.addedToBaseline > 0 || screenshotCounts.addedToBaseline > 0) console.log(chalk.green(`${variantCounts.addedToBaseline} variant(s) and ${screenshotCounts.addedToBaseline} screenshot(s) are added to baseline`));
+    if (variantCounts.rejected > 0 || screenshotCounts.rejected > 0) console.log(chalk.red(`${variantCounts.rejected} variant(s) and ${screenshotCounts.rejected} screenshot(s) have been rejected`));
+
+    return { variantCounts, screenshotCounts };
+}
+
+function getPageNumber(screenshotName: string, browserName?: string): string {
+    return extractPdfNameAndPage(screenshotName, browserName || '').pageNumber;
 }
 
 export function validateCoordinates(
