@@ -75,6 +75,7 @@ export default class httpClient {
                     config.headers['accessKey'] = this.accessKey;
                 }
             }
+            
             return config;
         });
 
@@ -118,6 +119,7 @@ export default class httpClient {
         if (config && config.data && !config.data.skipLogging && config.data.snapshotUuid && config.method!=='PUT') {
             log.debug(config.data);
         }
+
         return this.axiosInstance.request(config)
             .then(resp => {
                 if (resp) {
@@ -258,7 +260,7 @@ export default class httpClient {
 
     getScreenshotData(buildId: string, baseline: boolean, log: Logger, projectToken: string, buildName: string, sessionId?: string, type?: string) {
         log.debug(`Fetching screenshot data for buildId: ${buildId}  having  buildName: ${buildName} with baseline: ${baseline}`);
-        const params: Record<string, any> = { buildId, baseline, buildName };
+        const params: Record<string, any> = { buildId, baseline: false, buildName };
         if (sessionId) {
             params.sessionId = sessionId;
         }
@@ -856,9 +858,12 @@ export default class httpClient {
 
         const auth = Buffer.from(`${this.username}:${this.accessKey}`).toString('base64');
 
+        const url = ctx.env.SMARTUI_UPLOAD_URL + '/smartui/2.0/build/screenshots';
+        ctx.log.debug(`Fetching PDF results from URL: ${url} with params: ${JSON.stringify(params)}`);
+
         try {
             const response = await axios.request({
-                url: ctx.env.SMARTUI_UPLOAD_URL + '/smartui/2.0/build/screenshots',
+                url: url,
                 method: 'GET',
                 params: params,
                 headers: {
