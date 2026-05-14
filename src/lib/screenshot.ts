@@ -183,17 +183,12 @@ async function captureScreenshotsForConfig(
             });
         }
 
-        if (ctx.config.basicAuthorization) {
-            ctx.log.debug(`Adding basic authorization to the headers for root url`);
-            let token = Buffer.from(`${ctx.config.basicAuthorization.username}:${ctx.config.basicAuthorization.password}`).toString('base64');
-            headersObject['Authorization'] = `Basic ${token}`;
-        }
-
         ctx.log.debug(`Combined headers: ${JSON.stringify(headersObject)}`);
         if (Object.keys(headersObject).length > 0) {
             await page.setExtraHTTPHeaders(headersObject);
         }
 
+        const targetHostname = new URL(url).hostname;
 
         if (ctx.env.CAPTURE_RENDERING_ERRORS) {
             await page.route('**/*', async (route, request) => {
@@ -205,6 +200,12 @@ async function captureScreenshotsForConfig(
                         ...await request.allHeaders(),
                         ...constants.REQUEST_HEADERS
                     }
+                }
+
+                // Add basic authorization only for same-origin requests
+                if (ctx.config.basicAuthorization && requestHostname === targetHostname) {
+                    let token = Buffer.from(`${ctx.config.basicAuthorization.username}:${ctx.config.basicAuthorization.password}`).toString('base64');
+                    requestOptions.headers['Authorization'] = `Basic ${token}`;
                 }
 
                 try {
@@ -246,6 +247,17 @@ async function captureScreenshotsForConfig(
                 } catch (error: any) {
                     ctx.log.debug(`Handling request ${requestUrl}\n - aborted due to ${error.message}`);
                     route.abort();
+                }
+            });
+        } else if (ctx.config.basicAuthorization) {
+            // Intercept only when basic auth is configured, to scope it to same-origin requests
+            await page.route('**/*', async (route, request) => {
+                const requestHostname = new URL(request.url()).hostname;
+                if (requestHostname === targetHostname) {
+                    let token = Buffer.from(`${ctx.config.basicAuthorization.username}:${ctx.config.basicAuthorization.password}`).toString('base64');
+                    await route.continue({ headers: { ...await request.allHeaders(), 'Authorization': `Basic ${token}` } });
+                } else {
+                    await route.continue();
                 }
             });
         }
