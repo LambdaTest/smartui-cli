@@ -1,68 +1,120 @@
-# SmartUI-CLI
-
-<img height="400" src="https://user-images.githubusercontent.com/126776938/232535511-8d51cf1b-1a33-48fc-825c-b13e7a9ec388.png">
+# SmartUI CLI for TestMu AI (Formerly LambdaTest)
 
 <p align="center">
-  <a href="https://www.lambdatest.com/blog/?utm_source=github&utm_medium=repo&utm_campaign=playwright-sample" target="_bank">Blog</a>
-  &nbsp; &#8901; &nbsp;
-  <a href="https://www.lambdatest.com/support/docs/?utm_source=github&utm_medium=repo&utm_campaign=playwright-sample" target="_bank">Docs</a>
-  &nbsp; &#8901; &nbsp;
-  <a href="https://www.lambdatest.com/learning-hub/?utm_source=github&utm_medium=repo&utm_campaign=playwright-sample" target="_bank">Learning Hub</a>
-  &nbsp; &#8901; &nbsp;
-  <a href="https://www.lambdatest.com/newsletter/?utm_source=github&utm_medium=repo&utm_campaign=playwright-sample" target="_bank">Newsletter</a>
-  &nbsp; &#8901; &nbsp;
-  <a href="https://www.lambdatest.com/certifications/?utm_source=github&utm_medium=repo&utm_campaign=playwright-sample" target="_bank">Certifications</a>
-  &nbsp; &#8901; &nbsp;
-  <a href="https://www.youtube.com/c/LambdaTest" target="_bank">YouTube</a>
+  <a href="https://www.testmuai.com/"><img src="https://img.shields.io/badge/MADE%20BY%20TestMu%20AI-000000.svg?style=for-the-badge&labelColor=000" alt="Made by TestMu AI"></a>
+  <a href="https://www.npmjs.com/package/@lambdatest/smartui-cli"><img src="https://img.shields.io/npm/v/@lambdatest/smartui-cli.svg?style=for-the-badge&labelColor=000000" alt="npm version"></a>
+  <a href="https://community.testmuai.com/"><img src="https://img.shields.io/badge/Join%20the%20community-blueviolet.svg?style=for-the-badge&labelColor=000000" alt="Community"></a>
 </p>
-&emsp;
-&emsp;
-&emsp;
 
+## Getting Started
 
+[TestMu AI](https://www.testmuai.com/) (Formerly LambdaTest) is the world's first full-stack AI Agentic Quality Engineering platform that empowers teams to test intelligently, smarter, and ship faster. Built for scale, it offers a full-stack testing cloud with 10K+ real devices and 3,000+ browsers. With AI-native test management, MCP servers, and agent-based automation, TestMu AI supports Selenium, Appium, Playwright, and all major frameworks. 
 
-[<img height="58" width="200" src="https://user-images.githubusercontent.com/70570645/171866795-52c11b49-0728-4229-b073-4b704209ddde.png">](https://accounts.lambdatest.com/register?utm_source=github&utm_medium=repo&utm_campaign=playwright-sample)
+With TestMu AI (Formerly LambdaTest), you can capture visual snapshots of your web applications, upload images, and run visual regression tests using the SmartUI platform directly from the command line.
 
+- [Sign up on TestMu AI](https://www.testmuai.com/register/) (Formerly LambdaTest).
+- Follow the [TestMu AI Documentation](https://www.testmuai.com/support/docs/) for the full setup walkthrough.
 
-The **SmartUI-CLI** allows you to capture visual snapshots of your web applications, upload images, and run visual regression tests using [LambdaTest's SmartUI](https://www.lambdatest.com/visual-regression-testing) platform directly from the command line.
+### Prerequisites
 
-- [Installation](#installation)
-- [Commands](#commands)
-- [Documentation](#documentation)
-- [Issues](#issues)
+- Node.js v20.3 or above and npm (latest stable)
+- A TestMu AI (Formerly LambdaTest) account with your username and access key
 
-## Installation
+### Setup
 
-```sh-session
-$ npm install smartui-cli
+Clone and install dependencies:
+
+```bash
+git clone https://github.com/LambdaTest/smartui-cli && cd smartui-cli
+npm install smartui-cli
 ```
 
-**Note:**  
-If you face any problems executing tests with SmartUI-CLI `versions >= v4.x.x`, upgrade your Node.js version to `v20.3` or above.
+Set your credentials as environment variables.
 
-## Commands
-- `npx smartui exec` - Capture DOM assets for visual testing across multiple browsers and resolutions.
-- `npx smartui capture` - Bulk capture static URLs for visual testing.
-- `npx smartui upload` - Upload custom images or screenshots for visual comparison.
-- `npx smartui upload-figma` - Upload Figma design images for visual comparison.
-- `npx smartui config` - Creates configuration file according to the usecase.
+**macOS / Linux:**
 
-### Documentation
+```bash
+export LT_USERNAME="YOUR_USERNAME"
+export LT_ACCESS_KEY="YOUR_ACCESS_KEY"
+```
 
-In addition to its core functionalities, the SmartUI CLI leverages LambdaTest's cloud infrastructure for robust, scalable visual regression testing across various browsers and devices.
+**Windows:**
 
-- [SmartUI Selenium SDK](https://www.lambdatest.com/support/docs/smartui-selenium-java-sdk) - A complete SDK to capture DOM assets for visual tests.
-- [LambdaTest Documentation](https://www.lambdatest.com/support/docs/) - Official LambdaTest documentation for SmartUI and other integrations.
-- [Bulk capturing static URLs with SmartUI](https://www.lambdatest.com/support/docs/smartui-cli/) - Documentation for capturing satatic urls in bulk with SmartUI
-- [Bring your own screenshots](https://www.lambdatest.com/support/docs/smartui-cli-upload/) - Documentation for capturing satatic urls in bulk
-- [Figma CLI](https://www.lambdatest.com/support/docs/smartui-cli-figma/) - Documentation for uploading figma components to SmartUI
+```bash
+set LT_USERNAME="YOUR_USERNAME"
+set LT_ACCESS_KEY="YOUR_ACCESS_KEY"
+```
 
-### Issues
+### Run tests
 
-If you encounter problems with SmartUI-CLI, [add an issue on GitHub](https://github.com/LambdaTest/smartui-cli/issues/new).
+```bash
+npx smartui exec
+```
 
-For other support issues, reach out via [LambdaTest Support](https://www.lambdatest.com/support).
+Additional commands:
 
-------
+```bash
+npx smartui capture       # Bulk capture static URLs for visual testing
+npx smartui upload        # Upload custom images or screenshots for visual comparison
+npx smartui upload-figma  # Upload Figma design images for visual comparison
+npx smartui config        # Create configuration file according to use case
+```
 
-[Know more](https://www.lambdatest.com/visual-regression-testing) about SmartUI and it's AI enabled comparison engines.
+View results on your TestMu AI dashboard.
+
+### Local testing with TestMu AI Tunnel
+
+To test locally hosted apps, set up the TestMu AI tunnel. OS-specific guides:
+
+- [Local Testing on Windows](https://www.testmuai.com/support/docs/local-testing-for-windows/)
+- [Local Testing on macOS](https://www.testmuai.com/support/docs/local-testing-for-macos/)
+- [Local Testing on Linux](https://www.testmuai.com/support/docs/local-testing-for-linux/)
+
+Add the following to your capabilities:
+
+```js
+tunnel: true,
+```
+
+## Contributions
+
+Contributions are welcome. Open an issue to discuss your idea before submitting a pull request. When reporting bugs, include your Node.js version, OS, and npm version.
+
+## TestMu AI (Formerly LambdaTest) Community
+
+Connect with testers and developers in the [TestMu AI Community](https://community.testmuai.com/). Ask questions, share what you are building, and discuss best practices in test automation and DevOps.
+  
+## TestMu AI (Formerly LambdaTest) Certifications
+
+Earn free [TestMu AI Certifications](https://www.testmuai.com/certifications/) for testers, developers, and QA engineers. Validate your skills in Selenium, Cypress, Playwright, Appium, Espresso and more. Industry-recognized, shareable on LinkedIn, and built by practitioners, not marketers.
+
+## Learning Resources by TestMu AI (Formerly LambdaTest)
+
+Learn modern testing through tutorials, guides, videos, and weekly updates:
+
+* [TestMu AI Blog](https://www.testmuai.com/blog/)
+* [TestMu AI Learning Hub](https://www.testmuai.com/learning-hub/)
+* [TestMu AI on YouTube](https://www.youtube.com/@TestMuAI)
+* [TestMu AI Newsletter](https://www.testmuai.com/newsletter/)
+  
+## LambdaTest is Now TestMu AI
+
+On **January 12, 2026**, [LambdaTest evolved to TestMu AI](https://www.testmuai.com/lambdatest-is-now-testmuai/), the world's first fully autonomous **Agentic AI Quality Engineering Platform**.
+
+Same team. Same infrastructure. Same customer accounts. All existing LambdaTest logins, scripts, capabilities, and integrations continue to work without change.
+
+Find the new home for [LambdaTest](https://www.testmuai.com).
+
+### How LambdaTest Evolved into TestMu AI
+
+In 2017, we launched LambdaTest with a simple mission: make testing fast, reliable, and accessible. As LambdaTest grew, we expanded into Test Intelligence, Visual Regression Testing, Accessibility Testing, API Testing, and Performance Testing, covering the full depth of the testing lifecycle.
+
+As software development entered the AI era, testing had to evolve, too. We rebuilt the architecture to be AI-native from the ground up, with autonomous agents that **plan, author, execute, analyze, and optimize tests** while keeping humans in the loop. The platform integrates with your repos, CI, IDEs, and terminals, continuously learning from every code change and development signal.
+
+That evolution earned a new name: **TestMu AI**, built for an AI-first future of quality engineering. TestMu is not a new name for us. It is the name of our annual community conference, which has brought together 100,000+ quality engineers to discuss how AI would reshape testing, long before that became an industry norm. 
+
+What started as a high-performance cloud testing platform has transformed into an AI-native, multi-agent system powering a connected, end-to-end quality layer. That evolution defined a new identity: LambdaTest evolved into TestMu AI, built for an AI-first future of quality engineering.
+
+## Support
+
+Got a question? Email [support@testmuai.com](mailto:support@testmuai.com) or chat with us 24x7 from our chat portal.
