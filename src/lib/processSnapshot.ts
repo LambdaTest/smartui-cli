@@ -78,6 +78,12 @@ export async function prepareSnapshot(snapshot: Snapshot, ctx: Context): Promise
         if (options.useExtendedViewport) {
             processedOptions.useExtendedViewport = true;
         }
+        if (options.pageCustomScroll) {
+            processedOptions.pageCustomScroll = true;
+        }
+        if (options.elementsCustomScroll) {
+            processedOptions.elementsCustomScroll = true;
+        }
         if (options.sessionId) {
             const sessionId = options.sessionId;
             processedOptions.sessionId = sessionId
