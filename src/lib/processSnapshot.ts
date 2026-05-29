@@ -78,6 +78,15 @@ export async function prepareSnapshot(snapshot: Snapshot, ctx: Context): Promise
         if (options.useExtendedViewport) {
             processedOptions.useExtendedViewport = true;
         }
+        if (options.pageCustomScroll) {
+            processedOptions.pageCustomScroll = true;
+        }
+        if (options.elementsCustomScroll) {
+            processedOptions.elementsCustomScroll = true;
+        }
+        if (options.pageCustomScroll || options.elementsCustomScroll) {
+            ctx.log.warn(`Custom scroll only works at the (browser, viewport) your test ran in — other combos will drift.`);
+        }
         if (options.sessionId) {
             const sessionId = options.sessionId;
             processedOptions.sessionId = sessionId
@@ -576,6 +585,16 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
 
         if (options.loadDomContent) {
             processedOptions.loadDomContent = true;
+        }
+
+        if (options.pageCustomScroll) {
+            processedOptions.pageCustomScroll = true;
+        }
+        if (options.elementsCustomScroll) {
+            processedOptions.elementsCustomScroll = true;
+        }
+        if (options.pageCustomScroll || options.elementsCustomScroll) {
+            ctx.log.warn(`Custom scroll only works at the (browser, viewport) your test ran in — other combos will drift.`);
         }
 
         if (options.sessionId) {
