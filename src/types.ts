@@ -194,6 +194,8 @@ export interface Snapshot {
         sync?: boolean;
         contextId?: string;
         useExtendedViewport?: boolean;
+        pageCustomScroll?: boolean;
+        elementsCustomScroll?: boolean;
         approvalThreshold?: number;
         rejectionThreshold?: number;
         customCookies?: CustomCookie[];

@@ -690,6 +690,14 @@ const SnapshotSchema: JSONSchemaType<Snapshot> = {
                     type: "boolean",
                     errorMessage: "Invalid snapshot options; useExtendedViewport must be a boolean"
                 },
+                pageCustomScroll: {
+                    type: "boolean",
+                    errorMessage: "Invalid snapshot options; pageCustomScroll must be a boolean"
+                },
+                elementsCustomScroll: {
+                    type: "boolean",
+                    errorMessage: "Invalid snapshot options; elementsCustomScroll must be a boolean"
+                },
                 approvalThreshold: {
                     type: "number",
                     minimum: 0,
