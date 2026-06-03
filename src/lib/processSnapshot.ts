@@ -1107,7 +1107,8 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
             url: snapshot.url,
             dom: Buffer.from(snapshot.dom.html).toString('base64'),
             resources: cache,
-            options: processedOptions
+            options: processedOptions,
+            cookies: Buffer.from(snapshot.dom.cookies ?? '').toString('base64'),
         },
         warnings: [...optionWarnings, ...snapshot.dom.warnings],
         discoveryErrors: discoveryErrors
