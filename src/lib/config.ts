@@ -47,6 +47,28 @@ export function createWebStaticConfig(filepath: string) {
     console.log(`Created web-static config: ${filepath}`);
 };
 
+export function createStorybookConfig(filepath: string) {
+    // default filepath
+    filepath = filepath || '.smartui.json';
+    let filetype = path.extname(filepath);
+    if (filetype != '.json') {
+        console.log('Error: Config file must have .json extension');
+        return
+    }
+
+    // verify the file does not already exist
+    if (fs.existsSync(filepath)) {
+        console.log(`Error: SmartUI Storybook config already exists: ${filepath}`);
+        console.log(`To create a new file, please specify the file name like: 'smartui config:create-storybook .smartui-storybook.json'`);
+        return
+    }
+
+    // write stringified default config options to the filepath
+    fs.mkdirSync(path.dirname(filepath), { recursive: true });
+    fs.writeFileSync(filepath, JSON.stringify(constants.DEFAULT_STORYBOOK_CONFIG, null, 2) + '\n');
+    console.log(`Created SmartUI Storybook Config: ${filepath}`);
+};
+
 export function createFigmaConfig(filepath: string) {
     // default filepath
     filepath = filepath || 'designs.json';

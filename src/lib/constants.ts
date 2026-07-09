@@ -157,7 +157,36 @@ export default {
     COMMAND_TYPE_UPLOAD_FIGMA: 'upload-figma',
     COMMAND_TYPE_UPLOAD_PDF: 'upload-pdf',
     COMMAND_TYPE_MERGE: 'merge',
-    ALLOWED_CUSTOM_VIEWPORT_COMMANDS: ['exec', 'exec-start'],
+    COMMAND_TYPE_STORYBOOK: 'storybook',
+    // custom viewports apply to exec/exec-start and to storybook dir-mode
+    ALLOWED_CUSTOM_VIEWPORT_COMMANDS: ['exec', 'exec-start', 'storybook'],
+
+    // storybook backend routes (resolved against SMARTUI_UPLOAD_URL root host)
+    // TODO(unification, open-Q3): verify endpoint base + payload against backend
+    STORYBOOK_RENDER_PATH: '/storybook/render',
+    STORYBOOK_STATIC_RENDER_PATH: '/storybook/staticrender',
+    STORYBOOK_STATUS_PATH: '/storybook/status',
+    STORYBOOK_SIGNED_URL_PATH: '/storybook/url',
+
+    // storybook config
+    VALID_STORYBOOK_BROWSERS: ['chrome', 'firefox', 'safari', 'edge'],
+    DEFAULT_STORYBOOK_CONFIG: {
+        storybook: {
+            browsers: [
+                'chrome',
+                'firefox',
+                'safari',
+                'edge'
+            ],
+            viewports: [
+                [1920, 1080]
+            ],
+            waitForTimeout: 0,
+            include: [],
+            exclude: [],
+            customViewports: []
+        }
+    },
 
     // Default scrollTime
     DEFAULT_SCROLL_TIME: 8,
