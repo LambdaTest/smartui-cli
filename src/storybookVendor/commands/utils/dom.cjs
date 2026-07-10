@@ -27,14 +27,14 @@ async function sendDoM(storybookUrl, stories, storybookConfig, options) {
         await page.goto(storyInfo.url, { waitUntil: 'networkidle0' });
         const html = await page.content();
 
-        dom = new JSDOM(html, {
+        const dom = new JSDOM(html, {
             url: storybookUrl,
             resources: 'usable'
         });
-        clone = new JSDOM(html);
+        const clone = new JSDOM(html);
 
         // Serialize DOM
-        for(element of clone.window.document.querySelectorAll('img')) {
+        for(const element of clone.window.document.querySelectorAll('img')) {
             let image = new URL(element.getAttribute('src'), storybookUrl).href;
             let format = path.extname(image).replace(/^./, '');
             format = format === 'svg' ? 'svg+xml' : format

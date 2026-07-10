@@ -47,7 +47,11 @@ command
     .option('--force-rebuild', 'Force a rebuild of an already existing build', false)
     .option('--buildName <string>', 'Specify the build name for the pipeline')
     .addOption(new Option('--env <prod|stage>', 'Runtime environment').choices(['prod', 'stage']))
-    .action(async function (target, options) {
+    .action(async function (target, options, command) {
+        // Merge root-level global flags (e.g. --config, --markBaseline) so they reach
+        // the engine even when the same flag exists globally and locally.
+        const globals = command.optsWithGlobals();
+        options.config = options.config || globals.config;
         options.env = options.env || 'prod';
         const mode = /^https?:\/\//.test(target) ? 'url' : 'dir';
         const p = preview(target, mode, options.config);

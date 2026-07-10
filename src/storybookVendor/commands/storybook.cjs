@@ -20,7 +20,7 @@ async function storybook(serve, options) {
 
         // Convert browsers and resolutions arrays to string
         let resolutions = [];
-        storybookConfig.resolutions.forEach(element => {
+        (storybookConfig.resolutions || storybookConfig.viewports || []).forEach(element => {
             resolutions.push(element.join('x'));
         });
         storybookConfig.resolutions = (!resolutions.length) ? 'all' : resolutions.toString();
