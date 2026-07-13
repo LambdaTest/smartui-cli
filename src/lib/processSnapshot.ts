@@ -711,10 +711,8 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
             const { fullPage: icFullPage, ...ignoreColorsGroups } = options.ignoreColors;
             if (icFullPage === true) {
                 ignoreColorsFullPage = true;
-                if (isNotAllEmpty(ignoreColorsGroups as Record<string, Array<string>>)) {
-                    optionWarnings.add(`for snapshot ${snapshot.name}, ignoreColors.fullPage is set; other ignoreColors selectors are ignored`);
-                }
-            } else if (isNotAllEmpty(ignoreColorsGroups as Record<string, Array<string>>)) {
+            }
+            if (isNotAllEmpty(ignoreColorsGroups as Record<string, Array<string>>)) {
                 for (const [key, value] of Object.entries(ignoreColorsGroups)) {
                     if (!Array.isArray(value)) continue;
                     switch (key) {
@@ -1072,53 +1070,52 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
                         left: 0,
                         right: viewport.width
                     });
-                } else {
-                    for (const selector of ignoreColorsSelectors) {
-                        if (selector.startsWith('coordinates=')) {
-                            const validation = validateCoordinates(selector.replace('coordinates=', ''), ignoreColorsPageHeight, viewport.width, snapshot.name);
-                            if (!validation.valid) {
-                                optionWarnings.add(validation.error!);
-                                continue;
-                            }
-                            processedOptions.ignoreBoxes[viewportString].push({ type: constants.IGNORE_COLORS_BOX_TYPE, ...validation.coords });
-                        } else {
-                            const isXPath = selector.startsWith('xpath=');
-                            const selectorValue = isXPath ? selector.substring(6) : selector;
-                            const colorBoxes = await page.evaluate(({ selectorValue, isXPath, boxType }) => {
-                                try {
-                                    const body = document.body;
-                                    const html = document.documentElement;
-                                    const pageHeight = Math.max(body?.scrollHeight || 0, body?.offsetHeight || 0, html?.clientHeight || 0, html?.scrollHeight || 0, html?.offsetHeight || 0) || 16384;
-                                    const pageWidth = Math.max(body?.scrollWidth || 0, body?.offsetWidth || 0, html?.clientWidth || 0, html?.scrollWidth || 0, html?.offsetWidth || 0) || 7680;
-                                    let elements: Element[] = [];
-                                    if (isXPath) {
-                                        const xpathResult = document.evaluate(selectorValue, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
-                                        for (let i = 0; i < xpathResult.snapshotLength; i++) {
-                                            const node = xpathResult.snapshotItem(i);
-                                            if (node instanceof Element) elements.push(node);
-                                        }
-                                    } else {
-                                        elements = Array.from(document.querySelectorAll(selectorValue));
+                }
+                for (const selector of ignoreColorsSelectors) {
+                    if (selector.startsWith('coordinates=')) {
+                        const validation = validateCoordinates(selector.replace('coordinates=', ''), ignoreColorsPageHeight, viewport.width, snapshot.name);
+                        if (!validation.valid) {
+                            optionWarnings.add(validation.error!);
+                            continue;
+                        }
+                        processedOptions.ignoreBoxes[viewportString].push({ type: constants.IGNORE_COLORS_BOX_TYPE, ...validation.coords });
+                    } else {
+                        const isXPath = selector.startsWith('xpath=');
+                        const selectorValue = isXPath ? selector.substring(6) : selector;
+                        const colorBoxes = await page.evaluate(({ selectorValue, isXPath, boxType }) => {
+                            try {
+                                const body = document.body;
+                                const html = document.documentElement;
+                                const pageHeight = Math.max(body?.scrollHeight || 0, body?.offsetHeight || 0, html?.clientHeight || 0, html?.scrollHeight || 0, html?.offsetHeight || 0) || 16384;
+                                const pageWidth = Math.max(body?.scrollWidth || 0, body?.offsetWidth || 0, html?.clientWidth || 0, html?.scrollWidth || 0, html?.offsetWidth || 0) || 7680;
+                                let elements: Element[] = [];
+                                if (isXPath) {
+                                    const xpathResult = document.evaluate(selectorValue, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
+                                    for (let i = 0; i < xpathResult.snapshotLength; i++) {
+                                        const node = xpathResult.snapshotItem(i);
+                                        if (node instanceof Element) elements.push(node);
                                     }
-                                    return elements.map(el => {
-                                        const rect = el.getBoundingClientRect();
-                                        return {
-                                            type: boxType,
-                                            left: Math.max(0, rect.left + window.scrollX),
-                                            top: Math.max(0, rect.top + window.scrollY),
-                                            right: Math.min(pageWidth, rect.right + window.scrollX),
-                                            bottom: Math.min(pageHeight, rect.bottom + window.scrollY)
-                                        };
-                                    }).filter(box => box.right > box.left && box.bottom > box.top);
-                                } catch (error) {
-                                    return [];
+                                } else {
+                                    elements = Array.from(document.querySelectorAll(selectorValue));
                                 }
-                            }, { selectorValue, isXPath, boxType: constants.IGNORE_COLORS_BOX_TYPE });
-                            if (colorBoxes && colorBoxes.length) {
-                                processedOptions.ignoreBoxes[viewportString].push(...colorBoxes);
-                            } else {
-                                optionWarnings.add(`for snapshot ${snapshot.name} viewport ${viewportString}, no element found for ignoreColors selector ${selector}`);
+                                return elements.map(el => {
+                                    const rect = el.getBoundingClientRect();
+                                    return {
+                                        type: boxType,
+                                        left: Math.max(0, rect.left + window.scrollX),
+                                        top: Math.max(0, rect.top + window.scrollY),
+                                        right: Math.min(pageWidth, rect.right + window.scrollX),
+                                        bottom: Math.min(pageHeight, rect.bottom + window.scrollY)
+                                    };
+                                }).filter(box => box.right > box.left && box.bottom > box.top);
+                            } catch (error) {
+                                return [];
                             }
+                        }, { selectorValue, isXPath, boxType: constants.IGNORE_COLORS_BOX_TYPE });
+                        if (colorBoxes && colorBoxes.length) {
+                            processedOptions.ignoreBoxes[viewportString].push(...colorBoxes);
+                        } else {
+                            optionWarnings.add(`for snapshot ${snapshot.name} viewport ${viewportString}, no element found for ignoreColors selector ${selector}`);
                         }
                     }
                 }
