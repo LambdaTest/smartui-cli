@@ -41,6 +41,30 @@ function cacheSerializedResources(domResources: Array<any>): Record<string, any>
     return cache;
 }
 
+// flattens a selector-group object (id/class/cssSelector/xpath/coordinates) into prefixed selector strings
+function flattenSelectorGroups(groups: Record<string, any>, out: Array<string>): void {
+    for (const [key, value] of Object.entries(groups)) {
+        if (!Array.isArray(value)) continue;
+        switch (key) {
+            case 'id':
+                out.push(...value.map(e => e.startsWith('#') ? e : '#' + e));
+                break;
+            case 'class':
+                out.push(...value.map(e => e.startsWith('.') ? e : '.' + e));
+                break;
+            case 'xpath':
+                out.push(...value.map(e => e.startsWith('xpath=') ? e : 'xpath=' + e));
+                break;
+            case 'cssSelector':
+                out.push(...value);
+                break;
+            case 'coordinates':
+                out.push(...value.map(e => `coordinates=${e}`));
+                break;
+        }
+    }
+}
+
 export async function prepareSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record<string, any>> {
     let processedOptions: Record<string, any> = {};
     processedOptions.cliEnableJavascript = ctx.config.cliEnableJavaScript;
@@ -174,25 +198,7 @@ export async function prepareSnapshot(snapshot: Snapshot, ctx: Context): Promise
             ignoreOrSelectBoxes = 'selectBoxes';
         }
         if (ignoreOrSelectDOM) {
-            for (const [key, value] of Object.entries(options[ignoreOrSelectDOM])) {
-                switch (key) {
-                    case 'id':
-                        selectors.push(...value.map(e => '#' + e));
-                        break;
-                    case 'class':
-                        selectors.push(...value.map(e => '.' + e));
-                        break;
-                    case 'xpath':
-                        selectors.push(...value.map(e => 'xpath=' + e));
-                        break;
-                    case 'cssSelector':
-                        selectors.push(...value);
-                        break;
-                    case 'coordinates':
-                        selectors.push(...value.map(e => `coordinates=${e}`));
-                        break;
-                }
-            }
+            flattenSelectorGroups(options[ignoreOrSelectDOM], selectors);
         }
         if (options.ignoreType) {
             processedOptions.ignoreType = options.ignoreType;
@@ -687,53 +693,14 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
             ignoreOrSelectBoxes = 'selectBoxes';
         }
         if (ignoreOrSelectDOM) {
-            for (const [key, value] of Object.entries(options[ignoreOrSelectDOM])) {
-                switch (key) {
-                    case 'id':
-                        selectors.push(...value.map(e => e.startsWith('#') ? e : '#' + e));
-                        break;
-                    case 'class':
-                        selectors.push(...value.map(e => e.startsWith('.') ? e : '.' + e));
-                        break;
-                    case 'xpath':
-                        selectors.push(...value.map(e => e.startsWith('xpath=') ? e : 'xpath=' + e));
-                        break;
-                    case 'cssSelector':
-                        selectors.push(...value);
-                        break;
-                    case 'coordinates':
-                        selectors.push(...value.map(e => `coordinates=${e}`));
-                        break;
-                }
-            }
+            flattenSelectorGroups(options[ignoreOrSelectDOM], selectors);
         }
         if (options.ignoreColors && Object.keys(options.ignoreColors).length) {
             const { fullPage: icFullPage, ...ignoreColorsGroups } = options.ignoreColors;
             if (icFullPage === true) {
                 ignoreColorsFullPage = true;
             }
-            if (isNotAllEmpty(ignoreColorsGroups as Record<string, Array<string>>)) {
-                for (const [key, value] of Object.entries(ignoreColorsGroups)) {
-                    if (!Array.isArray(value)) continue;
-                    switch (key) {
-                        case 'id':
-                            ignoreColorsSelectors.push(...value.map(e => e.startsWith('#') ? e : '#' + e));
-                            break;
-                        case 'class':
-                            ignoreColorsSelectors.push(...value.map(e => e.startsWith('.') ? e : '.' + e));
-                            break;
-                        case 'xpath':
-                            ignoreColorsSelectors.push(...value.map(e => e.startsWith('xpath=') ? e : 'xpath=' + e));
-                            break;
-                        case 'cssSelector':
-                            ignoreColorsSelectors.push(...value);
-                            break;
-                        case 'coordinates':
-                            ignoreColorsSelectors.push(...value.map(e => `coordinates=${e}`));
-                            break;
-                    }
-                }
-            }
+            flattenSelectorGroups(ignoreColorsGroups, ignoreColorsSelectors);
         }
         if (options.ignoreType) {
             processedOptions.ignoreType = options.ignoreType;
