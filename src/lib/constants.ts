@@ -121,6 +121,9 @@ export default {
     MAXIMUM_POSSIBLE_PAGE_HEIGHT: 32767,
     SCREENSHOT_TOO_LARGE_ERROR: 'Cannot take screenshot larger than 32767',
 
+    // per-box type understood by the comparison pipeline (parity with DOS boxes)
+    IGNORE_COLORS_BOX_TYPE: 'ignoreColors',
+
     // mobile
     MOBILE_OS_ANDROID: 'android',
     MOBILE_OS_IOS: 'ios',

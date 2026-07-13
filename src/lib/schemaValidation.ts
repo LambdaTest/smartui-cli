@@ -578,6 +578,45 @@ const SnapshotSchema: JSONSchemaType<Snapshot> = {
                         }
                     }
                 },
+                ignoreColors: {
+                    type: "object",
+                    properties: {
+                        id: {
+                            type: "array",
+                            items: { type: "string", minLength: 1, pattern: "^[^;]*$", errorMessage: "Invalid snapshot options; ignoreColors id cannot be empty or have semicolon" },
+                            uniqueItems: true,
+                            errorMessage: "Invalid snapshot options; ignoreColors id array must have unique items"
+                        },
+                        class: {
+                            type: "array",
+                            items: { type: "string", minLength: 1, pattern: "^[^;]*$", errorMessage: "Invalid snapshot options; ignoreColors class cannot be empty or have semicolon" },
+                            uniqueItems: true,
+                            errorMessage: "Invalid snapshot options; ignoreColors class array must have unique items"
+                        },
+                        cssSelector: {
+                            type: "array",
+                            items: { type: "string", minLength: 1, pattern: "^[^;]*$", errorMessage: "Invalid snapshot options; ignoreColors cssSelector cannot be empty or have semicolon" },
+                            uniqueItems: true,
+                            errorMessage: "Invalid snapshot options; ignoreColors cssSelector array must have unique items"
+                        },
+                        xpath: {
+                            type: "array",
+                            items: { type: "string", minLength: 1 },
+                            uniqueItems: true,
+                            errorMessage: "Invalid snapshot options; ignoreColors xpath array must have unique and non-empty items"
+                        },
+                        coordinates: {
+                            type: "array",
+                            items: { type: "string", minLength: 1 },
+                            uniqueItems: true,
+                            errorMessage: "Invalid snapshot options; ignoreColors coordinates array must have unique and non-empty items"
+                        },
+                        fullPage: {
+                            type: "boolean",
+                            errorMessage: "Invalid snapshot options; ignoreColors fullPage must be a boolean"
+                        }
+                    }
+                },
                 ignoreType: {
                     type: "array",
                     items: {

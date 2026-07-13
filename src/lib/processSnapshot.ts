@@ -253,6 +253,7 @@ export async function prepareSnapshot(snapshot: Snapshot, ctx: Context): Promise
 
     processedOptions.ignoreDOM = options?.ignoreDOM;
     processedOptions.selectDOM = options?.selectDOM;
+    processedOptions.ignoreColors = options?.ignoreColors;
 
     //Add custom cookies in processed options
     if (options?.customCookies && Array.isArray(options.customCookies) && options.customCookies.length > 0) {
@@ -575,6 +576,8 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
     let selectors: Array<string> = [];
     let ignoreOrSelectDOM: string;
     let ignoreOrSelectBoxes: string;
+    let ignoreColorsSelectors: Array<string> = [];
+    let ignoreColorsFullPage: boolean = false;
     if (options && Object.keys(options).length) {
         ctx.log.debug(`Snapshot options: ${JSON.stringify(options)}`);
 
@@ -701,6 +704,36 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
                     case 'coordinates':
                         selectors.push(...value.map(e => `coordinates=${e}`));
                         break;
+                }
+            }
+        }
+        if (options.ignoreColors && Object.keys(options.ignoreColors).length) {
+            const { fullPage: icFullPage, ...ignoreColorsGroups } = options.ignoreColors;
+            if (icFullPage === true) {
+                ignoreColorsFullPage = true;
+                if (isNotAllEmpty(ignoreColorsGroups as Record<string, Array<string>>)) {
+                    optionWarnings.add(`for snapshot ${snapshot.name}, ignoreColors.fullPage is set; other ignoreColors selectors are ignored`);
+                }
+            } else if (isNotAllEmpty(ignoreColorsGroups as Record<string, Array<string>>)) {
+                for (const [key, value] of Object.entries(ignoreColorsGroups)) {
+                    if (!Array.isArray(value)) continue;
+                    switch (key) {
+                        case 'id':
+                            ignoreColorsSelectors.push(...value.map(e => e.startsWith('#') ? e : '#' + e));
+                            break;
+                        case 'class':
+                            ignoreColorsSelectors.push(...value.map(e => e.startsWith('.') ? e : '.' + e));
+                            break;
+                        case 'xpath':
+                            ignoreColorsSelectors.push(...value.map(e => e.startsWith('xpath=') ? e : 'xpath=' + e));
+                            break;
+                        case 'cssSelector':
+                            ignoreColorsSelectors.push(...value);
+                            break;
+                        case 'coordinates':
+                            ignoreColorsSelectors.push(...value.map(e => `coordinates=${e}`));
+                            break;
+                    }
                 }
             }
         }
@@ -881,7 +914,7 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
         }
 
         // snapshot options
-        if (selectors.length) {
+        if (selectors.length || ignoreColorsSelectors.length || ignoreColorsFullPage) {
             let height = 0;
             height = await page.evaluate(() => {
                 const DEFAULT_HEIGHT = 16384;
@@ -908,7 +941,7 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
             ctx.log.debug(`Calculated content height: ${height}`);
 
             let locators: Array<Locator> = [];
-            if (!Array.isArray(processedOptions[ignoreOrSelectBoxes][viewportString])) processedOptions[ignoreOrSelectBoxes][viewportString] = []
+            if (ignoreOrSelectBoxes && !Array.isArray(processedOptions[ignoreOrSelectBoxes][viewportString])) processedOptions[ignoreOrSelectBoxes][viewportString] = []
 
             for (const selector of selectors) {
                 if (selector.startsWith('coordinates=')) {
@@ -1026,9 +1059,74 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
                     }
                 }
             }
+
+            if (ignoreColorsFullPage || ignoreColorsSelectors.length) {
+                if (!processedOptions.ignoreBoxes) processedOptions.ignoreBoxes = {};
+                if (!Array.isArray(processedOptions.ignoreBoxes[viewportString])) processedOptions.ignoreBoxes[viewportString] = [];
+                const ignoreColorsPageHeight = viewport.height ? viewport.height : height;
+                if (ignoreColorsFullPage) {
+                    processedOptions.ignoreBoxes[viewportString].push({
+                        type: constants.IGNORE_COLORS_BOX_TYPE,
+                        top: 0,
+                        bottom: ignoreColorsPageHeight,
+                        left: 0,
+                        right: viewport.width
+                    });
+                } else {
+                    for (const selector of ignoreColorsSelectors) {
+                        if (selector.startsWith('coordinates=')) {
+                            const validation = validateCoordinates(selector.replace('coordinates=', ''), ignoreColorsPageHeight, viewport.width, snapshot.name);
+                            if (!validation.valid) {
+                                optionWarnings.add(validation.error!);
+                                continue;
+                            }
+                            processedOptions.ignoreBoxes[viewportString].push({ type: constants.IGNORE_COLORS_BOX_TYPE, ...validation.coords });
+                        } else {
+                            const isXPath = selector.startsWith('xpath=');
+                            const selectorValue = isXPath ? selector.substring(6) : selector;
+                            const colorBoxes = await page.evaluate(({ selectorValue, isXPath, boxType }) => {
+                                try {
+                                    const body = document.body;
+                                    const html = document.documentElement;
+                                    const pageHeight = Math.max(body?.scrollHeight || 0, body?.offsetHeight || 0, html?.clientHeight || 0, html?.scrollHeight || 0, html?.offsetHeight || 0) || 16384;
+                                    const pageWidth = Math.max(body?.scrollWidth || 0, body?.offsetWidth || 0, html?.clientWidth || 0, html?.scrollWidth || 0, html?.offsetWidth || 0) || 7680;
+                                    let elements: Element[] = [];
+                                    if (isXPath) {
+                                        const xpathResult = document.evaluate(selectorValue, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
+                                        for (let i = 0; i < xpathResult.snapshotLength; i++) {
+                                            const node = xpathResult.snapshotItem(i);
+                                            if (node instanceof Element) elements.push(node);
+                                        }
+                                    } else {
+                                        elements = Array.from(document.querySelectorAll(selectorValue));
+                                    }
+                                    return elements.map(el => {
+                                        const rect = el.getBoundingClientRect();
+                                        return {
+                                            type: boxType,
+                                            left: Math.max(0, rect.left + window.scrollX),
+                                            top: Math.max(0, rect.top + window.scrollY),
+                                            right: Math.min(pageWidth, rect.right + window.scrollX),
+                                            bottom: Math.min(pageHeight, rect.bottom + window.scrollY)
+                                        };
+                                    }).filter(box => box.right > box.left && box.bottom > box.top);
+                                } catch (error) {
+                                    return [];
+                                }
+                            }, { selectorValue, isXPath, boxType: constants.IGNORE_COLORS_BOX_TYPE });
+                            if (colorBoxes && colorBoxes.length) {
+                                processedOptions.ignoreBoxes[viewportString].push(...colorBoxes);
+                            } else {
+                                optionWarnings.add(`for snapshot ${snapshot.name} viewport ${viewportString}, no element found for ignoreColors selector ${selector}`);
+                            }
+                        }
+                    }
+                }
+            }
         }
         processedOptions.ignoreDOM = options?.ignoreDOM;
         processedOptions.selectDOM = options?.selectDOM;
+        processedOptions.ignoreColors = options?.ignoreColors;
         ctx.log.debug(`Processed options: ${JSON.stringify(processedOptions)}`);
     }
 
