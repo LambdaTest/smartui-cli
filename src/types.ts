@@ -176,7 +176,7 @@ export interface Snapshot {
             cssSelector?: Array<string>,
             xpath?: Array<string>,
             coordinates?: Array<string>,
-            fullPage?: boolean
+            entireScreenshot?: boolean
         },
         element?: {
             id?: string,

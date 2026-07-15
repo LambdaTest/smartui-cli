@@ -583,7 +583,7 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
     let ignoreOrSelectDOM: string;
     let ignoreOrSelectBoxes: string;
     let ignoreColorsSelectors: Array<string> = [];
-    let ignoreColorsFullPage: boolean = false;
+    let ignoreColorsEntireScreenshot: boolean = false;
     if (options && Object.keys(options).length) {
         ctx.log.debug(`Snapshot options: ${JSON.stringify(options)}`);
 
@@ -696,9 +696,9 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
             flattenSelectorGroups(options[ignoreOrSelectDOM], selectors);
         }
         if (options.ignoreColors && Object.keys(options.ignoreColors).length) {
-            const { fullPage: icFullPage, ...ignoreColorsGroups } = options.ignoreColors;
-            if (icFullPage === true) {
-                ignoreColorsFullPage = true;
+            const { entireScreenshot: icEntireScreenshot, ...ignoreColorsGroups } = options.ignoreColors;
+            if (icEntireScreenshot === true) {
+                ignoreColorsEntireScreenshot = true;
             }
             flattenSelectorGroups(ignoreColorsGroups, ignoreColorsSelectors);
         }
@@ -879,7 +879,7 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
         }
 
         // snapshot options
-        if (selectors.length || ignoreColorsSelectors.length || ignoreColorsFullPage) {
+        if (selectors.length || ignoreColorsSelectors.length || ignoreColorsEntireScreenshot) {
             let height = 0;
             height = await page.evaluate(() => {
                 const DEFAULT_HEIGHT = 16384;
@@ -1025,11 +1025,11 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
                 }
             }
 
-            if (ignoreColorsFullPage || ignoreColorsSelectors.length) {
+            if (ignoreColorsEntireScreenshot || ignoreColorsSelectors.length) {
                 if (!processedOptions.ignoreBoxes) processedOptions.ignoreBoxes = {};
                 if (!Array.isArray(processedOptions.ignoreBoxes[viewportString])) processedOptions.ignoreBoxes[viewportString] = [];
                 const ignoreColorsPageHeight = viewport.height ? viewport.height : height;
-                if (ignoreColorsFullPage) {
+                if (ignoreColorsEntireScreenshot) {
                     processedOptions.ignoreBoxes[viewportString].push({
                         type: constants.IGNORE_COLORS_BOX_TYPE,
                         top: 0,

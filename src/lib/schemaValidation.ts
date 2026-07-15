@@ -611,9 +611,9 @@ const SnapshotSchema: JSONSchemaType<Snapshot> = {
                             uniqueItems: true,
                             errorMessage: "Invalid snapshot options; ignoreColors coordinates array must have unique and non-empty items"
                         },
-                        fullPage: {
+                        entireScreenshot: {
                             type: "boolean",
-                            errorMessage: "Invalid snapshot options; ignoreColors fullPage must be a boolean"
+                            errorMessage: "Invalid snapshot options; ignoreColors entireScreenshot must be a boolean"
                         }
                     }
                 },
