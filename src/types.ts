@@ -170,6 +170,14 @@ export interface Snapshot {
             xpath?: Array<string>,
             coordinates?: Array<string>
         },
+        ignoreColors?: {
+            id?: Array<string>,
+            class?: Array<string>,
+            cssSelector?: Array<string>,
+            xpath?: Array<string>,
+            coordinates?: Array<string>,
+            entireScreenshot?: boolean
+        },
         element?: {
             id?: string,
             class?: string,
@@ -209,8 +217,8 @@ export interface ProcessedSnapshot {
     dom: string,
     resources: Record<string, any>,
     options: {
-        ignoreBoxes?: Record<string, Array<Record<string, number>>>,
-        selectBoxes?: Record<string, Array<Record<string, number>>>
+        ignoreBoxes?: Record<string, Array<Record<string, number | string>>>,
+        selectBoxes?: Record<string, Array<Record<string, number | string>>>
     }
 }
 
