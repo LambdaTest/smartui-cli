@@ -95,7 +95,7 @@ export function smoothScrollToBottom({
 export async function launchBrowsers(ctx: Context): Promise<Record<string, Browser>> {
     let browsers: Record<string, Browser> = {};
     const isHeadless = process.env.HEADLESS?.toLowerCase() === 'false' ? false : true;
-    let launchOptions: Record<string, any> = { headless: isHeadless };
+    let launchOptions: Record<string, any> = { headless: isHeadless, args: constants.LAUNCH_ARGS };
     
     const proxyServer = ctx.env.SMARTUI_HTTPS_PROXY || ctx.env.SMARTUI_HTTP_PROXY || ctx.env.HTTPS_PROXY || ctx.env.HTTP_PROXY;
     if (proxyServer) {
@@ -115,8 +115,7 @@ export async function launchBrowsers(ctx: Context): Promise<Record<string, Brows
                     browsers[constants.FIREFOX] = await firefox.launch(launchOptions);
                     break;
                 case constants.EDGE:
-                    launchOptions.args = ['--headless=new'];
-                    browsers[constants.EDGE] = await chromium.launch({ channel: constants.EDGE_CHANNEL, ...launchOptions });
+                    browsers[constants.EDGE] = await chromium.launch({ channel: constants.EDGE_CHANNEL, ...launchOptions, args: [...constants.LAUNCH_ARGS, '--headless=new'] });
                     break;
             }
         }
