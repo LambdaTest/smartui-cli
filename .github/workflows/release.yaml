@@ -20,12 +20,13 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '18'
+        registry-url: 'https://registry.npmjs.org'
 
     - name: Remove pnpm-lock.yaml
       run: rm -rf pnpm-lock.yaml
 
     - name: Install pnpm
-      run: npm install -g pnpm@10
+      run: npm install -g pnpm
 
     - name: Install dependencies
       run: pnpm install
