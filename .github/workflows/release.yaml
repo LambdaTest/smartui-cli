@@ -4,10 +4,6 @@ on:
   release:
      types: [published]
 
-permissions:
-  contents: read
-  id-token: write
-
 jobs:
   build-and-publish:
     runs-on: ubuntu-latest
@@ -41,12 +37,12 @@ jobs:
 
     - name: Release beta package
       if: steps.check-beta.outputs.IS_BETA == 'true'
-      run: |
-        pnpm run build
-        pnpm publish --tag beta --access public --provenance --no-git-checks
+      run: pnpm run release:beta
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
     - name: Release stable package
       if: steps.check-beta.outputs.IS_BETA == 'false'
-      run: |
-        pnpm run build
-        pnpm publish --access public --provenance --no-git-checks
+      run: pnpm run release
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
