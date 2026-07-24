@@ -110,6 +110,11 @@ export default {
         'sec-ch-ua-platform': '"Windows"'
     },
 
+    // Linux Playwright WebKit can't decode AVIF (and some builds lack WebP), so sites serving those
+    // formats render blank images. Reject avif/webp on WebKit image requests so the origin content-
+    // negotiates down to JPEG/PNG, which WebKit renders. image/* + */* keep every other format working.
+    WEBKIT_IMAGE_ACCEPT: 'image/avif;q=0,image/webp;q=0,image/*,*/*;q=0.8',
+
     // user agents
     CHROME_USER_AGENT: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.107 Safari/537.36',
     FIREFOX_USER_AGENT: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:112.0) Gecko/20100101 Firefox/112.0',

@@ -269,6 +269,20 @@ async function captureScreenshotsForConfig(
             });
         }
 
+        // WebKit only: Linux Playwright WebKit can't decode AVIF, so the site's AVIF images render
+        // blank. Reject avif/webp on image requests so the origin serves JPEG/PNG. Registered last so
+        // it runs first, then defers (fallback) to any handler above (CAPTURE_RENDERING_ERRORS /
+        // basicAuth) or to the network.
+        if (browserName === constants.SAFARI) {
+            await page.route('**/*', async (route, request) => {
+                if (request.resourceType() === 'image') {
+                    await route.fallback({ headers: { ...await request.allHeaders(), accept: constants.WEBKIT_IMAGE_ACCEPT } });
+                } else {
+                    await route.fallback();
+                }
+            });
+        }
+
         if (renderViewports && renderViewports.length > 0) {
             const first = renderViewports[0];
             globalViewport = first.viewportString;
