@@ -96,21 +96,17 @@ export async function launchBrowsers(ctx: Context): Promise<Record<string, Brows
     let browsers: Record<string, Browser> = {};
     const isHeadless = process.env.HEADLESS?.toLowerCase() === 'false' ? false : true;
     let launchOptions: Record<string, any> = { headless: isHeadless };
-
+    
     const proxyServer = ctx.env.SMARTUI_HTTPS_PROXY || ctx.env.SMARTUI_HTTP_PROXY || ctx.env.HTTPS_PROXY || ctx.env.HTTP_PROXY;
     if (proxyServer) {
         launchOptions.proxy = { server: proxyServer };
     }
 
-    // constants.LAUNCH_ARGS are Chromium (Blink) CLI flags; WebKit/Firefox — notably the Linux
-    // Playwright builds — reject unknown options and fail to launch. Scope the args to Chromium only.
-    const chromiumLaunchOptions: Record<string, any> = { ...launchOptions, args: constants.LAUNCH_ARGS };
-
     if (ctx.config.web) {
         for (const browser of ctx.config.web.browsers) {
             switch (browser) {
                 case constants.CHROME:
-                    browsers[constants.CHROME] = await chromium.launch(chromiumLaunchOptions);
+                    browsers[constants.CHROME] = await chromium.launch(launchOptions);
                     break;
                 case constants.SAFARI:
                     browsers[constants.SAFARI] = await webkit.launch(launchOptions);
@@ -119,14 +115,15 @@ export async function launchBrowsers(ctx: Context): Promise<Record<string, Brows
                     browsers[constants.FIREFOX] = await firefox.launch(launchOptions);
                     break;
                 case constants.EDGE:
-                    browsers[constants.EDGE] = await chromium.launch({ ...chromiumLaunchOptions, channel: constants.EDGE_CHANNEL, args: [...chromiumLaunchOptions.args, '--headless=new'] });
+                    launchOptions.args = ['--headless=new'];
+                    browsers[constants.EDGE] = await chromium.launch({ channel: constants.EDGE_CHANNEL, ...launchOptions });
                     break;
             }
         }
     }
     if (ctx.config.mobile) {
         for (const device of ctx.config.mobile.devices) {
-            if (constants.SUPPORTED_MOBILE_DEVICES[device].os === 'android' && !browsers[constants.CHROME]) browsers[constants.CHROME] = await chromium.launch(chromiumLaunchOptions);
+            if (constants.SUPPORTED_MOBILE_DEVICES[device].os === 'android' && !browsers[constants.CHROME]) browsers[constants.CHROME] = await chromium.launch(launchOptions);
             else if (constants.SUPPORTED_MOBILE_DEVICES[device].os === 'ios' && !browsers[constants.SAFARI]) browsers[constants.SAFARI] = await webkit.launch(launchOptions);
         }
     }
@@ -138,9 +135,7 @@ export async function closeBrowsers(browsers: Record<string, Browser>): Promise<
     for (const browserName of Object.keys(browsers)) await browsers[browserName]?.close();
 }
 
-// Rendering-engine classification for a capture browserName (android maps to chrome, iOS to safari
-// upstream, so these are total over the 4 possible values). Keeps engine-specific handling — Blink
-// launch flags, Sec-CH-UA client hints, WebKit AVIF decoding — from being re-derived inline.
+// Rendering-engine classification for a capture browserName (android→chrome, iOS→safari upstream).
 export function isChromiumEngine(browserName: string): boolean {
     return browserName === constants.CHROME || browserName === constants.EDGE;
 }

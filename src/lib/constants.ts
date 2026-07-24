@@ -106,13 +106,11 @@ export default {
     REQUEST_HEADERS: {
         // `HeadlessChrome` is added to sec-ch-ua, `--disable-features=UserAgentClientHint` doesn't seem to work
         'sec-ch-ua': '"Chromium";v="129", "Not=A?Brand";v="8"',
-        'sec-ch-ua-mobile': '"?0"',
+        'sec-ch-ua-mobile': '?0',
         'sec-ch-ua-platform': '"Windows"'
     },
 
-    // Linux Playwright WebKit can't decode AVIF (and some builds lack WebP), so sites serving those
-    // formats render blank images. Reject avif/webp on WebKit image requests so the origin content-
-    // negotiates down to JPEG/PNG, which WebKit renders. image/* + */* keep every other format working.
+    // Reject avif/webp on WebKit image requests (Linux WebKit can't decode them) → origin serves JPEG/PNG.
     WEBKIT_IMAGE_ACCEPT: 'image/avif;q=0,image/webp;q=0,image/*,*/*;q=0.8',
 
     // user agents

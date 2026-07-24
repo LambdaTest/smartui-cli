@@ -168,10 +168,7 @@ async function captureScreenshotsForConfig(
             await wrappedScript(page);
         }
         const headersObject: Record<string, string> = {};
-        // Headless Chromium leaks "HeadlessChrome" into the Sec-CH-UA client hint, which bot-protection
-        // WAFs (e.g. Akamai) block on. Seed a clean Sec-CH-UA for Chromium engines only — WebKit/Firefox
-        // don't send client hints, so setting them there would itself be a bot tell. User-supplied
-        // requestHeaders below still override these defaults.
+        // Seed a clean Sec-CH-UA on Chromium so headless "HeadlessChrome" doesn't leak to bot WAFs.
         if (utils.isChromiumEngine(browserName)) {
             Object.assign(headersObject, constants.REQUEST_HEADERS);
         }
@@ -205,7 +202,7 @@ async function captureScreenshotsForConfig(
                     timeout: 30000,
                     headers: {
                         ...await request.allHeaders(),
-                        ...constants.REQUEST_HEADERS
+                        ...(utils.isChromiumEngine(browserName) ? constants.REQUEST_HEADERS : {})
                     }
                 }
 
@@ -269,16 +266,13 @@ async function captureScreenshotsForConfig(
             });
         }
 
-        // WebKit only: Linux Playwright WebKit can't decode AVIF, so the site's AVIF images render
-        // blank. Reject avif/webp on image requests so the origin serves JPEG/PNG. Registered last so
-        // it runs first, then defers (fallback) to any handler above (CAPTURE_RENDERING_ERRORS /
-        // basicAuth) or to the network.
+        // WebKit only: Linux WebKit can't decode AVIF — swap only an avif/webp image Accept for JPEG/PNG.
         if (utils.isWebkitEngine(browserName)) {
             await page.route('**/*', async (route, request) => {
-                const overrides = request.resourceType() === 'image'
-                    ? { headers: { ...await request.allHeaders(), accept: constants.WEBKIT_IMAGE_ACCEPT } }
-                    : {};
-                await route.fallback(overrides);
+                if (request.resourceType() !== 'image') return route.fallback();
+                const headers = await request.allHeaders();
+                if (/image\/(avif|webp)/i.test(headers['accept'] || '')) headers['accept'] = constants.WEBKIT_IMAGE_ACCEPT;
+                return route.fallback({ headers });
             });
         }
 
