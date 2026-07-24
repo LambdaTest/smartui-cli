@@ -168,6 +168,13 @@ async function captureScreenshotsForConfig(
             await wrappedScript(page);
         }
         const headersObject: Record<string, string> = {};
+        // Headless Chromium leaks "HeadlessChrome" into the Sec-CH-UA client hint, which bot-protection
+        // WAFs (e.g. Akamai) block on. Seed a clean Sec-CH-UA for Chromium engines only — WebKit/Firefox
+        // don't send client hints, so setting them there would itself be a bot tell. User-supplied
+        // requestHeaders below still override these defaults.
+        if (browserName === constants.CHROME || browserName === constants.EDGE) {
+            Object.assign(headersObject, constants.REQUEST_HEADERS);
+        }
         if (ctx.config.requestHeaders && Array.isArray(ctx.config.requestHeaders)) {
             ctx.config.requestHeaders.forEach((headerObj) => {
                 Object.entries(headerObj).forEach(([key, value]) => {
