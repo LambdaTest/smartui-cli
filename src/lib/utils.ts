@@ -95,18 +95,22 @@ export function smoothScrollToBottom({
 export async function launchBrowsers(ctx: Context): Promise<Record<string, Browser>> {
     let browsers: Record<string, Browser> = {};
     const isHeadless = process.env.HEADLESS?.toLowerCase() === 'false' ? false : true;
-    let launchOptions: Record<string, any> = { headless: isHeadless, args: constants.LAUNCH_ARGS };
-    
+    let launchOptions: Record<string, any> = { headless: isHeadless };
+
     const proxyServer = ctx.env.SMARTUI_HTTPS_PROXY || ctx.env.SMARTUI_HTTP_PROXY || ctx.env.HTTPS_PROXY || ctx.env.HTTP_PROXY;
     if (proxyServer) {
         launchOptions.proxy = { server: proxyServer };
     }
 
+    // constants.LAUNCH_ARGS are Chromium (Blink) CLI flags; WebKit/Firefox — notably the Linux
+    // Playwright builds — reject unknown options and fail to launch. Scope the args to Chromium only.
+    const chromiumLaunchOptions: Record<string, any> = { ...launchOptions, args: constants.LAUNCH_ARGS };
+
     if (ctx.config.web) {
         for (const browser of ctx.config.web.browsers) {
             switch (browser) {
                 case constants.CHROME:
-                    browsers[constants.CHROME] = await chromium.launch(launchOptions);
+                    browsers[constants.CHROME] = await chromium.launch(chromiumLaunchOptions);
                     break;
                 case constants.SAFARI:
                     browsers[constants.SAFARI] = await webkit.launch(launchOptions);
@@ -122,7 +126,7 @@ export async function launchBrowsers(ctx: Context): Promise<Record<string, Brows
     }
     if (ctx.config.mobile) {
         for (const device of ctx.config.mobile.devices) {
-            if (constants.SUPPORTED_MOBILE_DEVICES[device].os === 'android' && !browsers[constants.CHROME]) browsers[constants.CHROME] = await chromium.launch(launchOptions);
+            if (constants.SUPPORTED_MOBILE_DEVICES[device].os === 'android' && !browsers[constants.CHROME]) browsers[constants.CHROME] = await chromium.launch(chromiumLaunchOptions);
             else if (constants.SUPPORTED_MOBILE_DEVICES[device].os === 'ios' && !browsers[constants.SAFARI]) browsers[constants.SAFARI] = await webkit.launch(launchOptions);
         }
     }
