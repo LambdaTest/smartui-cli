@@ -172,7 +172,7 @@ async function captureScreenshotsForConfig(
         // WAFs (e.g. Akamai) block on. Seed a clean Sec-CH-UA for Chromium engines only — WebKit/Firefox
         // don't send client hints, so setting them there would itself be a bot tell. User-supplied
         // requestHeaders below still override these defaults.
-        if (browserName === constants.CHROME || browserName === constants.EDGE) {
+        if (utils.isChromiumEngine(browserName)) {
             Object.assign(headersObject, constants.REQUEST_HEADERS);
         }
         if (ctx.config.requestHeaders && Array.isArray(ctx.config.requestHeaders)) {
@@ -273,13 +273,12 @@ async function captureScreenshotsForConfig(
         // blank. Reject avif/webp on image requests so the origin serves JPEG/PNG. Registered last so
         // it runs first, then defers (fallback) to any handler above (CAPTURE_RENDERING_ERRORS /
         // basicAuth) or to the network.
-        if (browserName === constants.SAFARI) {
+        if (utils.isWebkitEngine(browserName)) {
             await page.route('**/*', async (route, request) => {
-                if (request.resourceType() === 'image') {
-                    await route.fallback({ headers: { ...await request.allHeaders(), accept: constants.WEBKIT_IMAGE_ACCEPT } });
-                } else {
-                    await route.fallback();
-                }
+                const overrides = request.resourceType() === 'image'
+                    ? { headers: { ...await request.allHeaders(), accept: constants.WEBKIT_IMAGE_ACCEPT } }
+                    : {};
+                await route.fallback(overrides);
             });
         }
 

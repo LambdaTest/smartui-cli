@@ -119,7 +119,7 @@ export async function launchBrowsers(ctx: Context): Promise<Record<string, Brows
                     browsers[constants.FIREFOX] = await firefox.launch(launchOptions);
                     break;
                 case constants.EDGE:
-                    browsers[constants.EDGE] = await chromium.launch({ channel: constants.EDGE_CHANNEL, ...launchOptions, args: [...constants.LAUNCH_ARGS, '--headless=new'] });
+                    browsers[constants.EDGE] = await chromium.launch({ ...chromiumLaunchOptions, channel: constants.EDGE_CHANNEL, args: [...chromiumLaunchOptions.args, '--headless=new'] });
                     break;
             }
         }
@@ -136,6 +136,17 @@ export async function launchBrowsers(ctx: Context): Promise<Record<string, Brows
 
 export async function closeBrowsers(browsers: Record<string, Browser>): Promise<void> {
     for (const browserName of Object.keys(browsers)) await browsers[browserName]?.close();
+}
+
+// Rendering-engine classification for a capture browserName (android maps to chrome, iOS to safari
+// upstream, so these are total over the 4 possible values). Keeps engine-specific handling — Blink
+// launch flags, Sec-CH-UA client hints, WebKit AVIF decoding — from being re-derived inline.
+export function isChromiumEngine(browserName: string): boolean {
+    return browserName === constants.CHROME || browserName === constants.EDGE;
+}
+
+export function isWebkitEngine(browserName: string): boolean {
+    return browserName === constants.SAFARI;
 }
 
 export function getWebRenderViewports(ctx: Context): Array<Record<string, any>> {
