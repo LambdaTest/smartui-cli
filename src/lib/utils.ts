@@ -135,6 +135,15 @@ export async function closeBrowsers(browsers: Record<string, Browser>): Promise<
     for (const browserName of Object.keys(browsers)) await browsers[browserName]?.close();
 }
 
+// Rendering-engine classification for a capture browserName (android→chrome, iOS→safari upstream).
+export function isChromiumEngine(browserName: string): boolean {
+    return browserName === constants.CHROME || browserName === constants.EDGE;
+}
+
+export function isWebkitEngine(browserName: string): boolean {
+    return browserName === constants.SAFARI;
+}
+
 export function getWebRenderViewports(ctx: Context): Array<Record<string, any>> {
     let webRenderViewports: Array<Record<string, any>> = [];
 

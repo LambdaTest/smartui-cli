@@ -106,12 +106,15 @@ export default {
     REQUEST_HEADERS: {
         // `HeadlessChrome` is added to sec-ch-ua, `--disable-features=UserAgentClientHint` doesn't seem to work
         'sec-ch-ua': '"Chromium";v="129", "Not=A?Brand";v="8"',
-        'sec-ch-ua-mobile': '"?0"',
+        'sec-ch-ua-mobile': '?0',
         'sec-ch-ua-platform': '"Windows"'
     },
 
+    // Reject avif/webp on WebKit image requests (Linux WebKit can't decode them) → origin serves JPEG/PNG.
+    WEBKIT_IMAGE_ACCEPT: 'image/avif;q=0,image/webp;q=0,image/*,*/*;q=0.8',
+
     // user agents
-    CHROME_USER_AGENT: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.107 Safari/537.3',
+    CHROME_USER_AGENT: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.107 Safari/537.36',
     FIREFOX_USER_AGENT: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:112.0) Gecko/20100101 Firefox/112.0',
     SAFARI_USER_AGENT: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 13_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.4 Safari/605.1.15',
     EDGE_USER_AGENT: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36 Edg/113.0.1774.35',
