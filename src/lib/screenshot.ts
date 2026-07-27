@@ -168,6 +168,10 @@ async function captureScreenshotsForConfig(
             await wrappedScript(page);
         }
         const headersObject: Record<string, string> = {};
+        // Seed a clean Sec-CH-UA on Chromium so headless "HeadlessChrome" doesn't leak to bot WAFs.
+        if (utils.isChromiumEngine(browserName)) {
+            Object.assign(headersObject, constants.REQUEST_HEADERS);
+        }
         if (ctx.config.requestHeaders && Array.isArray(ctx.config.requestHeaders)) {
             ctx.config.requestHeaders.forEach((headerObj) => {
                 Object.entries(headerObj).forEach(([key, value]) => {
@@ -198,7 +202,7 @@ async function captureScreenshotsForConfig(
                     timeout: 30000,
                     headers: {
                         ...await request.allHeaders(),
-                        ...constants.REQUEST_HEADERS
+                        ...(utils.isChromiumEngine(browserName) ? constants.REQUEST_HEADERS : {})
                     }
                 }
 
@@ -259,6 +263,16 @@ async function captureScreenshotsForConfig(
                 } else {
                     await route.continue();
                 }
+            });
+        }
+
+        // WebKit only: Linux WebKit can't decode AVIF — swap only an avif/webp image Accept for JPEG/PNG.
+        if (utils.isWebkitEngine(browserName)) {
+            await page.route('**/*', async (route, request) => {
+                if (request.resourceType() !== 'image') return route.fallback();
+                const headers = await request.allHeaders();
+                if (/image\/(avif|webp)/i.test(headers['accept'] || '')) headers['accept'] = constants.WEBKIT_IMAGE_ACCEPT;
+                return route.fallback({ headers });
             });
         }
 
