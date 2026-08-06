@@ -36,7 +36,7 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
                 if (!ctx.env.LT_SDK_SKIP_EXECUTION_LOGS) {
                     const output = createWritable((chunk: string) => {
                         totalOutput += chunk;
-                        task.output = chalk.gray(totalOutput);
+                        task.output = ctx.env.SMARTUI_PRESERVE_EXEC_LOGS_COLOR ? totalOutput : chalk.gray(totalOutput);
                     })
                     childProcess.stdout?.pipe(output);
                     childProcess.stderr?.pipe(output);
