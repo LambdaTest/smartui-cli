@@ -29,6 +29,7 @@ export default (): Env => {
         SHOW_RENDER_ERRORS,
         SMARTUI_SSE_URL='https://server-events.lambdatest.com',
         LT_SDK_SKIP_EXECUTION_LOGS,
+        SMARTUI_PRESERVE_EXEC_LOGS_COLOR,
         MAX_CONCURRENT_PROCESSING,
         DO_NOT_USE_USER_AGENT,
     } = process.env
@@ -61,6 +62,7 @@ export default (): Env => {
         SHOW_RENDER_ERRORS: SHOW_RENDER_ERRORS === 'true',
         SMARTUI_SSE_URL,
         LT_SDK_SKIP_EXECUTION_LOGS: LT_SDK_SKIP_EXECUTION_LOGS === 'true',
+        SMARTUI_PRESERVE_EXEC_LOGS_COLOR: SMARTUI_PRESERVE_EXEC_LOGS_COLOR === 'true',
         MAX_CONCURRENT_PROCESSING: MAX_CONCURRENT_PROCESSING ? parseInt(MAX_CONCURRENT_PROCESSING, 10) : 0,
         DO_NOT_USE_USER_AGENT: DO_NOT_USE_USER_AGENT === 'true',
         CAPTURE_RENDERING_ERRORS: process.env.CAPTURE_RENDERING_ERRORS === 'true',

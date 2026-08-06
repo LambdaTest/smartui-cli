@@ -146,6 +146,7 @@ export interface Env {
     SHOW_RENDER_ERRORS: boolean;
     SMARTUI_SSE_URL: string;
     LT_SDK_SKIP_EXECUTION_LOGS: boolean;
+    SMARTUI_PRESERVE_EXEC_LOGS_COLOR: boolean;
     MAX_CONCURRENT_PROCESSING: number;
     DO_NOT_USE_USER_AGENT: boolean;
     CAPTURE_RENDERING_ERRORS: boolean;
