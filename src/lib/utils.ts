@@ -369,16 +369,24 @@ export async function startPolling(ctx: Context, build_id: string, baseline: boo
             if (ctx.options.fetchResults && ctx.options.fetchResultsFileName && ctx.build && ctx.build.id && resp.build.build_id === ctx.build.id) {
                 fileName = `${ctx.options.fetchResultsFileName}`
             }
+            const isBuildFinal = resp.build.build_status_ind === constants.BUILD_COMPLETE || resp.build.build_status_ind === constants.BUILD_ERROR;
             let output: any = resp;
             if (resp.build.build_type === constants.BUILD_TYPE_OMNI) {
                 const pdfScreenshotsGroup = buildPdfScreenshotsGroup(resp.screenshots || {});
                 const { normalScreenshots: filteredScreenshots } = separateScreenshots(resp.screenshots || {});
-                output = { ...resp, screenshots: filteredScreenshots, pdfScreenshots: pdfScreenshotsGroup };
+                // buildResult is only meaningful once the build settles -- emitting it on an
+                // in-progress tick would write "Failed" into the file for the whole run.
+                output = {
+                    ...resp,
+                    screenshots: filteredScreenshots,
+                    pdfScreenshots: pdfScreenshotsGroup,
+                    ...(isBuildFinal ? { buildResult: getBuildResult(resp.build.build_status) } : {})
+                };
             }
             fs.writeFileSync(`${fileName}`, JSON.stringify(output, null, 2));
             ctx.log.debug(`Updated results in ${fileName}`);
 
-            if (resp.build.build_status_ind === constants.BUILD_COMPLETE || resp.build.build_status_ind === constants.BUILD_ERROR) {
+            if (isBuildFinal) {
                 clearInterval(intervalId);
                 ctx.log.info(`Fetching results completed. Final results written to ${fileName}`);
 
@@ -398,7 +406,7 @@ export async function startPolling(ctx: Context, build_id: string, baseline: boo
                         printScreenshotSection(normalScreenshots);
                     }
 
-                    const buildResult = resp.build.build_status?.toLowerCase() === 'approved' ? 'Passed' : 'Failed';
+                    const buildResult = getBuildResult(resp.build.build_status);
                     const resultColor = buildResult === 'Passed' ? chalk.green : chalk.red;
 
                     // Write formatted omni results
@@ -722,7 +730,7 @@ export function startPdfPolling(ctx: Context) {
                         printScreenshotSection(normalScreenshots);
                     }
 
-                    const buildResult = response.build.build_status?.toLowerCase() === 'approved' ? 'Passed' : 'Failed';
+                    const buildResult = getBuildResult(response.build.build_status);
                     const resultColor = buildResult === 'Passed' ? chalk.green : chalk.red;
 
                     if (ctx.options.fetchResults) {
@@ -731,7 +739,7 @@ export function startPdfPolling(ctx: Context) {
                             filename = `${ctx.options.fetchResultsFileName}`;
                         }
                         const pdfScreenshotsGroup = buildPdfScreenshotsGroup(response.screenshots || {});
-                        const output = { ...response, screenshots: normalScreenshots, pdfScreenshots: pdfScreenshotsGroup };
+                        const output = { ...response, screenshots: normalScreenshots, pdfScreenshots: pdfScreenshotsGroup, buildResult };
                         fs.writeFileSync(filename, JSON.stringify(output, null, 2));
                         console.log(chalk.green(`\nResults saved to ${filename}`));
                     }
@@ -879,6 +887,15 @@ function separateScreenshots(screenshots: Record<string, any[]>): { normalScreen
 
 const NON_MISMATCH_STATUSES = ['Approved', 'moved', 'new-screenshot'];
 
+// Build-level `build_status` values only -- these are lowercase, unlike the per-variant
+// `status` above which is capitalized ('Approved'). Do not call getBuildResult with a
+// variant status.
+const PASSING_BUILD_STATUSES = ['approved', 'moved'];
+
+function getBuildResult(buildStatus?: string): 'Passed' | 'Failed' {
+    return PASSING_BUILD_STATUSES.includes(buildStatus?.toLowerCase() ?? '') ? 'Passed' : 'Failed';
+}
+
 function isPageMismatch(page: any): boolean {
     return !NON_MISMATCH_STATUSES.includes(page.status);
 }
@@ -1003,7 +1020,7 @@ function printOmniHeader(build: any, project: any) {
     console.log(chalk.green.bold(`Build Name: ${build.build_name}`));
     console.log(chalk.green.bold(`Build ID: ${build.build_id}`));
     console.log(chalk.green.bold(`Build Status: ${build.build_status}`));
-    const buildResult = build.build_status?.toLowerCase() === 'approved' ? 'Passed' : 'Failed';
+    const buildResult = getBuildResult(build.build_status);
     const resultColor = buildResult === 'Passed' ? chalk.green : chalk.red;
     console.log(resultColor.bold(`Build Result : ${buildResult}`));
     console.log(chalk.green.bold(`Branch Name: ${build.branch}`));
