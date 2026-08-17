@@ -51,7 +51,7 @@ export default (ctx: Context): Git => {
 
 		return {
 			branch: ctx.env.CURRENT_BRANCH || gitInfo.branch || '',
-			commitId: gitInfo.commit_id.slice(0,6) || '',
+			commitId: (gitInfo.commit_id || '').slice(0, 6),
 			commitMessage: gitInfo.commit_body || '',
 			commitAuthor: gitInfo.commit_author || '',
 			githubURL: githubURL ? githubURL : (ctx.env.GIT_URL) ? ctx.env.GIT_URL : process.env.GITHUB_REPOSITORY ? `${constants.GITHUB_API_HOST}/repos/${process.env.GITHUB_REPOSITORY}/statuses/${gitInfo.commit_id}` : '',
