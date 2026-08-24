@@ -16,7 +16,52 @@ class ValidationError extends Error {
     }
 }
 
-function validateProjectToken(options) {
+// Resolve PROJECT_NAME into a project token the same way the core CLI does, so
+// `smartui storybook` accepts PROJECT_NAME (auto-creating the project) and is not
+// limited to a pre-issued PROJECT_TOKEN.
+async function resolveProjectToken(options) {
+    const { PROJECT_NAME, LT_USERNAME, LT_ACCESS_KEY } = process.env;
+
+    if (!LT_USERNAME || !LT_ACCESS_KEY) {
+        console.log('[smartui] Error: PROJECT_NAME requires LT_USERNAME and LT_ACCESS_KEY to be set');
+        process.exit(constants.ERROR_CATCHALL);
+    }
+
+    let response;
+    try {
+        response = await httpClient.get(constants[options.env].TOKEN_VERIFY_URL, {
+            headers: {
+                projectName: PROJECT_NAME,
+                userName: LT_USERNAME,
+                accessKey: LT_ACCESS_KEY
+            }
+        });
+    } catch (error) {
+        const errorMsg = error.response
+            ? (error.response.data && error.response.data.message) || error.message
+            : error.message;
+        console.log(`[smartui] Error: Cannot resolve PROJECT_NAME '${PROJECT_NAME}'. Error: `, errorMsg);
+        process.exit(constants.ERROR_CATCHALL);
+    }
+
+    const body = (response.data && response.data.data) || response.data || {};
+    if (!body.projectToken) {
+        console.log(`[smartui] Error: Cannot resolve PROJECT_NAME '${PROJECT_NAME}'; project token not received`);
+        process.exit(constants.ERROR_CATCHALL);
+    }
+
+    process.env.PROJECT_TOKEN = body.projectToken;
+    if (body.message && body.message.includes('Project created successfully')) {
+        console.log(`[smartui] Project '${PROJECT_NAME}' created`);
+    }
+    console.log(`[smartui] Resolved PROJECT_NAME '${PROJECT_NAME}' to a project token`);
+}
+
+async function validateProjectToken(options) {
+    if (!process.env.PROJECT_TOKEN && process.env.PROJECT_NAME) {
+        await resolveProjectToken(options);
+    }
+
     if (process.env.PROJECT_TOKEN) {
         return httpClient.get(constants[options.env].AUTH_URL, {
             headers: {
@@ -39,10 +84,9 @@ function validateProjectToken(options) {
                 process.exit(constants.ERROR_CATCHALL);
             });
     }
-    else {
-        console.log('[smartui] Error: No PROJECT_TOKEN set');
-        process.exit(constants.ERROR_CATCHALL);
-    }
+
+    console.log('[smartui] Error: No PROJECT_TOKEN or PROJECT_NAME set');
+    process.exit(constants.ERROR_CATCHALL);
 };
 
 function validateStorybookUrl(url) {
@@ -89,6 +133,17 @@ async function validateStorybookDir(dir) {
 
 async function validateLatestBuild(options) {
     let commit = await getLastCommit();
+
+    // Build de-duplication keys off branch + commit. Outside a git repo there is nothing
+    // to de-duplicate against, and sending empty keys makes the API reject the request with
+    // an error that reads like an auth failure. Skip the check instead, matching how the
+    // core CLI skips "Fetching git repo details" when it is not a git repo.
+    if (!commit.branch || !commit.shortHash) {
+        console.log('[smartui] Not a git repository; skipping duplicate-build check.');
+        console.log('[smartui] Run inside a git repo to enable build de-duplication by branch and commit.');
+        return;
+    }
+
     return httpClient.get(new URL(constants[options.env].SB_BUILD_VALIDATE_PATH, constants[options.env].BASE_URL).href, {
         headers: {
             projectToken: process.env.PROJECT_TOKEN

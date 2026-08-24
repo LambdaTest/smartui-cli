@@ -8,7 +8,8 @@ constants.stage = {
     SB_BUILD_VALIDATE_PATH: "/storybook/validate",
     CHECK_UPDATE_PATH: "storybook/packageinfo",
     GET_SIGNED_URL_PATH: "/storybook/url",
-    STATIC_RENDER_PATH: "/storybook/staticrender"
+    STATIC_RENDER_PATH: "/storybook/staticrender",
+    TOKEN_VERIFY_URL: "https://stage-api.lambdatestinternal.com/visualui/1.0/token/verify"
 };
 constants.prod = {
     AUTH_URL: "https://api.lambdatest.com/storybook/auth",
@@ -18,7 +19,8 @@ constants.prod = {
     SB_BUILD_VALIDATE_PATH: "/storybook/validate",
     CHECK_UPDATE_PATH: "storybook/packageinfo",
     GET_SIGNED_URL_PATH: "/storybook/url",
-    STATIC_RENDER_PATH: "/storybook/staticrender"
+    STATIC_RENDER_PATH: "/storybook/staticrender",
+    TOKEN_VERIFY_URL: "https://api.lambdatest.com/visualui/1.0/token/verify"
 };
 constants.VALID_BROWSERS = ['chrome', 'safari', 'firefox', 'edge'];
 
