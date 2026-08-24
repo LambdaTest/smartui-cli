@@ -49,6 +49,7 @@ const StorybookConfigBlock = {
             uniqueItems: true,
             errorMessage: {
                 minItems: "Invalid config; storybook browsers must have at least one entry",
+                uniqueItems: "Invalid config; storybook browsers must have unique entries",
                 _: `Invalid config; allowed storybook browsers - ${constants.VALID_STORYBOOK_BROWSERS.join(', ')}`
             }
         },

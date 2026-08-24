@@ -56,10 +56,27 @@ export function createStorybookConfig(filepath: string) {
         return
     }
 
-    // verify the file does not already exist
+    // `config:create` writes to the same default path, and the config schema lets one file
+    // carry both a `web` and a `storybook` block. So when the file is already there without
+    // a storybook block, add the block rather than refusing to write.
     if (fs.existsSync(filepath)) {
-        console.log(`Error: SmartUI Storybook config already exists: ${filepath}`);
-        console.log(`To create a new file, please specify the file name like: 'smartui config:create-storybook .smartui-storybook.json'`);
+        let existingConfig: Record<string, any>;
+        try {
+            existingConfig = JSON.parse(fs.readFileSync(filepath, 'utf-8'));
+        } catch (error: any) {
+            console.log(`Error: Cannot read existing config ${filepath}: ${error.message}`);
+            return
+        }
+
+        if (existingConfig.storybook) {
+            console.log(`Error: SmartUI Storybook config already exists: ${filepath}`);
+            console.log(`To create a new file, please specify the file name like: 'smartui config:create-storybook .smartui-storybook.json'`);
+            return
+        }
+
+        existingConfig.storybook = constants.DEFAULT_STORYBOOK_CONFIG.storybook;
+        fs.writeFileSync(filepath, JSON.stringify(existingConfig, null, 2) + '\n');
+        console.log(`Added SmartUI Storybook config to existing config: ${filepath}`);
         return
     }
 
