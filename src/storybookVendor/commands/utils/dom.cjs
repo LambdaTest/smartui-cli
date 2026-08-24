@@ -9,10 +9,21 @@ const { shortPolling } = require('./polling.cjs');
 const puppeteer = require('puppeteer');
 
 async function sendDoM(storybookUrl, stories, storybookConfig, options) {
-    const browser = await puppeteer.launch({
-        headless: 'new',
-        args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    });
+    let browser;
+    try {
+        browser = await puppeteer.launch({
+            headless: 'new',
+            args: ['--no-sandbox', '--disable-setuid-sandbox'],
+        });
+    } catch (error) {
+        // The usual cause is a missing Chromium download: package managers that skip
+        // install scripts (pnpm >= 10 by default) never run puppeteer's postinstall,
+        // so launch times out waiting for a browser that was never fetched.
+        console.log('[smartui] Error: Cannot launch the browser used to capture stories.');
+        console.log('[smartui] Error: ', error.message.split('\n')[0]);
+        console.log("[smartui] If Chromium is missing, install it with 'npx puppeteer browsers install chrome'.");
+        process.exit(constants.ERROR_CATCHALL);
+    }
 
     if (!fs.existsSync('doms')){
         fs.mkdir('doms', (err) => {

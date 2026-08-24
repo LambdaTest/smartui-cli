@@ -63,6 +63,16 @@
   "overrides": {
     "simple-swizzle": "0.2.2"
   },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@playwright/browser-chromium",
+      "@playwright/browser-firefox",
+      "@playwright/browser-webkit",
+      "esbuild",
+      "puppeteer",
+      "sharp"
+    ]
+  },
   "devDependencies": {
     "@types/archiver": "^5.3.4",
     "find-free-port": "^2.0.0",
