@@ -9,6 +9,32 @@ const staticUtils = require('./utils/static.cjs')
 var { constants } = require('./utils/constants.cjs');
 const { shortPolling } = require('./utils/polling.cjs');
 
+// Storybook >= 8 dropped stories.json in favour of index.json (entries keyed by story id).
+// Try the modern file first and fall back to the legacy one so both generations work.
+async function fetchStoryIndex(url) {
+    const candidates = ['index.json', 'stories.json'];
+    let lastError;
+
+    for (const file of candidates) {
+        let response;
+        try {
+            response = await httpClient.get(new URL(file, url).href);
+        } catch (error) {
+            lastError = error;
+            continue;
+        }
+
+        const data = response && response.data ? response.data : {};
+        const entries = data.entries || data.stories;
+        if (entries && Object.keys(entries).length) {
+            return { entries, source: file };
+        }
+        lastError = new Error(`${file} did not contain any stories`);
+    }
+
+    throw lastError || new Error(`neither ${candidates.join(' nor ')} could be read from ${url}`);
+}
+
 async function storybook(serve, options) {
     let type = /^https?:\/\//.test(serve) ? 'url' : 'dir';
     let storybookConfig = options.config ? options.config : defaultSmartUIConfig.storybook;
@@ -26,40 +52,38 @@ async function storybook(serve, options) {
         storybookConfig.resolutions = (!resolutions.length) ? 'all' : resolutions.toString();
         storybookConfig.browsers = (!storybookConfig.browsers.length) ? 'all' : storybookConfig.browsers.map(x => x.toLowerCase()).toString();
 
-        // Get stories object from stories.json and add url corresponding to every story ID 
-        await httpClient.get(new URL('stories.json', url).href)
-            .then(async function (response) {
-                let stories = {}
-                for (const [storyId, storyInfo] of Object.entries(response.data.stories)) {
-                    if (!skipStory(storyInfo, storybookConfig)) {
-                        stories[storyId] = {
-                            name: storyInfo.name,
-                            kind: storyInfo.kind,
-                            url: new URL('/iframe.html?id=' + storyId + '&viewMode=story', url).href
-                        }
-                    }
-                }
+        // Get the story index and add url corresponding to every story ID.
+        // Storybook >= 8 serves index.json; older versions serve stories.json.
+        let index;
+        try {
+            index = await fetchStoryIndex(url);
+        } catch (error) {
+            process.exitCode = constants.ERROR_CATCHALL;
+            console.log('[smartui] Cannot fetch stories. Error: ', error.message);
+            return;
+        }
+        console.log(`[smartui] Story index read from ${index.source}`);
 
-                if (Object.keys(stories).length === 0) {
-                    console.log('[smartui] Error: No stories found');
-                    process.exit(constants.ERROR_CATCHALL);
+        let stories = {}
+        for (const [storyId, storyInfo] of Object.entries(index.entries)) {
+            if (!skipStory(storyInfo, storybookConfig)) {
+                stories[storyId] = {
+                    name: storyInfo.name,
+                    kind: storyInfo.kind || storyInfo.title,
+                    url: new URL('/iframe.html?id=' + storyId + '&viewMode=story', url).href
                 }
-                console.log('[smartui] Stories found: ', Object.keys(stories).length);
-                console.log('[smartui] Number of stories rendered may differ based on the config file.');
+            }
+        }
 
-                // Capture DoM of every story and send it to renderer API
-                await sendDoM(url, stories, storybookConfig, options);
-            })
-            .catch(function (error) {
-                process.exitCode = constants.ERROR_CATCHALL;
-                if (error.response) {
-                    console.log('[smartui] Cannot fetch stories. Error: ', error.message);
-                } else if (error.request) {
-                    console.log('[smartui] Cannot fetch stories. Error: ', error.message);
-                } else {
-                    console.log('[smartui] Cannot fetch stories. Error: ', error.message);
-                }
-            });
+        if (Object.keys(stories).length === 0) {
+            console.log('[smartui] Error: No stories found');
+            process.exit(constants.ERROR_CATCHALL);
+        }
+        console.log('[smartui] Stories found: ', Object.keys(stories).length);
+        console.log('[smartui] Number of stories rendered may differ based on the config file.');
+
+        // Capture DoM of every story and send it to renderer API
+        await sendDoM(url, stories, storybookConfig, options);
     } else {
         let dirPath = serve;
         await validateStorybookDir(dirPath);
