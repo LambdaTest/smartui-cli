@@ -418,7 +418,7 @@ export async function startPolling(ctx: Context, build_id: string, baseline: boo
                             projectName: resp.project.name,
                             buildStatus: resp.build.build_status,
                             buildResult,
-                            branchName: resp.build.branch,
+                            branchName: displayBranchName(resp.build.branch),
                             pdfs: formatPdfsForOutput(pdfGroups),
                             screenshots: formatScreenshotsForOutput(normalScreenshots)
                         }
@@ -462,7 +462,7 @@ export async function startPolling(ctx: Context, build_id: string, baseline: boo
                             `\nSummary of Mismatches for buildId: ${build_id}\n` +
                             `${chalk.yellow('Total Variants with Mismatches:')} ${chalk.white(totalVariantsWithMismatches)} out of ${chalk.white(totalVariants)}\n` +
                             `${chalk.yellow('Total Screenshots with Mismatches:')} ${chalk.white(totalScreenshotsWithMismatches)} out of ${chalk.white(totalScreenshots)}\n` +
-                            `${chalk.yellow('Branch Name:')} ${chalk.white(resp.build.branch)}\n` +
+                            (displayBranchName(resp.build.branch) ? `${chalk.yellow('Branch Name:')} ${chalk.white(resp.build.branch)}\n` : '') +
                             `${chalk.yellow('Project Name:')} ${chalk.white(resp.project.name)}\n` +
                             `${chalk.yellow('Build ID:')} ${chalk.white(resp.build.build_id)}\n`
                         )
@@ -1015,6 +1015,11 @@ function formatScreenshotsForOutput(screenshots: Record<string, any[]>): any[] {
 
 // --- Omni display helpers ---
 
+// 'unknown-branch' is an internal sentinel for git-less builds; never show it to users.
+export function displayBranchName(branch: string | undefined): string {
+    return branch && branch !== 'unknown-branch' ? branch : '';
+}
+
 function printOmniHeader(build: any, project: any) {
     console.log(chalk.green.bold(`\nProject Name: ${project.name}`));
     console.log(chalk.green.bold(`Build Name: ${build.build_name}`));
@@ -1023,7 +1028,9 @@ function printOmniHeader(build: any, project: any) {
     const buildResult = getBuildResult(build.build_status);
     const resultColor = buildResult === 'Passed' ? chalk.green : chalk.red;
     console.log(resultColor.bold(`Build Result : ${buildResult}`));
-    console.log(chalk.green.bold(`Branch Name: ${build.branch}`));
+    if (displayBranchName(build.branch)) {
+        console.log(chalk.green.bold(`Branch Name: ${build.branch}`));
+    }
     console.log(chalk.white('-----'));
 }
 
