@@ -56,10 +56,16 @@ async function compress(dirPath, uploadId) {
 function filterStories(dirPath, storybookConfig) {
 	let storyIds = [];
 	let stories = []
-	if (fs.existsSync((`${dirPath}/stories.json`))){
-		stories = JSON.parse(fs.readFileSync(`${dirPath}/stories.json`)).stories;
-	} else if(fs.existsSync((`${dirPath}/index.json`))){
-		stories = JSON.parse(fs.readFileSync(`${dirPath}/index.json`)).entries;
+	// Prefer index.json, matching URL-mode discovery in storybook.cjs (TE-24909).
+	// Storybook >= 8 writes index.json; a stories.json sitting next to it is a leftover
+	// from an older build of the same directory, and reading that instead would give DIR
+	// mode a different story set from URL mode against the same Storybook.
+	if (fs.existsSync((`${dirPath}/index.json`))){
+		const index = JSON.parse(fs.readFileSync(`${dirPath}/index.json`));
+		stories = index.entries || index.stories;
+	} else if(fs.existsSync((`${dirPath}/stories.json`))){
+		const index = JSON.parse(fs.readFileSync(`${dirPath}/stories.json`));
+		stories = index.stories || index.entries;
 	}
 
 	for (const [storyId, storyInfo] of Object.entries(stories)) {
