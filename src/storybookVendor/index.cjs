@@ -33,6 +33,18 @@ async function runStorybook(serve, options) {
   }
 
   await validate.validateProjectToken(options);
+
+  // Validate the target before the duplicate-build check, not after. The duplicate check
+  // short-circuits the run with "Build with commit ... already exists", so when it ran
+  // first a missing directory or an unreachable Storybook URL was reported as a duplicate
+  // build. The target checks are read-only and idempotent, so storybook() re-running them
+  // costs nothing beyond one extra HEAD-shaped request in URL mode.
+  if (/^https?:\/\//.test(serve)) {
+    await validate.validateStorybookUrl(serve);
+  } else {
+    await validate.validateStorybookDir(serve);
+  }
+
   if (!options.forceRebuild) await validate.validateLatestBuild(options);
   await storybook(serve, options);
 }

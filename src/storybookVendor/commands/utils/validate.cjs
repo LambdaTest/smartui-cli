@@ -46,7 +46,12 @@ async function resolveProjectToken(options) {
 
     const body = (response.data && response.data.data) || response.data || {};
     if (!body.projectToken) {
-        console.log(`[smartui] Error: Cannot resolve PROJECT_NAME '${PROJECT_NAME}'; project token not received`);
+        // /token/verify answers 200 even when project creation fails, carrying the reason in
+        // the body rather than the status code. Print that reason: saying only "token not
+        // received" sends people hunting for a credentials problem when the server has
+        // already told us it was something else, e.g. a 502 from project creation.
+        const reason = body.message || (response.data && response.data.message);
+        console.log(`[smartui] Error: Cannot resolve PROJECT_NAME '${PROJECT_NAME}'.` + (reason ? ` Error: ${reason}` : ' No project token was returned.'));
         process.exit(constants.ERROR_CATCHALL);
     }
 
