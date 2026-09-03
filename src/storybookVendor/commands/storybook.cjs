@@ -239,4 +239,6 @@ async function storybook(serve, options) {
     }
 };
 
-module.exports = { storybook };
+// fetchStoryIndex is exported for tests: it is the TE-24909 fix (Storybook >= 8 index.json
+// discovery with a legacy stories.json fallback) and is worth covering directly.
+module.exports = { storybook, fetchStoryIndex };

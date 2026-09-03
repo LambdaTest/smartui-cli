@@ -9,7 +9,10 @@
     "build": "tsup",
     "release": "pnpm run build && pnpm publish --access public --no-git-checks",
     "release:beta": "pnpm run build && pnpm publish --tag beta --access public --no-git-checks",
-    "local-build": "pnpm run build && pnpm pack"
+    "local-build": "pnpm run build && pnpm pack",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck:storybook": "tsc -p tsconfig.storybook.json"
   },
   "bin": {
     "smartui": "./dist/index.cjs"
@@ -77,7 +80,8 @@
     "@types/archiver": "^5.3.4",
     "find-free-port": "^2.0.0",
     "tsup": "^8.5.1",
-    "typescript": "^5.3.2"
+    "typescript": "^5.3.2",
+    "vitest": "^2.1.9"
   },
   "engines": {
     "node": ">=20.3"
