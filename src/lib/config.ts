@@ -12,8 +12,33 @@ export function createConfig(filepath: string) {
         return
     }
 
-    // verify the file does not already exist
     if (fs.existsSync(filepath)) {
+        // The other half of TE-23033. `config:create-storybook` writes to this same default
+        // path, and the schema lets one file carry both a `web` and a `storybook` block, so
+        // running the two generators in either order has to work. When the file exists but
+        // holds only a storybook block, add the web half rather than refusing.
+        let existingConfig: Record<string, any> | undefined;
+        try {
+            existingConfig = JSON.parse(fs.readFileSync(filepath, 'utf-8'));
+        } catch (error: any) {
+            console.log(`Error: Cannot read existing config ${filepath}: ${error.message}`);
+            return
+        }
+
+        if (existingConfig && existingConfig.storybook && !existingConfig.web) {
+            // Copy every default key the file does not already have, not just `web`, so the
+            // result matches what running the generators the other way round produces. The
+            // top-level defaults (waitForTimeout, smartIgnore and friends) are part of a web
+            // config, and leaving them out would give two different files for the same pair
+            // of commands.
+            for (const [key, value] of Object.entries(constants.DEFAULT_CONFIG)) {
+                if (!(key in existingConfig)) existingConfig[key] = value;
+            }
+            fs.writeFileSync(filepath, JSON.stringify(existingConfig, null, 2) + '\n');
+            console.log(`Added SmartUI Config to existing config: ${filepath}`);
+            return
+        }
+
         console.log(`Error: SmartUI Config already exists: ${filepath}`);
         console.log(`To create a new file, please specify the file name like: 'smartui config:create .smartui-config.json'`);
         return
