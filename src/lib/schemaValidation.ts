@@ -17,6 +17,134 @@ ajv.addFormat('web-url', {
 });
 addErrors(ajv);
 
+// Reusable [w] | [w,h] viewport tuple, bounds 320..7680 (ported from storybook validate.js)
+const StorybookViewportTuple = {
+    type: "array",
+    oneOf: [
+        {
+            items: [{ type: "integer", minimum: 320, maximum: 7680 }],
+            minItems: 1,
+            maxItems: 1
+        },
+        {
+            items: [
+                { type: "integer", minimum: 320, maximum: 7680 },
+                { type: "integer", minimum: 320, maximum: 7680 }
+            ],
+            minItems: 2,
+            maxItems: 2
+        }
+    ],
+    errorMessage: "Invalid config; storybook viewport width/height must be >= 320 and <= 7680"
+};
+
+// storybook config block (ported from smartui-storybook validate.js rules)
+const StorybookConfigBlock = {
+    type: "object",
+    properties: {
+        browsers: {
+            type: "array",
+            items: { type: "string", enum: constants.VALID_STORYBOOK_BROWSERS },
+            minItems: 1,
+            uniqueItems: true,
+            errorMessage: {
+                minItems: "Invalid config; storybook browsers must have at least one entry",
+                uniqueItems: "Invalid config; storybook browsers must have unique entries",
+                _: `Invalid config; allowed storybook browsers - ${constants.VALID_STORYBOOK_BROWSERS.join(', ')}`
+            }
+        },
+        viewports: {
+            type: "array",
+            minItems: 1,
+            maxItems: 5,
+            items: StorybookViewportTuple,
+            errorMessage: {
+                minItems: "Invalid config; storybook viewports must have at least one entry",
+                maxItems: "Invalid config; max storybook viewports allowed - 5"
+            }
+        },
+        resolutions: {
+            type: "array",
+            minItems: 1,
+            maxItems: 5,
+            items: StorybookViewportTuple,
+            errorMessage: {
+                minItems: "Invalid config; storybook resolutions must have at least one entry",
+                maxItems: "Invalid config; max storybook resolutions allowed - 5"
+            }
+        },
+        waitForTimeout: {
+            type: "integer",
+            minimum: 0,
+            maximum: 300000,
+            errorMessage: "Invalid config; storybook waitForTimeout must be >= 0 and <= 300000"
+        },
+        include: {
+            type: "array",
+            items: { type: "string" }
+        },
+        exclude: {
+            type: "array",
+            items: { type: "string" }
+        },
+        customViewports: {
+            type: "array",
+            items: {
+                type: "object",
+                properties: {
+                    stories: { type: "array", items: { type: "string" } },
+                    exclude: { type: "array", items: { type: "string" } },
+                    styles: {
+                        type: "object",
+                        properties: {
+                            width: { type: "integer", minimum: 320, maximum: 7680 },
+                            height: { type: "integer", minimum: 320, maximum: 7680 }
+                        },
+                        required: ["width"],
+                        additionalProperties: false
+                    },
+                    waitForTimeout: { type: "integer", minimum: 0, maximum: 300000 }
+                },
+                // styles XOR waitForTimeout (one is required)
+                oneOf: [
+                    { required: ["styles"] },
+                    { required: ["waitForTimeout"] }
+                ],
+                // stories and exclude are mutually exclusive
+                not: { required: ["stories", "exclude"] },
+                additionalProperties: false,
+                errorMessage: {
+                    oneOf: "Invalid config; each customViewport must specify exactly one of styles or waitForTimeout",
+                    not: "Invalid config; customViewport cannot specify both stories and exclude"
+                }
+            }
+        },
+        useOnlyCustomViewports: {
+            type: "boolean",
+            errorMessage: "Invalid config; useOnlyCustomViewports must be true/false"
+        },
+        backgroundTheme: {
+            type: "string",
+            enum: ["light", "dark", "both"],
+            errorMessage: "Invalid config; backgroundTheme must be light, dark or both"
+        },
+        useGlobals: {
+            type: "boolean",
+            errorMessage: "Invalid config; useGlobals must be true/false"
+        },
+        lazyLoadedStories: {
+            type: "array",
+            items: { type: "string" }
+        },
+        chunkSize: {
+            type: "integer",
+            minimum: 1,
+            errorMessage: "Invalid config; chunkSize must be an integer >= 1"
+        }
+    },
+    additionalProperties: false
+};
+
 const ConfigSchema = {
     type: "object",
     properties: {
@@ -389,11 +517,13 @@ const ConfigSchema = {
         showRenderErrors: {
             type: "boolean",
             errorMessage: "Invalid config; showRenderErrors must be true/false"
-        }
+        },
+        storybook: StorybookConfigBlock
     },
     anyOf: [
         { required: ["web"] },
-        { required: ["mobile"] }
+        { required: ["mobile"] },
+        { required: ["storybook"] }
     ],
     additionalProperties: false
 }

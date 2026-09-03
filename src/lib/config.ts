@@ -3,6 +3,35 @@ import fs from 'fs'
 import constants from './constants.js';
 import { Context } from "../types.js";
 
+// Read a config file that is about to be merged into.
+//
+// Returns the parsed object, or an error message explaining why it cannot be merged. Both
+// generators write to the same default .smartui.json, so they have to cope with whatever is
+// already there. Three shapes used to go wrong: a leading BOM (editors add one, JSON.parse
+// rejects it), a JSON array (assigning a block to it succeeded, then JSON.stringify dropped the
+// property and the file was rewritten unchanged while the CLI reported success), and a bare
+// `null` (crashed with an unhandled TypeError and a Node stack trace).
+function readMergeableConfig(filepath: string): { config?: Record<string, any>, error?: string } {
+    let raw: string;
+    try {
+        raw = fs.readFileSync(filepath, 'utf-8');
+    } catch (error: any) {
+        return { error: `Cannot read existing config ${filepath}: ${error.message}` };
+    }
+
+    let parsed: unknown;
+    try {
+        parsed = JSON.parse(raw.replace(/^\uFEFF/, ''));
+    } catch (error: any) {
+        return { error: `Cannot read existing config ${filepath}: ${error.message}` };
+    }
+
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        return { error: `Cannot update ${filepath}: expected a JSON object, found ${Array.isArray(parsed) ? 'an array' : parsed === null ? 'null' : typeof parsed}` };
+    }
+    return { config: parsed as Record<string, any> };
+}
+
 export function createConfig(filepath: string) {
     // default filepath
     filepath = filepath || '.smartui.json';
@@ -12,8 +41,31 @@ export function createConfig(filepath: string) {
         return
     }
 
-    // verify the file does not already exist
     if (fs.existsSync(filepath)) {
+        // The other half of TE-23033. `config:create-storybook` writes to this same default
+        // path, and the schema lets one file carry both a `web` and a `storybook` block, so
+        // running the two generators in either order has to work. When the file exists but
+        // holds only a storybook block, add the web half rather than refusing.
+        const { config: existingConfig, error } = readMergeableConfig(filepath);
+        if (error) {
+            console.log(`Error: ${error}`);
+            return
+        }
+
+        if (existingConfig && existingConfig.storybook && !existingConfig.web) {
+            // Copy every default key the file does not already have, not just `web`, so the
+            // result matches what running the generators the other way round produces. The
+            // top-level defaults (waitForTimeout, smartIgnore and friends) are part of a web
+            // config, and leaving them out would give two different files for the same pair
+            // of commands.
+            for (const [key, value] of Object.entries(constants.DEFAULT_CONFIG)) {
+                if (!(key in existingConfig)) existingConfig[key] = value;
+            }
+            fs.writeFileSync(filepath, JSON.stringify(existingConfig, null, 2) + '\n');
+            console.log(`Added SmartUI Config to existing config: ${filepath}`);
+            return
+        }
+
         console.log(`Error: SmartUI Config already exists: ${filepath}`);
         console.log(`To create a new file, please specify the file name like: 'smartui config:create .smartui-config.json'`);
         return
@@ -45,6 +97,43 @@ export function createWebStaticConfig(filepath: string) {
     fs.mkdirSync(path.dirname(filepath), { recursive: true });
     fs.writeFileSync(filepath, JSON.stringify(constants.DEFAULT_WEB_STATIC_CONFIG, null, 2) + '\n');
     console.log(`Created web-static config: ${filepath}`);
+};
+
+export function createStorybookConfig(filepath: string) {
+    // default filepath
+    filepath = filepath || '.smartui.json';
+    let filetype = path.extname(filepath);
+    if (filetype != '.json') {
+        console.log('Error: Config file must have .json extension');
+        return
+    }
+
+    // `config:create` writes to the same default path, and the config schema lets one file
+    // carry both a `web` and a `storybook` block. So when the file is already there without
+    // a storybook block, add the block rather than refusing to write.
+    if (fs.existsSync(filepath)) {
+        const { config: existingConfig, error } = readMergeableConfig(filepath);
+        if (error || !existingConfig) {
+            console.log(`Error: ${error}`);
+            return
+        }
+
+        if (existingConfig.storybook) {
+            console.log(`Error: SmartUI Storybook config already exists: ${filepath}`);
+            console.log(`To create a new file, please specify the file name like: 'smartui config:create-storybook .smartui-storybook.json'`);
+            return
+        }
+
+        existingConfig.storybook = constants.DEFAULT_STORYBOOK_CONFIG.storybook;
+        fs.writeFileSync(filepath, JSON.stringify(existingConfig, null, 2) + '\n');
+        console.log(`Added SmartUI Storybook config to existing config: ${filepath}`);
+        return
+    }
+
+    // write stringified default config options to the filepath
+    fs.mkdirSync(path.dirname(filepath), { recursive: true });
+    fs.writeFileSync(filepath, JSON.stringify(constants.DEFAULT_STORYBOOK_CONFIG, null, 2) + '\n');
+    console.log(`Created SmartUI Storybook Config: ${filepath}`);
 };
 
 export function createFigmaConfig(filepath: string) {

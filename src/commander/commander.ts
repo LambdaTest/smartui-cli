@@ -1,8 +1,9 @@
 import { Command } from 'commander'
 import exec from './exec.js'
-import { configWeb, configStatic, configFigma, configWebFigma, configAppFigma} from './config.js'
+import { configWeb, configStatic, configFigma, configWebFigma, configAppFigma, configStorybook} from './config.js'
 import capture from './capture.js'
 import upload from './upload.js'
+import storybook from './storybook.js'
 import { version } from '../../package.json'
 import { uploadFigma, uploadWebFigmaCommand,uploadAppFigmaCommand  } from './uploadFigma.js'
 import startServer from './server.js';
@@ -32,6 +33,8 @@ program
     .addCommand(capture)
     .addCommand(configWeb)
     .addCommand(configStatic)
+    .addCommand(configStorybook)
+    .addCommand(storybook)
     .addCommand(upload)
     .addCommand(startServer)
     .addCommand(stopServer)

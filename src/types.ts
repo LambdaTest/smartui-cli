@@ -48,13 +48,22 @@ export interface Context {
         rejectionThreshold?: number;
         showRenderErrors?: boolean;
         customCSS?: string;
+        storybook?: StorybookConfig;
     };
     uploadFilePath: string;
     webStaticConfig: WebStaticConfig;
     build: Build;
     git: Git;
+    storybook?: {
+        mode?: 'url' | 'dir';
+        // URL mode: map of storyId -> { name, kind, url(iframe) }
+        stories?: Record<string, StorybookStory>;
+        // DIR mode: enumerated storyIds to render server-side
+        storyIds?: Array<string>;
+    };
     args: {
-        execCommand?: Array<string>
+        execCommand?: Array<string>;
+        storybookTarget?: string;
     }
     tunnelDetails: {
         tunnelPort: number;
@@ -304,6 +313,35 @@ export interface tunnelConfig {
     v: boolean;
     logFile: string;
     environment:string;
+}
+
+export interface StorybookStory {
+    name: string;
+    kind?: string;
+    url: string;
+}
+
+export interface StorybookCustomViewport {
+    stories?: Array<string>;
+    exclude?: Array<string>;
+    styles?: { width: number, height?: number };
+    waitForTimeout?: number;
+}
+
+export interface StorybookConfig {
+    browsers?: Array<string>;
+    // [ [w] | [w,h] ] pairs; resolutions takes precedence over viewports
+    viewports?: Array<[number] | [number, number]>;
+    resolutions?: Array<[number] | [number, number]>;
+    waitForTimeout?: number;
+    include?: Array<string>;
+    exclude?: Array<string>;
+    customViewports?: Array<StorybookCustomViewport>;
+    useOnlyCustomViewports?: boolean;
+    backgroundTheme?: 'light' | 'dark' | 'both';
+    useGlobals?: boolean;
+    lazyLoadedStories?: Array<string>;
+    chunkSize?: number;
 }
 
 export interface FigmaWebConfig {

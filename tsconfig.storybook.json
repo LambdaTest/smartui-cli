@@ -1,0 +1,22 @@
+{
+  // Scoped typecheck for the Storybook unification surface.
+  //
+  // The repository as a whole does not typecheck today: tsup/esbuild strips types
+  // without checking them, and `tsc --noEmit` reports 251 pre-existing errors across
+  // files this branch never touches. Fixing those is not this change's job, but the
+  // code this branch adds should still be checked, which is what lets
+  // src/commander/storybook.ts drop its `@ts-nocheck`.
+  //
+  // Run with: pnpm run typecheck:storybook
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "NodeNext",
+    "noEmit": true,
+    "allowJs": false
+  },
+  "files": [
+    "src/commander/storybook.ts",
+    "src/storybookVendor/index.d.cts",
+    "src/lib/tui.d.cts"
+  ]
+}
