@@ -3,29 +3,46 @@ const fs = require('fs')
 const { sendDoM } = require('./utils/dom.cjs')
 const { validateStorybookUrl, validateStorybookDir } = require('./utils/validate.cjs')
 const { defaultSmartUIConfig } = require('./utils/config.cjs')
-const { skipStory } = require('./utils/story.cjs')
+const { skipStory, normalizeStoryEntries } = require('./utils/story.cjs')
 const { getLastCommit } = require('./utils/git.cjs')
 const staticUtils = require('./utils/static.cjs')
 var { constants } = require('./utils/constants.cjs');
 const { shortPolling } = require('./utils/polling.cjs');
 
+// Resolve relative paths against a Storybook base URL.
+//
+// `new URL('index.json', 'http://host/sb')` yields 'http://host/index.json', because without a
+// trailing slash the last segment is treated as a filename and replaced. A Storybook served under
+// a sub-path (a reverse proxy, GitHub Pages, any /storybook/ deployment) is a normal thing to
+// point this command at, and typing the URL without a trailing slash is the normal way to type it.
+// Normalise once so every path below resolves under the base rather than beside it or at the root.
+function storybookBase(url) {
+    const base = new URL(url);
+    if (!base.pathname.endsWith('/')) base.pathname += '/';
+    return base;
+}
+
 // Storybook >= 8 dropped stories.json in favour of index.json (entries keyed by story id).
 // Try the modern file first and fall back to the legacy one so both generations work.
 async function fetchStoryIndex(url) {
+    const base = storybookBase(url);
     const candidates = ['index.json', 'stories.json'];
     let lastError;
 
     for (const file of candidates) {
         let response;
         try {
-            response = await httpClient.get(new URL(file, url).href);
+            response = await httpClient.get(new URL(file, base).href);
         } catch (error) {
             lastError = error;
             continue;
         }
 
         const data = response && response.data ? response.data : {};
-        const entries = data.entries || data.stories;
+        // Normalise before accepting a candidate: a served index.json can be a string or some
+        // other non-index payload (a proxy error page rendered as JSON, for example), and
+        // iterating that yields stories named "0", "1", "2" rather than a clean failure.
+        const entries = normalizeStoryEntries(data.entries || data.stories);
         if (entries && Object.keys(entries).length) {
             return { entries, source: file };
         }
@@ -70,7 +87,7 @@ async function storybook(serve, options) {
                 stories[storyId] = {
                     name: storyInfo.name,
                     kind: storyInfo.kind || storyInfo.title,
-                    url: new URL('/iframe.html?id=' + storyId + '&viewMode=story', url).href
+                    url: new URL('iframe.html?id=' + storyId + '&viewMode=story', storybookBase(url)).href
                 }
             }
         }
@@ -241,4 +258,4 @@ async function storybook(serve, options) {
 
 // fetchStoryIndex is exported for tests: it is the TE-24909 fix (Storybook >= 8 index.json
 // discovery with a legacy stories.json fallback) and is worth covering directly.
-module.exports = { storybook, fetchStoryIndex };
+module.exports = { storybook, fetchStoryIndex, storybookBase };

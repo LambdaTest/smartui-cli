@@ -112,3 +112,47 @@ describe('createConfig, the reverse direction of TE-23033', () => {
         expect(logs.join('\n')).toMatch(/SmartUI Config already exists/);
     });
 });
+
+describe('existing files that are not usable config objects', () => {
+    // All of these previously went wrong: a BOM made the file unreadable, an array reported
+    // success while JSON.stringify silently dropped the added property, and `null` crashed with
+    // an unhandled TypeError and a Node stack trace.
+    const write = (name: string, content: string) => {
+        const p = path.join(dir, name);
+        fs.writeFileSync(p, content);
+        return p;
+    };
+
+    it('merges into a file that starts with a BOM', () => {
+        const p = write('bom.json', '\uFEFF{"web":{"browsers":["chrome"]}}');
+        createStorybookConfig(p);
+        const after = JSON.parse(fs.readFileSync(p, 'utf8').replace(/^\uFEFF/, ''));
+        expect(Object.keys(after)).toEqual(['web', 'storybook']);
+    });
+
+    it.each([
+        ['an array', '[1,2,3]', /found an array/],
+        ['null', 'null', /found null/],
+        ['a string', '"hello"', /found string/],
+        ['a number', '42', /found number/],
+    ])('refuses %s without modifying the file', (_label, content, matcher) => {
+        const p = write('x.json', content);
+        createStorybookConfig(p);
+        expect(fs.readFileSync(p, 'utf8')).toBe(content);
+        expect(logs.join('\n')).toMatch(matcher);
+    });
+
+    it('createConfig refuses the same shapes', () => {
+        const p = write('y.json', '[1,2]');
+        createConfig(p);
+        expect(fs.readFileSync(p, 'utf8')).toBe('[1,2]');
+        expect(logs.join('\n')).toMatch(/found an array/);
+    });
+
+    it('reports an unreadable file rather than throwing', () => {
+        createStorybookConfig(path.join(dir, 'no-such-dir', 'deep', 'a.json'));
+        // A path whose parent does not exist is a create, not a merge, so it must succeed.
+        expect(fs.existsSync(path.join(dir, 'no-such-dir', 'deep', 'a.json'))).toBe(true);
+    });
+});
+

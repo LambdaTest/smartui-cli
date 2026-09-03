@@ -2,7 +2,7 @@ const fs = require('fs');
 const { httpClient } = require('./httpClient.cjs');
 const archiver = require('archiver');
 var { constants } = require('./constants.cjs');
-const { skipStory } = require('./story.cjs');
+const { skipStory, normalizeStoryEntries } = require('./story.cjs');
 const { shortPolling } = require('./polling.cjs');
 
 var INTERVAL = 2000
@@ -60,12 +60,26 @@ function filterStories(dirPath, storybookConfig) {
 	// Storybook >= 8 writes index.json; a stories.json sitting next to it is a leftover
 	// from an older build of the same directory, and reading that instead would give DIR
 	// mode a different story set from URL mode against the same Storybook.
+	let indexFile;
 	if (fs.existsSync((`${dirPath}/index.json`))){
-		const index = JSON.parse(fs.readFileSync(`${dirPath}/index.json`));
-		stories = index.entries || index.stories;
+		indexFile = `${dirPath}/index.json`;
 	} else if(fs.existsSync((`${dirPath}/stories.json`))){
-		const index = JSON.parse(fs.readFileSync(`${dirPath}/stories.json`));
-		stories = index.stories || index.entries;
+		indexFile = `${dirPath}/stories.json`;
+	}
+
+	if (indexFile) {
+		let index;
+		try {
+			index = JSON.parse(fs.readFileSync(indexFile));
+		} catch (error) {
+			console.log(`[smartui] Error: Could not parse ${indexFile}: ${error.message}`);
+			process.exit(constants.ERROR_CATCHALL);
+		}
+		stories = normalizeStoryEntries(index && (index.entries || index.stories));
+		if (!stories) {
+			console.log(`[smartui] Error: ${indexFile} does not contain a story index`);
+			process.exit(constants.ERROR_CATCHALL);
+		}
 	}
 
 	for (const [storyId, storyInfo] of Object.entries(stories)) {

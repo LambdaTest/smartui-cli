@@ -34,8 +34,16 @@ export declare function runStorybook(
 /** Write a starter config containing a `storybook` block to `filepath`. */
 export declare function createStorybookConfig(filepath: string): void;
 
+/**
+ * Replace credentials in a string with [REDACTED]. Non-strings are returned unchanged.
+ * The backend echoes the caller's access key in at least one error message, so anything
+ * derived from a server response is scrubbed before being printed.
+ */
+export declare function redactSecrets<T>(value: T): T;
+
 declare const _default: {
     runStorybook: typeof runStorybook;
     createStorybookConfig: typeof createStorybookConfig;
+    redactSecrets: typeof redactSecrets;
 };
 export default _default;

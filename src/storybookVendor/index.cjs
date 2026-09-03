@@ -55,4 +55,11 @@ function createStorybookConfig(filepath) {
   createConfig(filepath);
 }
 
-module.exports = { runStorybook, createStorybookConfig };
+// Exported so the command wrapper can scrub every line the engine prints, not just the
+// messages the engine itself remembers to scrub.
+function redactSecrets(value) {
+  const { redact } = require('./commands/utils/redact.cjs');
+  return redact(value);
+}
+
+module.exports = { runStorybook, createStorybookConfig, redactSecrets };

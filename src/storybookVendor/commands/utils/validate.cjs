@@ -1,5 +1,6 @@
 const { httpClient } = require('./httpClient.cjs');
 var { constants } = require('./constants.cjs');
+const { redact } = require('./redact.cjs');
 const fs = require('fs');
 const { getLastCommit } = require('./git.cjs');
 
@@ -37,9 +38,9 @@ async function resolveProjectToken(options) {
             }
         });
     } catch (error) {
-        const errorMsg = error.response
+        const errorMsg = redact(error.response
             ? (error.response.data && error.response.data.message) || error.message
-            : error.message;
+            : error.message);
         console.log(`[smartui] Error: Cannot resolve PROJECT_NAME '${PROJECT_NAME}'. Error: `, errorMsg);
         process.exit(constants.ERROR_CATCHALL);
     }
@@ -50,7 +51,7 @@ async function resolveProjectToken(options) {
         // the body rather than the status code. Print that reason: saying only "token not
         // received" sends people hunting for a credentials problem when the server has
         // already told us it was something else, e.g. a 502 from project creation.
-        const reason = body.message || (response.data && response.data.message);
+        const reason = redact(body.message || (response.data && response.data.message));
         console.log(`[smartui] Error: Cannot resolve PROJECT_NAME '${PROJECT_NAME}'.` + (reason ? ` Error: ${reason}` : ' No project token was returned.'));
         process.exit(constants.ERROR_CATCHALL);
     }

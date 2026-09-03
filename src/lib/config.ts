@@ -3,6 +3,35 @@ import fs from 'fs'
 import constants from './constants.js';
 import { Context } from "../types.js";
 
+// Read a config file that is about to be merged into.
+//
+// Returns the parsed object, or an error message explaining why it cannot be merged. Both
+// generators write to the same default .smartui.json, so they have to cope with whatever is
+// already there. Three shapes used to go wrong: a leading BOM (editors add one, JSON.parse
+// rejects it), a JSON array (assigning a block to it succeeded, then JSON.stringify dropped the
+// property and the file was rewritten unchanged while the CLI reported success), and a bare
+// `null` (crashed with an unhandled TypeError and a Node stack trace).
+function readMergeableConfig(filepath: string): { config?: Record<string, any>, error?: string } {
+    let raw: string;
+    try {
+        raw = fs.readFileSync(filepath, 'utf-8');
+    } catch (error: any) {
+        return { error: `Cannot read existing config ${filepath}: ${error.message}` };
+    }
+
+    let parsed: unknown;
+    try {
+        parsed = JSON.parse(raw.replace(/^\uFEFF/, ''));
+    } catch (error: any) {
+        return { error: `Cannot read existing config ${filepath}: ${error.message}` };
+    }
+
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        return { error: `Cannot update ${filepath}: expected a JSON object, found ${Array.isArray(parsed) ? 'an array' : parsed === null ? 'null' : typeof parsed}` };
+    }
+    return { config: parsed as Record<string, any> };
+}
+
 export function createConfig(filepath: string) {
     // default filepath
     filepath = filepath || '.smartui.json';
@@ -17,11 +46,9 @@ export function createConfig(filepath: string) {
         // path, and the schema lets one file carry both a `web` and a `storybook` block, so
         // running the two generators in either order has to work. When the file exists but
         // holds only a storybook block, add the web half rather than refusing.
-        let existingConfig: Record<string, any> | undefined;
-        try {
-            existingConfig = JSON.parse(fs.readFileSync(filepath, 'utf-8'));
-        } catch (error: any) {
-            console.log(`Error: Cannot read existing config ${filepath}: ${error.message}`);
+        const { config: existingConfig, error } = readMergeableConfig(filepath);
+        if (error) {
+            console.log(`Error: ${error}`);
             return
         }
 
@@ -85,11 +112,9 @@ export function createStorybookConfig(filepath: string) {
     // carry both a `web` and a `storybook` block. So when the file is already there without
     // a storybook block, add the block rather than refusing to write.
     if (fs.existsSync(filepath)) {
-        let existingConfig: Record<string, any>;
-        try {
-            existingConfig = JSON.parse(fs.readFileSync(filepath, 'utf-8'));
-        } catch (error: any) {
-            console.log(`Error: Cannot read existing config ${filepath}: ${error.message}`);
+        const { config: existingConfig, error } = readMergeableConfig(filepath);
+        if (error || !existingConfig) {
+            console.log(`Error: ${error}`);
             return
         }
 
