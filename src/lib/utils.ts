@@ -1563,13 +1563,13 @@ export function generateCSSInjectionReport(
 // Waits for every uploaded pdf to finish comparing and returns one result set per document.
 // The backend counts pages down against a per-document key, so a document is either fully
 // ready (200) or still processing (202/404 while its pages land).
-// Returns false when any document failed, timed out, or reported a mismatch.
-export async function fetchPdfSyncResults(ctx: Context): Promise<boolean> {
+// Reporting only: a mismatch is a result for the caller to review, not a CLI failure, so this
+// never changes the exit code. Matches how the web sync path behaves.
+export async function fetchPdfSyncResults(ctx: Context): Promise<void> {
     const targets = ctx.pdfSyncTargets || [];
-    if (!targets.length || !ctx.build?.id) return true;
+    if (!targets.length || !ctx.build?.id) return;
 
     const documents: Array<Record<string, any>> = [];
-    let passed = true;
 
     for (const target of targets) {
         // a per-document budget: sequential polling on one shared deadline meant a slow first
@@ -1584,7 +1584,6 @@ export async function fetchPdfSyncResults(ctx: Context): Promise<boolean> {
                 const status = response?.statusCode;
                 if (status === 200) {
                     documents.push({ document_name: target.name, ...response.data });
-                    if (!isSyncResultPassing(response.data)) passed = false;
                     resolved = true;
                     break;
                 }
@@ -1607,11 +1606,9 @@ export async function fetchPdfSyncResults(ctx: Context): Promise<boolean> {
         }
 
         if (fatal) {
-            passed = false;
             documents.push({ document_name: target.name, snapshotStatus: 'failed', error: fatal });
             ctx.log.error(`Failed to fetch results for ${target.name}: ${fatal}`);
         } else if (!resolved) {
-            passed = false;
             documents.push({ document_name: target.name, snapshotStatus: 'processing', error: 'Timed out waiting for results' });
             ctx.log.warn(`Timed out waiting for results of ${target.name}`);
         }
@@ -1624,14 +1621,5 @@ export async function fetchPdfSyncResults(ctx: Context): Promise<boolean> {
     } else {
         ctx.log.info(JSON.stringify(results, null, 2));
     }
-    return passed;
-}
-
-// A document passes when every page compared without a mismatch and none is still unresolved
-function isSyncResultPassing(data: Record<string, any> | undefined): boolean {
-    if (!data) return false;
-    if (data.snapshotStatus && data.snapshotStatus !== 'success') return false;
-    const screenshots: Array<Record<string, any>> = data.screenshots || [];
-    return screenshots.every(screenshot => !(Number(screenshot.mismatch_percentage) > 0));
 }
 
