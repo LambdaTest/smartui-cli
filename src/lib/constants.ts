@@ -140,6 +140,7 @@ export default {
     BUILD_TYPE_OMNI: 'omni',
     PDF_SYNC_TIMEOUT_MS: 600000,
     PDF_SYNC_POLL_INTERVAL_MS: 5000,
+    PDF_SYNC_MAX_CONCURRENT_POLLS: 5,
 
     // CI
     GITHUB_API_HOST: 'https://api.github.com',

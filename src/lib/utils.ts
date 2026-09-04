@@ -1569,52 +1569,18 @@ export async function fetchPdfSyncResults(ctx: Context): Promise<void> {
     const targets = ctx.pdfSyncTargets || [];
     if (!targets.length || !ctx.build?.id) return;
 
-    const documents: Array<Record<string, any>> = [];
+    const buildId = ctx.build.id;
+    // Documents are polled concurrently, so a batch takes as long as its slowest pdf rather than
+    // the sum of all of them. Web reaches the same endpoint once per snapshot from the SDK, so
+    // several of its polls are already in flight at once. Bounded because a large upload would
+    // otherwise put one in-flight request per document on every tick.
+    const documents = await pollWithConcurrencyLimit(
+        targets,
+        constants.PDF_SYNC_MAX_CONCURRENT_POLLS,
+        target => pollPdfSyncDocument(ctx, buildId, target)
+    );
 
-    for (const target of targets) {
-        // a per-document budget: sequential polling on one shared deadline meant a slow first
-        // document timed the rest out before they were ever asked for
-        const deadline = Date.now() + constants.PDF_SYNC_TIMEOUT_MS;
-        let resolved = false;
-        let fatal = '';
-
-        while (!resolved && !fatal) {
-            try {
-                const response = await ctx.client.getSnapshotStatus(ctx.build.id, target.name, target.uuid, ctx);
-                const status = response?.statusCode;
-                if (status === 200) {
-                    documents.push({ document_name: target.name, ...response.data });
-                    resolved = true;
-                    break;
-                }
-                if (status !== 202 && status !== 404) {
-                    fatal = `Unexpected response (status ${status ?? 'unknown'})`;
-                    break;
-                }
-            } catch (error: any) {
-                // only 202 and 404 mean "not ready"; auth failures and 5xx are terminal and
-                // must not be retried silently until the deadline
-                const status = error?.response?.status ?? error?.statusCode;
-                if (status !== 202 && status !== 404) {
-                    fatal = error?.response?.data?.error?.message || error?.message || `Request failed (status ${status ?? 'unknown'})`;
-                    break;
-                }
-                ctx.log.debug(`sync poll pending for ${target.name}: ${error.message}`);
-            }
-            if (Date.now() >= deadline) break;
-            await new Promise(resolve => setTimeout(resolve, constants.PDF_SYNC_POLL_INTERVAL_MS));
-        }
-
-        if (fatal) {
-            documents.push({ document_name: target.name, snapshotStatus: 'failed', error: fatal });
-            ctx.log.error(`Failed to fetch results for ${target.name}: ${fatal}`);
-        } else if (!resolved) {
-            documents.push({ document_name: target.name, snapshotStatus: 'processing', error: 'Timed out waiting for results' });
-            ctx.log.warn(`Timed out waiting for results of ${target.name}`);
-        }
-    }
-
-    const results = { buildId: ctx.build.id, documents };
+    const results = { buildId, documents };
     if (ctx.options.fetchResultsFileName) {
         fs.writeFileSync(ctx.options.fetchResultsFileName, JSON.stringify(results, null, 2));
         ctx.log.info(`Results written to ${ctx.options.fetchResultsFileName}`);
@@ -1623,3 +1589,59 @@ export async function fetchPdfSyncResults(ctx: Context): Promise<void> {
     }
 }
 
+// Waits for one document. Resolves rather than rejects, so one bad pdf cannot discard the
+// results of the others that finished alongside it.
+async function pollPdfSyncDocument(ctx: Context, buildId: string, target: { name: string; uuid: string }): Promise<Record<string, any>> {
+    const deadline = Date.now() + constants.PDF_SYNC_TIMEOUT_MS;
+
+    while (true) {
+        try {
+            const response = await ctx.client.getSnapshotStatus(buildId, target.name, target.uuid, ctx);
+            const status = response?.statusCode;
+            if (status === 200) {
+                return { document_name: target.name, ...response.data };
+            }
+            if (status !== 202 && status !== 404) {
+                const fatal = `Unexpected response (status ${status ?? 'unknown'})`;
+                ctx.log.error(`Failed to fetch results for ${target.name}: ${fatal}`);
+                return { document_name: target.name, snapshotStatus: 'failed', error: fatal };
+            }
+        } catch (error: any) {
+            // only 202 and 404 mean "not ready"; auth failures and 5xx are terminal and
+            // must not be retried silently until the deadline
+            const status = error?.response?.status ?? error?.statusCode;
+            if (status !== 202 && status !== 404) {
+                const fatal = error?.response?.data?.error?.message || error?.message || `Request failed (status ${status ?? 'unknown'})`;
+                ctx.log.error(`Failed to fetch results for ${target.name}: ${fatal}`);
+                return { document_name: target.name, snapshotStatus: 'failed', error: fatal };
+            }
+            ctx.log.debug(`sync poll pending for ${target.name}: ${error.message}`);
+        }
+
+        if (Date.now() >= deadline) {
+            ctx.log.warn(`Timed out waiting for results of ${target.name}`);
+            return { document_name: target.name, snapshotStatus: 'processing', error: 'Timed out waiting for results' };
+        }
+        await new Promise(resolve => setTimeout(resolve, constants.PDF_SYNC_POLL_INTERVAL_MS));
+    }
+}
+
+// Runs at most `limit` polls at a time and returns results in the order of the input, so the
+// reported documents line up with the uploaded files regardless of which finished first.
+async function pollWithConcurrencyLimit<T, R>(items: T[], limit: number, worker: (item: T) => Promise<R>): Promise<R[]> {
+    const results: R[] = new Array(items.length);
+    let nextIndex = 0;
+
+    const runner = async (): Promise<void> => {
+        while (true) {
+            const index = nextIndex++;
+            const item = items[index];
+            if (index >= items.length || item === undefined) return;
+            results[index] = await worker(item);
+        }
+    };
+
+    const runnerCount = Math.max(1, Math.min(limit, items.length));
+    await Promise.all(Array.from({ length: runnerCount }, () => runner()));
+    return results;
+}
