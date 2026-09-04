@@ -59,7 +59,11 @@ command
 
             if (ctx.options.sync && ctx.build && ctx.build.id) {
                 // sync already waits for every page, so the background poller would only duplicate it
-                await fetchPdfSyncResults(ctx);
+                const passed = await fetchPdfSyncResults(ctx);
+                if (!passed) {
+                    // sync exists to gate a pipeline, so a mismatch or timeout has to fail the run
+                    process.exit(1);
+                }
             } else if (ctx.options.fetchResults && ctx.build && ctx.build.id) {
                 startPdfPolling(ctx);
             }

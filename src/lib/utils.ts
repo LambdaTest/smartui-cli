@@ -1563,29 +1563,55 @@ export function generateCSSInjectionReport(
 // Waits for every uploaded pdf to finish comparing and returns one result set per document.
 // The backend counts pages down against a per-document key, so a document is either fully
 // ready (200) or still processing (202/404 while its pages land).
-export async function fetchPdfSyncResults(ctx: Context): Promise<void> {
+// Returns false when any document failed, timed out, or reported a mismatch.
+export async function fetchPdfSyncResults(ctx: Context): Promise<boolean> {
     const targets = ctx.pdfSyncTargets || [];
-    if (!targets.length || !ctx.build?.id) return;
+    if (!targets.length || !ctx.build?.id) return true;
 
-    const deadline = Date.now() + constants.PDF_SYNC_TIMEOUT_MS;
     const documents: Array<Record<string, any>> = [];
+    let passed = true;
 
     for (const target of targets) {
+        // a per-document budget: sequential polling on one shared deadline meant a slow first
+        // document timed the rest out before they were ever asked for
+        const deadline = Date.now() + constants.PDF_SYNC_TIMEOUT_MS;
         let resolved = false;
-        while (!resolved && Date.now() < deadline) {
+        let fatal = '';
+
+        while (!resolved && !fatal) {
             try {
                 const response = await ctx.client.getSnapshotStatus(ctx.build.id, target.name, target.uuid, ctx);
-                if (response?.statusCode === 200) {
+                const status = response?.statusCode;
+                if (status === 200) {
                     documents.push({ document_name: target.name, ...response.data });
+                    if (!isSyncResultPassing(response.data)) passed = false;
                     resolved = true;
                     break;
                 }
+                if (status !== 202 && status !== 404) {
+                    fatal = `Unexpected response (status ${status ?? 'unknown'})`;
+                    break;
+                }
             } catch (error: any) {
-                ctx.log.debug(`sync poll failed for ${target.name}: ${error.message}`);
+                // only 202 and 404 mean "not ready"; auth failures and 5xx are terminal and
+                // must not be retried silently until the deadline
+                const status = error?.response?.status ?? error?.statusCode;
+                if (status !== 202 && status !== 404) {
+                    fatal = error?.response?.data?.error?.message || error?.message || `Request failed (status ${status ?? 'unknown'})`;
+                    break;
+                }
+                ctx.log.debug(`sync poll pending for ${target.name}: ${error.message}`);
             }
+            if (Date.now() >= deadline) break;
             await new Promise(resolve => setTimeout(resolve, constants.PDF_SYNC_POLL_INTERVAL_MS));
         }
-        if (!resolved) {
+
+        if (fatal) {
+            passed = false;
+            documents.push({ document_name: target.name, snapshotStatus: 'failed', error: fatal });
+            ctx.log.error(`Failed to fetch results for ${target.name}: ${fatal}`);
+        } else if (!resolved) {
+            passed = false;
             documents.push({ document_name: target.name, snapshotStatus: 'processing', error: 'Timed out waiting for results' });
             ctx.log.warn(`Timed out waiting for results of ${target.name}`);
         }
@@ -1598,4 +1624,14 @@ export async function fetchPdfSyncResults(ctx: Context): Promise<void> {
     } else {
         ctx.log.info(JSON.stringify(results, null, 2));
     }
+    return passed;
 }
+
+// A document passes when every page compared without a mismatch and none is still unresolved
+function isSyncResultPassing(data: Record<string, any> | undefined): boolean {
+    if (!data) return false;
+    if (data.snapshotStatus && data.snapshotStatus !== 'success') return false;
+    const screenshots: Array<Record<string, any>> = data.screenshots || [];
+    return screenshots.every(screenshot => !(Number(screenshot.mismatch_percentage) > 0));
+}
+
