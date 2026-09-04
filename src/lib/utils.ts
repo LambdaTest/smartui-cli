@@ -1604,7 +1604,7 @@ async function pollPdfSyncDocument(ctx: Context, buildId: string, target: { name
 
     while (true) {
         try {
-            const response = await ctx.client.getSnapshotStatus(buildId, target.name, target.uuid, ctx);
+            const response = await ctx.client.getSnapshotStatus(buildId, target.name, target.uuid, ctx, true);
             const status = response?.statusCode;
             if (status === 200) {
                 return { document_name: target.name, ...response.data };
