@@ -5,6 +5,7 @@ import { updateLogContext } from '../lib/logger.js';
 import path from 'path';
 import fs from 'fs';
 import FormData from 'form-data';
+import { randomUUID } from 'node:crypto';
 
 export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRendererFactory> => {
     return {
@@ -30,9 +31,11 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
 
 async function uploadPdfs(ctx: Context, pdfPath: string): Promise<void> {
     const formData = new FormData();
+    const uploadedFileNames: string[] = [];
 
     if (pdfPath.endsWith('.pdf')) {
         formData.append('pathToFiles', fs.createReadStream(pdfPath));
+        uploadedFileNames.push(path.basename(pdfPath));
     } else {
         const files = fs.readdirSync(pdfPath);
         const pdfFiles = files.filter(file => file.endsWith('.pdf')).sort();
@@ -40,18 +43,31 @@ async function uploadPdfs(ctx: Context, pdfPath: string): Promise<void> {
         pdfFiles.forEach(pdf => {
             const filePath = path.join(pdfPath, pdf);
             formData.append('pathToFiles', fs.createReadStream(filePath));
+            uploadedFileNames.push(pdf);
         })
     }
 
     const buildName = ctx.options.buildName;
     const pdfNames = ctx.options.pdfNames;
 
+    // The backend names each document from pdfNames when given, else the uploaded file name.
+    // Sync polling asks by that same name, so resolve it here rather than guessing later.
+    const providedNames = pdfNames ? pdfNames.split(',').map(name => name.trim()) : [];
+    const documentNames = uploadedFileNames.map((fileName, index) => providedNames[index] ?? fileName);
+
+    let snapshotUuids = '';
+    if (ctx.options.sync) {
+        const syncTargets = documentNames.map(name => ({ name, uuid: randomUUID() as string }));
+        ctx.pdfSyncTargets = syncTargets;
+        snapshotUuids = syncTargets.map(target => target.uuid).join(',');
+    }
+
     if (buildName) {
         ctx.build.name = buildName;
     }
 
     try {
-        const response = await ctx.client.uploadPdf(ctx, formData, buildName, pdfNames);
+        const response = await ctx.client.uploadPdf(ctx, formData, buildName, pdfNames, snapshotUuids);
         if (response && response.buildId) {
             ctx.build.id = response.buildId;
             ctx.log.debug(`PDF upload successful. Build ID: ${ctx.build.id}`);

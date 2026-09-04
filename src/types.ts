@@ -50,6 +50,8 @@ export interface Context {
         customCSS?: string;
     };
     uploadFilePath: string;
+    // documents awaiting sync results, filled at upload time so polling knows what to ask for
+    pdfSyncTargets?: Array<{ name: string; uuid: string }>;
     webStaticConfig: WebStaticConfig;
     build: Build;
     git: Git;
@@ -86,6 +88,7 @@ export interface Context {
         gitURL?: string,
         showRenderErrors?: boolean,
         pdfNames?: string,
+        sync?: boolean,
         userName?: string,
         accessKey?: string
     }

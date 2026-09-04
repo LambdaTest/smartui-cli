@@ -1558,3 +1558,44 @@ export function generateCSSInjectionReport(
     
     return report;
 }
+
+
+// Waits for every uploaded pdf to finish comparing and returns one result set per document.
+// The backend counts pages down against a per-document key, so a document is either fully
+// ready (200) or still processing (202/404 while its pages land).
+export async function fetchPdfSyncResults(ctx: Context): Promise<void> {
+    const targets = ctx.pdfSyncTargets || [];
+    if (!targets.length || !ctx.build?.id) return;
+
+    const deadline = Date.now() + constants.PDF_SYNC_TIMEOUT_MS;
+    const documents: Array<Record<string, any>> = [];
+
+    for (const target of targets) {
+        let resolved = false;
+        while (!resolved && Date.now() < deadline) {
+            try {
+                const response = await ctx.client.getSnapshotStatus(ctx.build.id, target.name, target.uuid, ctx);
+                if (response?.statusCode === 200) {
+                    documents.push({ document_name: target.name, ...response.data });
+                    resolved = true;
+                    break;
+                }
+            } catch (error: any) {
+                ctx.log.debug(`sync poll failed for ${target.name}: ${error.message}`);
+            }
+            await new Promise(resolve => setTimeout(resolve, constants.PDF_SYNC_POLL_INTERVAL_MS));
+        }
+        if (!resolved) {
+            documents.push({ document_name: target.name, snapshotStatus: 'processing', error: 'Timed out waiting for results' });
+            ctx.log.warn(`Timed out waiting for results of ${target.name}`);
+        }
+    }
+
+    const results = { buildId: ctx.build.id, documents };
+    if (ctx.options.fetchResultsFileName) {
+        fs.writeFileSync(ctx.options.fetchResultsFileName, JSON.stringify(results, null, 2));
+        ctx.log.info(`Results written to ${ctx.options.fetchResultsFileName}`);
+    } else {
+        ctx.log.info(JSON.stringify(results, null, 2));
+    }
+}

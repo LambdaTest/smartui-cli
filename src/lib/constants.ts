@@ -138,6 +138,8 @@ export default {
     BUILD_COMPLETE: 'completed',
     BUILD_ERROR: 'error',
     BUILD_TYPE_OMNI: 'omni',
+    PDF_SYNC_TIMEOUT_MS: 600000,
+    PDF_SYNC_POLL_INTERVAL_MS: 5000,
 
     // CI
     GITHUB_API_HOST: 'https://api.github.com',
