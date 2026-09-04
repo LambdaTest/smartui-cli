@@ -809,7 +809,7 @@ export default class httpClient {
         }
     }
 
-    async uploadPdf(ctx: Context, form: FormData, buildName?: string, pdfNames?: string): Promise<any> {
+    async uploadPdf(ctx: Context, form: FormData, buildName?: string, pdfNames?: string, snapshotUuids?: string): Promise<any> {
         form.append('projectToken', this.projectToken);
         if (ctx.build.name !== undefined && ctx.build.name !== '') {
             form.append('buildName', buildName);
@@ -819,6 +819,13 @@ export default class httpClient {
         }
         if (pdfNames && pdfNames !== '') {
             form.append('pdfNames', pdfNames);
+        }
+        if (ctx.options.sync) {
+            form.append('sync', 'true');
+        }
+        // positionally aligned with the uploaded files; the poll uses the same uuid per document
+        if (snapshotUuids && snapshotUuids !== '') {
+            form.append('snapshotUuids', snapshotUuids);
         }
 
         if (ctx.git?.branch) form.append('branch', ctx.git.branch);

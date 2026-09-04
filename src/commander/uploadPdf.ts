@@ -6,7 +6,7 @@ import fs from 'fs';
 import auth from '../tasks/auth.js';
 import uploadPdfs from '../tasks/uploadPdfs.js';
 import getGitInfo from '../tasks/getGitInfo.js';
-import {startPdfPolling} from "../lib/utils.js";
+import {startPdfPolling, fetchPdfSyncResults} from "../lib/utils.js";
 import constants from '../lib/constants.js';
 const command = new Command();
 
@@ -18,6 +18,7 @@ command
     .option('--buildName <string>', 'Specify the build name')
     .option('--markBaseline', 'Mark this build baseline')
     .option('--pdfNames <string>', 'Specify PDF names for the upload')
+    .option('--sync', 'Wait for the uploaded PDFs to be compared and return the results')
     .action(async function(directory, _, command) {
         const options = command.optsWithGlobals();
         if (options.buildName === '') {
@@ -56,7 +57,10 @@ command
         try {
             await tasks.run(ctx);
 
-            if (ctx.options.fetchResults && ctx.build && ctx.build.id) {
+            if (ctx.options.sync && ctx.build && ctx.build.id) {
+                // sync already waits for every page, so the background poller would only duplicate it
+                await fetchPdfSyncResults(ctx);
+            } else if (ctx.options.fetchResults && ctx.build && ctx.build.id) {
                 startPdfPolling(ctx);
             }
         } catch (error) {

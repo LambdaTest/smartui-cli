@@ -287,7 +287,8 @@ export default (options: Record<string, string>): Context => {
             showRenderErrors: options.showRenderErrors ? true : false,
             userName: options.userName || '',
             accessKey: options.accessKey || '',
-            pdfNames: options.pdfNames || ''
+            pdfNames: options.pdfNames || '',
+            sync: options.sync ? true : false
         },
         cliVersion: version,
         totalSnapshots: -1,
