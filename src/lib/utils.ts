@@ -1570,23 +1570,31 @@ export async function fetchPdfSyncResults(ctx: Context): Promise<void> {
     if (!targets.length || !ctx.build?.id) return;
 
     const buildId = ctx.build.id;
-    // Documents are polled concurrently, so a batch takes as long as its slowest pdf rather than
-    // the sum of all of them. Web reaches the same endpoint once per snapshot from the SDK, so
-    // several of its polls are already in flight at once. Bounded because a large upload would
-    // otherwise put one in-flight request per document on every tick.
-    const documents = await pollWithConcurrencyLimit(
-        targets,
-        constants.PDF_SYNC_MAX_CONCURRENT_POLLS,
-        target => pollPdfSyncDocument(ctx, buildId, target)
-    );
+    const settled: Array<Record<string, any> | undefined> = new Array(targets.length);
+    const emitted: Array<Record<string, any>> = [];
+    let nextToEmit = 0;
 
-    const results = { buildId, documents };
-    if (ctx.options.fetchResultsFileName) {
-        fs.writeFileSync(ctx.options.fetchResultsFileName, JSON.stringify(results, null, 2));
-        ctx.log.info(`Results written to ${ctx.options.fetchResultsFileName}`);
-    } else {
-        ctx.log.info(JSON.stringify(results, null, 2));
-    }
+    // Documents are polled concurrently but reported in upload order: a document is emitted as
+    // soon as it and everything before it is ready, so results appear as they land instead of
+    // waiting for the slowest pdf in the batch.
+    const emitReadyDocuments = (): void => {
+        while (nextToEmit < targets.length) {
+            const document = settled[nextToEmit];
+            if (document === undefined) return;
+            emitted.push(document);
+            ctx.log.info(JSON.stringify(document, null, 2));
+            if (ctx.options.fetchResultsFileName) {
+                // rewritten as each document lands, matching how the non-sync pdf poller writes
+                fs.writeFileSync(ctx.options.fetchResultsFileName, JSON.stringify({ buildId, documents: emitted }, null, 2));
+            }
+            nextToEmit++;
+        }
+    };
+
+    await runWithConcurrencyLimit(targets, constants.PDF_SYNC_MAX_CONCURRENT_POLLS, async (target, index) => {
+        settled[index] = await pollPdfSyncDocument(ctx, buildId, target);
+        emitReadyDocuments();
+    });
 }
 
 // Waits for one document. Resolves rather than rejects, so one bad pdf cannot discard the
@@ -1626,10 +1634,9 @@ async function pollPdfSyncDocument(ctx: Context, buildId: string, target: { name
     }
 }
 
-// Runs at most `limit` polls at a time and returns results in the order of the input, so the
-// reported documents line up with the uploaded files regardless of which finished first.
-async function pollWithConcurrencyLimit<T, R>(items: T[], limit: number, worker: (item: T) => Promise<R>): Promise<R[]> {
-    const results: R[] = new Array(items.length);
+// Runs at most `limit` workers at a time, handing each its index so callers can report results
+// in the order the items were submitted.
+async function runWithConcurrencyLimit<T>(items: T[], limit: number, worker: (item: T, index: number) => Promise<void>): Promise<void> {
     let nextIndex = 0;
 
     const runner = async (): Promise<void> => {
@@ -1637,11 +1644,10 @@ async function pollWithConcurrencyLimit<T, R>(items: T[], limit: number, worker:
             const index = nextIndex++;
             const item = items[index];
             if (index >= items.length || item === undefined) return;
-            results[index] = await worker(item);
+            await worker(item, index);
         }
     };
 
     const runnerCount = Math.max(1, Math.min(limit, items.length));
     await Promise.all(Array.from({ length: runnerCount }, () => runner()));
-    return results;
 }
