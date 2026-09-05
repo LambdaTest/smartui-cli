@@ -1558,3 +1558,96 @@ export function generateCSSInjectionReport(
     
     return report;
 }
+
+
+// Waits for every uploaded pdf to finish comparing and returns one result set per document.
+// The backend counts pages down against a per-document key, so a document is either fully
+// ready (200) or still processing (202/404 while its pages land).
+// Reporting only: a mismatch is a result for the caller to review, not a CLI failure, so this
+// never changes the exit code. Matches how the web sync path behaves.
+export async function fetchPdfSyncResults(ctx: Context): Promise<void> {
+    const targets = ctx.pdfSyncTargets || [];
+    if (!targets.length || !ctx.build?.id) return;
+
+    const buildId = ctx.build.id;
+    const settled: Array<Record<string, any> | undefined> = new Array(targets.length);
+    const emitted: Array<Record<string, any>> = [];
+    let nextToEmit = 0;
+
+    // Documents are polled concurrently but reported in upload order: a document is emitted as
+    // soon as it and everything before it is ready, so results appear as they land instead of
+    // waiting for the slowest pdf in the batch.
+    const emitReadyDocuments = (): void => {
+        while (nextToEmit < targets.length) {
+            const document = settled[nextToEmit];
+            if (document === undefined) return;
+            emitted.push(document);
+            ctx.log.info(JSON.stringify(document, null, 2));
+            if (ctx.options.fetchResultsFileName) {
+                // rewritten as each document lands, matching how the non-sync pdf poller writes
+                fs.writeFileSync(ctx.options.fetchResultsFileName, JSON.stringify({ buildId, documents: emitted }, null, 2));
+            }
+            nextToEmit++;
+        }
+    };
+
+    await runWithConcurrencyLimit(targets, constants.PDF_SYNC_MAX_CONCURRENT_POLLS, async (target, index) => {
+        settled[index] = await pollPdfSyncDocument(ctx, buildId, target);
+        emitReadyDocuments();
+    });
+}
+
+// Waits for one document. Resolves rather than rejects, so one bad pdf cannot discard the
+// results of the others that finished alongside it.
+async function pollPdfSyncDocument(ctx: Context, buildId: string, target: { name: string; uuid: string }): Promise<Record<string, any>> {
+    const deadline = Date.now() + constants.PDF_SYNC_TIMEOUT_MS;
+
+    while (true) {
+        try {
+            const response = await ctx.client.getSnapshotStatus(buildId, target.name, target.uuid, ctx, true);
+            const status = response?.statusCode;
+            if (status === 200) {
+                return { document_name: target.name, ...response.data };
+            }
+            if (status !== 202 && status !== 404) {
+                const fatal = `Unexpected response (status ${status ?? 'unknown'})`;
+                ctx.log.error(`Failed to fetch results for ${target.name}: ${fatal}`);
+                return { document_name: target.name, snapshotStatus: 'failed', error: fatal };
+            }
+        } catch (error: any) {
+            // only 202 and 404 mean "not ready"; auth failures and 5xx are terminal and
+            // must not be retried silently until the deadline
+            const status = error?.response?.status ?? error?.statusCode;
+            if (status !== 202 && status !== 404) {
+                const fatal = error?.response?.data?.error?.message || error?.message || `Request failed (status ${status ?? 'unknown'})`;
+                ctx.log.error(`Failed to fetch results for ${target.name}: ${fatal}`);
+                return { document_name: target.name, snapshotStatus: 'failed', error: fatal };
+            }
+            ctx.log.debug(`sync poll pending for ${target.name}: ${error.message}`);
+        }
+
+        if (Date.now() >= deadline) {
+            ctx.log.warn(`Timed out waiting for results of ${target.name}`);
+            return { document_name: target.name, snapshotStatus: 'processing', error: 'Timed out waiting for results' };
+        }
+        await new Promise(resolve => setTimeout(resolve, constants.PDF_SYNC_POLL_INTERVAL_MS));
+    }
+}
+
+// Runs at most `limit` workers at a time, handing each its index so callers can report results
+// in the order the items were submitted.
+async function runWithConcurrencyLimit<T>(items: T[], limit: number, worker: (item: T, index: number) => Promise<void>): Promise<void> {
+    let nextIndex = 0;
+
+    const runner = async (): Promise<void> => {
+        while (true) {
+            const index = nextIndex++;
+            const item = items[index];
+            if (index >= items.length || item === undefined) return;
+            await worker(item, index);
+        }
+    };
+
+    const runnerCount = Math.max(1, Math.min(limit, items.length));
+    await Promise.all(Array.from({ length: runnerCount }, () => runner()));
+}

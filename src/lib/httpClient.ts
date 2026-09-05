@@ -781,7 +781,7 @@ export default class httpClient {
         }, ctx.log)
     }
 
-    getSnapshotStatus(buildId: string, snapshotName: string, snapshotUuid: string, ctx: Context): Promise<Record<string, any>> {
+    getSnapshotStatus(buildId: string, snapshotName: string, snapshotUuid: string, ctx: Context, tolerateNotFound: boolean = false): Promise<Record<string, any>> {
         return this.request({
             url: `/snapshot/status`,
             method: 'GET',
@@ -792,7 +792,11 @@ export default class httpClient {
             },
             headers: {
                 'Content-Type': 'application/json',
-            }
+            },
+            // A pdf counter only exists once rendering has produced the page count, so 404 is the
+            // normal early state and has to be read rather than thrown. Web seeds its counter when
+            // the snapshot is accepted, never sees a 404, and keeps the default behaviour.
+            ...(tolerateNotFound ? { validateStatus: (status: number) => (status >= 200 && status < 300) || status === 404 } : {})
         }, ctx.log);
     }
 
@@ -809,7 +813,7 @@ export default class httpClient {
         }
     }
 
-    async uploadPdf(ctx: Context, form: FormData, buildName?: string, pdfNames?: string): Promise<any> {
+    async uploadPdf(ctx: Context, form: FormData, buildName?: string, pdfNames?: string, snapshotUuids?: string): Promise<any> {
         form.append('projectToken', this.projectToken);
         if (ctx.build.name !== undefined && ctx.build.name !== '') {
             form.append('buildName', buildName);
@@ -819,6 +823,13 @@ export default class httpClient {
         }
         if (pdfNames && pdfNames !== '') {
             form.append('pdfNames', pdfNames);
+        }
+        if (ctx.options.sync) {
+            form.append('sync', 'true');
+        }
+        // positionally aligned with the uploaded files; the poll uses the same uuid per document
+        if (snapshotUuids && snapshotUuids !== '') {
+            form.append('snapshotUuids', snapshotUuids);
         }
 
         if (ctx.git?.branch) form.append('branch', ctx.git.branch);
