@@ -389,6 +389,22 @@ const ConfigSchema = {
         showRenderErrors: {
             type: "boolean",
             errorMessage: "Invalid config; showRenderErrors must be true/false"
+        },
+        tags: {
+            type: "array",
+            items: {
+                type: "string",
+                minLength: 1,
+                maxLength: 50,
+                errorMessage: "Invalid config; each tag must be a non-empty string of at most 50 characters"
+            },
+            maxItems: 50,
+            uniqueItems: true,
+            errorMessage: {
+                type: "Invalid config; tags must be an array of strings",
+                maxItems: "Invalid config; at most 50 tags are allowed",
+                uniqueItems: "Invalid config; tags must be unique"
+            }
         }
     },
     anyOf: [

@@ -48,6 +48,7 @@ export interface Context {
         rejectionThreshold?: number;
         showRenderErrors?: boolean;
         customCSS?: string;
+        tags?: string[];
     };
     uploadFilePath: string;
     // documents awaiting sync results, filled at upload time so polling knows what to ask for
