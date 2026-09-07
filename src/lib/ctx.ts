@@ -245,7 +245,8 @@ export default (options: Record<string, string>): Context => {
             approvalThreshold: config.approvalThreshold,
             rejectionThreshold: config.rejectionThreshold,
             showRenderErrors: config.showRenderErrors ?? false,
-            customCSS: (config as any).customCSS
+            customCSS: (config as any).customCSS,
+            tags: config.tags || []
         },
         uploadFilePath: '',
         webStaticConfig: [],

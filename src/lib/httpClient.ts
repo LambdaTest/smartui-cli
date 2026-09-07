@@ -836,6 +836,7 @@ export default class httpClient {
         if (ctx.git?.commitId) form.append('commitId', ctx.git.commitId);
         if (ctx.git?.commitAuthor) form.append('commitAuthor', ctx.git.commitAuthor);
         if (ctx.git?.commitMessage) form.append('commitMessage', ctx.git.commitMessage);
+        if (ctx.config.tags?.length) form.append('tags', ctx.config.tags.join(','));
 
         try {
             const response = await this.axiosInstance.request({
