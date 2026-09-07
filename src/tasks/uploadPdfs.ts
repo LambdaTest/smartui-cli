@@ -75,6 +75,7 @@ async function uploadPdfs(ctx: Context, pdfPath: string): Promise<void> {
         if (response && response.projectId) {
             ctx.build.projectId = response.projectId;
         }
+        for (const warning of response?.warnings || []) ctx.log.warn(warning);
     } catch (error : any) {
         throw new Error(error.message);
     }
