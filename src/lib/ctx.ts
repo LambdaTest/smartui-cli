@@ -288,6 +288,10 @@ export default (options: Record<string, string>): Context => {
             userName: options.userName || '',
             accessKey: options.accessKey || '',
             pdfNames: options.pdfNames || '',
+            // kept as strings so the backend does the range/band validation and "0" survives
+            approvalThreshold: options.approvalThreshold || '',
+            rejectionThreshold: options.rejectionThreshold || '',
+            thresholds: options.thresholds || '',
             sync: options.sync ? true : false
         },
         cliVersion: version,

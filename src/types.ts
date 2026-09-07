@@ -88,6 +88,9 @@ export interface Context {
         gitURL?: string,
         showRenderErrors?: boolean,
         pdfNames?: string,
+        approvalThreshold?: string,
+        rejectionThreshold?: string,
+        thresholds?: string,
         sync?: boolean,
         userName?: string,
         accessKey?: string

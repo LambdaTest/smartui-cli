@@ -831,6 +831,10 @@ export default class httpClient {
         if (snapshotUuids && snapshotUuids !== '') {
             form.append('snapshotUuids', snapshotUuids);
         }
+        // call-level thresholds apply to every pdf; the per-pdf map wins where it names a file
+        if (ctx.options.approvalThreshold) form.append('approvalThreshold', ctx.options.approvalThreshold);
+        if (ctx.options.rejectionThreshold) form.append('rejectionThreshold', ctx.options.rejectionThreshold);
+        if (ctx.options.thresholds) form.append('thresholds', ctx.options.thresholds);
 
         if (ctx.git?.branch) form.append('branch', ctx.git.branch);
         if (ctx.git?.commitId) form.append('commitId', ctx.git.commitId);

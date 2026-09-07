@@ -50,6 +50,11 @@ async function uploadPdfs(ctx: Context, pdfPath: string): Promise<void> {
     const buildName = ctx.options.buildName;
     const pdfNames = ctx.options.pdfNames;
 
+    // --thresholds takes inline JSON or a path; either way the backend validates it against the names
+    if (ctx.options.thresholds && fs.existsSync(ctx.options.thresholds)) {
+        ctx.options.thresholds = fs.readFileSync(ctx.options.thresholds, 'utf8');
+    }
+
     // The backend names each document from pdfNames when given, else the uploaded file name.
     // Sync polling asks by that same name, so resolve it here rather than guessing later.
     const providedNames = pdfNames ? pdfNames.split(',').map(name => name.trim()) : [];

@@ -18,6 +18,9 @@ command
     .option('--buildName <string>', 'Specify the build name')
     .option('--markBaseline', 'Mark this build baseline')
     .option('--pdfNames <string>', 'Specify PDF names for the upload')
+    .option('--approvalThreshold <number>', 'Mismatch % at or below which every PDF in this upload is auto-approved (0-100)')
+    .option('--rejectionThreshold <number>', 'Mismatch % at or above which every PDF in this upload is auto-rejected (0-100)')
+    .option('--thresholds <json|file>', 'Per-PDF overrides keyed by name, inline JSON or a path to a JSON file, e.g. {"invoice.pdf":{"approval":2,"rejection":5}}')
     .option('--sync', 'Wait for the uploaded PDFs to be compared and return the results')
     .action(async function(directory, _, command) {
         const options = command.optsWithGlobals();
