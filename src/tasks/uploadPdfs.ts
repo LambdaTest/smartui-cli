@@ -6,7 +6,7 @@ import path from 'path';
 import fs from 'fs';
 import FormData from 'form-data';
 import { randomUUID } from 'node:crypto';
-import { resolvePdfThresholds, readPdfThresholdInput } from '../lib/pdfThresholds.js';
+import { resolvePdfThresholds } from '../lib/pdfThresholds.js';
 
 export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRendererFactory> => {
     return {
@@ -57,10 +57,10 @@ async function uploadPdfs(ctx: Context, pdfPath: string): Promise<void> {
     const documentNames = uploadedFileNames.map((fileName, index) => providedNames[index] ?? fileName);
 
     // resolved per pdf here, as the web path does per snapshot, so the backend gets one final
-    // value per file: per-file entry, else the build-level value (flag > pdf block > top-level)
+    // value per file: config pdf.thresholds entry, else the build-level value (flag > pdf block > top-level)
     const thresholds = resolvePdfThresholds(
         documentNames,
-        readPdfThresholdInput(ctx.options.thresholds),
+        ctx.options.pdfThresholds ?? {},
         ctx.options.approvalThreshold,
         ctx.options.rejectionThreshold
     );

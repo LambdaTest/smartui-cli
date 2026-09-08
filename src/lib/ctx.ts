@@ -297,8 +297,8 @@ export default (options: Record<string, string>): Context => {
             // sent rather than dropped, and the backend does the range/band validation
             approvalThreshold: firstThreshold(options.approvalThreshold, (config as any).pdf?.approvalThreshold, config.approvalThreshold),
             rejectionThreshold: firstThreshold(options.rejectionThreshold, (config as any).pdf?.rejectionThreshold, config.rejectionThreshold),
-            // the per-file map is taken whole from whichever source is set first, never merged
-            thresholds: options.thresholds || ((config as any).pdf?.thresholds ? JSON.stringify((config as any).pdf.thresholds) : ''),
+            // per-pdf overrides come only from the config file; there is no flag for them
+            pdfThresholds: (config as any).pdf?.thresholds ?? {},
             sync: options.sync ? true : false
         },
         cliVersion: version,

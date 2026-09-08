@@ -90,7 +90,7 @@ export interface Context {
         pdfNames?: string,
         approvalThreshold?: string,
         rejectionThreshold?: string,
-        thresholds?: string,
+        pdfThresholds?: Record<string, { approval?: number; rejection?: number }>,
         sync?: boolean,
         userName?: string,
         accessKey?: string
