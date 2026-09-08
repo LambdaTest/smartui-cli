@@ -34,6 +34,11 @@ export default (options: Record<string, string>): Context => {
     try {
         if (options.config) {
             config = JSON.parse(fs.readFileSync(options.config, 'utf-8'));
+            // the schema now also accepts a pdf-only file, so keep every other command on the rule
+            // it had before: no web or mobile block means nothing to run
+            if (options.commandType !== constants.COMMAND_TYPE_UPLOAD_PDF && !config.web && !config.mobile) {
+                throw new Error('Invalid config; must have either web or mobile config');
+            }
             // TODO: Mask sensitive data of config file
             // logger.debug(`Config file ${options.config} loaded: ${JSON.stringify(config, null, 2)}`);
 
@@ -288,10 +293,12 @@ export default (options: Record<string, string>): Context => {
             userName: options.userName || '',
             accessKey: options.accessKey || '',
             pdfNames: options.pdfNames || '',
-            // kept as strings so the backend does the range/band validation and "0" survives
-            approvalThreshold: options.approvalThreshold || '',
-            rejectionThreshold: options.rejectionThreshold || '',
-            thresholds: options.thresholds || '',
+            // flag > pdf block > top-level config > project; kept as strings so an explicit 0 is
+            // sent rather than dropped, and the backend does the range/band validation
+            approvalThreshold: firstThreshold(options.approvalThreshold, (config as any).pdf?.approvalThreshold, config.approvalThreshold),
+            rejectionThreshold: firstThreshold(options.rejectionThreshold, (config as any).pdf?.rejectionThreshold, config.rejectionThreshold),
+            // the per-file map is taken whole from whichever source is set first, never merged
+            thresholds: options.thresholds || ((config as any).pdf?.thresholds ? JSON.stringify((config as any).pdf.thresholds) : ''),
             sync: options.sync ? true : false
         },
         cliVersion: version,
@@ -317,4 +324,11 @@ export default (options: Record<string, string>): Context => {
         logFileUUID: logFileUUID,
         logFilePath: logFilePath
     }
+}
+// first source that actually set a value; a numeric 0 from config is a value, an empty flag is not
+function firstThreshold(...sources: any[]): string {
+    for (const s of sources) {
+        if (s !== undefined && s !== null && s !== '') return String(s);
+    }
+    return '';
 }

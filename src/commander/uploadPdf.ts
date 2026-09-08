@@ -14,6 +14,7 @@ command
     .name('upload-pdf')
     .description('Upload PDFs for visual comparison')
     .argument('<directory>', 'Path of the directory containing PDFs')
+    .option('-c --config <filepath>', 'Config file path; the same file used by exec, thresholds read from the top level or a pdf block')
     .option('--fetch-results [filename]', 'Fetch results and optionally specify an output file, e.g., <filename>.json')
     .option('--buildName <string>', 'Specify the build name')
     .option('--markBaseline', 'Mark this build baseline')
