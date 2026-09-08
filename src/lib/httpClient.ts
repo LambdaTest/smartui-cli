@@ -813,7 +813,7 @@ export default class httpClient {
         }
     }
 
-    async uploadPdf(ctx: Context, form: FormData, buildName?: string, pdfNames?: string, snapshotUuids?: string): Promise<any> {
+    async uploadPdf(ctx: Context, form: FormData, buildName?: string, pdfNames?: string, snapshotUuids?: string, thresholds?: Record<string, { approval?: number; rejection?: number }>): Promise<any> {
         form.append('projectToken', this.projectToken);
         if (ctx.build.name !== undefined && ctx.build.name !== '') {
             form.append('buildName', buildName);
@@ -831,10 +831,10 @@ export default class httpClient {
         if (snapshotUuids && snapshotUuids !== '') {
             form.append('snapshotUuids', snapshotUuids);
         }
-        // call-level thresholds apply to every pdf; the per-pdf map wins where it names a file
-        if (ctx.options.approvalThreshold) form.append('approvalThreshold', ctx.options.approvalThreshold);
-        if (ctx.options.rejectionThreshold) form.append('rejectionThreshold', ctx.options.rejectionThreshold);
-        if (ctx.options.thresholds) form.append('thresholds', ctx.options.thresholds);
+        // already resolved per pdf by the task; only the final map goes over, never the raw flags
+        if (thresholds && Object.keys(thresholds).length > 0) {
+            form.append('thresholds', JSON.stringify(thresholds));
+        }
 
         if (ctx.git?.branch) form.append('branch', ctx.git.branch);
         if (ctx.git?.commitId) form.append('commitId', ctx.git.commitId);

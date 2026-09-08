@@ -6,6 +6,7 @@ import path from 'path';
 import fs from 'fs';
 import FormData from 'form-data';
 import { randomUUID } from 'node:crypto';
+import { resolvePdfThresholds, readPdfThresholdInput } from '../lib/pdfThresholds.js';
 
 export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRendererFactory> => {
     return {
@@ -50,15 +51,19 @@ async function uploadPdfs(ctx: Context, pdfPath: string): Promise<void> {
     const buildName = ctx.options.buildName;
     const pdfNames = ctx.options.pdfNames;
 
-    // --thresholds takes inline JSON or a path; either way the backend validates it against the names
-    if (ctx.options.thresholds && fs.existsSync(ctx.options.thresholds)) {
-        ctx.options.thresholds = fs.readFileSync(ctx.options.thresholds, 'utf8');
-    }
-
     // The backend names each document from pdfNames when given, else the uploaded file name.
     // Sync polling asks by that same name, so resolve it here rather than guessing later.
     const providedNames = pdfNames ? pdfNames.split(',').map(name => name.trim()) : [];
     const documentNames = uploadedFileNames.map((fileName, index) => providedNames[index] ?? fileName);
+
+    // resolved per pdf here, as the web path does per snapshot, so the backend gets one final
+    // value per file: per-file entry, else the build-level value (flag > pdf block > top-level)
+    const thresholds = resolvePdfThresholds(
+        documentNames,
+        readPdfThresholdInput(ctx.options.thresholds),
+        ctx.options.approvalThreshold,
+        ctx.options.rejectionThreshold
+    );
 
     let snapshotUuids = '';
     if (ctx.options.sync) {
@@ -72,7 +77,7 @@ async function uploadPdfs(ctx: Context, pdfPath: string): Promise<void> {
     }
 
     try {
-        const response = await ctx.client.uploadPdf(ctx, formData, buildName, pdfNames, snapshotUuids);
+        const response = await ctx.client.uploadPdf(ctx, formData, buildName, pdfNames, snapshotUuids, thresholds);
         if (response && response.buildId) {
             ctx.build.id = response.buildId;
             ctx.log.debug(`PDF upload successful. Build ID: ${ctx.build.id}`);
