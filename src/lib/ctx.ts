@@ -293,10 +293,11 @@ export default (options: Record<string, string>): Context => {
             userName: options.userName || '',
             accessKey: options.accessKey || '',
             pdfNames: options.pdfNames || '',
-            // flag > pdf block > top-level config > project; kept as strings so an explicit 0 is
-            // sent rather than dropped, and the backend does the range/band validation
-            approvalThreshold: firstThreshold(options.approvalThreshold, (config as any).pdf?.approvalThreshold, config.approvalThreshold),
-            rejectionThreshold: firstThreshold(options.rejectionThreshold, (config as any).pdf?.rejectionThreshold, config.rejectionThreshold),
+            // flag > pdf block > project. The top-level approvalThreshold/rejectionThreshold are the
+            // web values and are never read for pdf. Kept as strings so an explicit 0 is sent rather
+            // than dropped; the backend does the range/band validation
+            approvalThreshold: firstThreshold(options.approvalThreshold, (config as any).pdf?.approvalThreshold),
+            rejectionThreshold: firstThreshold(options.rejectionThreshold, (config as any).pdf?.rejectionThreshold),
             // per-pdf overrides come only from the config file; there is no flag for them
             pdfThresholds: (config as any).pdf?.thresholds ?? {},
             sync: options.sync ? true : false
