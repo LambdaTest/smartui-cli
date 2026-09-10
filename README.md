@@ -13,7 +13,7 @@
 With TestMu AI (Formerly LambdaTest), you can capture visual snapshots of your web applications, upload images, and run visual regression tests using the SmartUI platform directly from the command line.
 
 - [Sign up on TestMu AI](https://www.testmuai.com/register/) (Formerly LambdaTest).
-- Follow the [TestMu AI Documentation](https://www.testmuai.com/support/docs/) for the full setup walkthrough.
+- Follow the [TestMu AI Documentation](https://www.testmuai.com/support/docs/smartui-cli-complete-reference/) for the full setup walkthrough.
 
 ### Prerequisites
 
