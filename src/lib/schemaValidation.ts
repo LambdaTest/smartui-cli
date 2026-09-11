@@ -389,11 +389,54 @@ const ConfigSchema = {
         showRenderErrors: {
             type: "boolean",
             errorMessage: "Invalid config; showRenderErrors must be true/false"
+        },
+        pdf: {
+            type: "object",
+            properties: {
+                approvalThreshold: {
+                    type: "number",
+                    minimum: 0,
+                    maximum: 100,
+                    errorMessage: "Invalid config; pdf.approvalThreshold must be a number between 0 and 100"
+                },
+                rejectionThreshold: {
+                    type: "number",
+                    minimum: 0,
+                    maximum: 100,
+                    errorMessage: "Invalid config; pdf.rejectionThreshold must be a number between 0 and 100"
+                },
+                thresholds: {
+                    type: "object",
+                    additionalProperties: {
+                        type: "object",
+                        properties: {
+                            approval: {
+                                type: "number",
+                                minimum: 0,
+                                maximum: 100,
+                                errorMessage: "Invalid config; pdf.thresholds.<name>.approval must be a number between 0 and 100"
+                            },
+                            rejection: {
+                                type: "number",
+                                minimum: 0,
+                                maximum: 100,
+                                errorMessage: "Invalid config; pdf.thresholds.<name>.rejection must be a number between 0 and 100"
+                            }
+                        },
+                        additionalProperties: false,
+                        errorMessage: "Invalid config; each pdf.thresholds entry may only have approval and rejection"
+                    },
+                    errorMessage: "Invalid config; pdf.thresholds must be an object keyed by PDF name"
+                }
+            },
+            additionalProperties: false,
+            errorMessage: "Invalid config; pdf may only contain approvalThreshold, rejectionThreshold and thresholds"
         }
     },
     anyOf: [
         { required: ["web"] },
-        { required: ["mobile"] }
+        { required: ["mobile"] },
+        { required: ["pdf"] }
     ],
     additionalProperties: false
 }

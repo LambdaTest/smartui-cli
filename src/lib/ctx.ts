@@ -34,6 +34,11 @@ export default (options: Record<string, string>): Context => {
     try {
         if (options.config) {
             config = JSON.parse(fs.readFileSync(options.config, 'utf-8'));
+            // the schema now also accepts a pdf-only file, so keep every other command on the rule
+            // it had before: no web or mobile block means nothing to run
+            if (options.commandType !== constants.COMMAND_TYPE_UPLOAD_PDF && !config.web && !config.mobile) {
+                throw new Error('Invalid config; must have either web or mobile config');
+            }
             // TODO: Mask sensitive data of config file
             // logger.debug(`Config file ${options.config} loaded: ${JSON.stringify(config, null, 2)}`);
 
@@ -288,6 +293,13 @@ export default (options: Record<string, string>): Context => {
             userName: options.userName || '',
             accessKey: options.accessKey || '',
             pdfNames: options.pdfNames || '',
+            // flag > pdf block > project. The top-level approvalThreshold/rejectionThreshold are the
+            // web values and are never read for pdf. Kept as strings so an explicit 0 is sent rather
+            // than dropped; the backend does the range/band validation
+            approvalThreshold: firstThreshold(options.approvalThreshold, (config as any).pdf?.approvalThreshold),
+            rejectionThreshold: firstThreshold(options.rejectionThreshold, (config as any).pdf?.rejectionThreshold),
+            // per-pdf overrides come only from the config file; there is no flag for them
+            pdfThresholds: (config as any).pdf?.thresholds ?? {},
             sync: options.sync ? true : false
         },
         cliVersion: version,
@@ -313,4 +325,11 @@ export default (options: Record<string, string>): Context => {
         logFileUUID: logFileUUID,
         logFilePath: logFilePath
     }
+}
+// first source that actually set a value; a numeric 0 from config is a value, an empty flag is not
+function firstThreshold(...sources: any[]): string {
+    for (const s of sources) {
+        if (s !== undefined && s !== null && s !== '') return String(s);
+    }
+    return '';
 }
