@@ -813,7 +813,7 @@ export default class httpClient {
         }
     }
 
-    async uploadPdf(ctx: Context, form: FormData, buildName?: string, pdfNames?: string, snapshotUuids?: string, thresholds?: Record<string, { approval?: number; rejection?: number }>): Promise<any> {
+    async uploadPdf(ctx: Context, form: FormData, buildName?: string, pdfNames?: string, snapshotUuids?: string): Promise<any> {
         form.append('projectToken', this.projectToken);
         if (ctx.build.name !== undefined && ctx.build.name !== '') {
             form.append('buildName', buildName);
@@ -830,10 +830,6 @@ export default class httpClient {
         // positionally aligned with the uploaded files; the poll uses the same uuid per document
         if (snapshotUuids && snapshotUuids !== '') {
             form.append('snapshotUuids', snapshotUuids);
-        }
-        // already resolved per pdf by the task; only the final map goes over, never the raw flags
-        if (thresholds && Object.keys(thresholds).length > 0) {
-            form.append('thresholds', JSON.stringify(thresholds));
         }
 
         if (ctx.git?.branch) form.append('branch', ctx.git.branch);

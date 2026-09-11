@@ -14,13 +14,10 @@ command
     .name('upload-pdf')
     .description('Upload PDFs for visual comparison')
     .argument('<directory>', 'Path of the directory containing PDFs')
-    .option('-c --config <filepath>', 'Config file path; the same file used by exec, thresholds read from the top level or a pdf block')
     .option('--fetch-results [filename]', 'Fetch results and optionally specify an output file, e.g., <filename>.json')
     .option('--buildName <string>', 'Specify the build name')
     .option('--markBaseline', 'Mark this build baseline')
     .option('--pdfNames <string>', 'Specify PDF names for the upload')
-    .option('--approvalThreshold <number>', 'Mismatch % at or below which every PDF in this upload is auto-approved (0-100); per-PDF overrides go in the config file under pdf.thresholds')
-    .option('--rejectionThreshold <number>', 'Mismatch % at or above which every PDF in this upload is auto-rejected (0-100); per-PDF overrides go in the config file under pdf.thresholds')
     .option('--sync', 'Wait for the uploaded PDFs to be compared and return the results')
     .action(async function(directory, _, command) {
         const options = command.optsWithGlobals();
