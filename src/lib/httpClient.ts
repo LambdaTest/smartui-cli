@@ -840,6 +840,8 @@ export default class httpClient {
         if (ctx.git?.commitId) form.append('commitId', ctx.git.commitId);
         if (ctx.git?.commitAuthor) form.append('commitAuthor', ctx.git.commitAuthor);
         if (ctx.git?.commitMessage) form.append('commitMessage', ctx.git.commitMessage);
+        // one field per tag so a comma inside a tag name is not split server-side
+        for (const tag of ctx.config.tags || []) form.append('tags', tag);
 
         try {
             const response = await this.axiosInstance.request({
