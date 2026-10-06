@@ -39,6 +39,7 @@ export interface Context {
         geolocation?: string;
         userAgent?: string;
         requestHeaders?: Array<Record<string, string>>;
+        cookies?: Array<cookieConfig>;
         allowDuplicateSnapshotNames?: boolean;
         useLambdaInternal?: boolean;
         useRemoteDiscovery?: boolean;
@@ -283,6 +284,14 @@ export type FigmaDesignConfig = {
     depth: number;
     figma_config: FigmaConfigItem[];
 };
+
+export interface cookieConfig {
+    name: string;
+    value: string;
+    domain: string;
+    path?: string;
+    sameSite?: 'Strict' | 'Lax' | 'None';
+}
 
 export interface basicAuth {
     username: string;
