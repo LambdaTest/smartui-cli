@@ -342,6 +342,23 @@ const ConfigSchema = {
                 uniqueItems: "Invalid config; duplicates in requestHeaders"
             }
         },
+        cookies: {
+            type: "array",
+            maxItems: 50,
+            items: {
+                type: "object",
+                properties: {
+                    name: { type: "string", minLength: 1 },
+                    value: { type: "string" },
+                    domain: { type: "string", minLength: 1 },
+                    path: { type: "string" },
+                    sameSite: { type: "string", enum: ["Strict", "Lax", "None"] }
+                },
+                required: ["name", "value", "domain"],
+                additionalProperties: false
+            },
+            errorMessage: "Invalid config; cookies must be an array (max 50) of { name, value, domain, path?, sameSite? }"
+        },
         dedicatedProxyURL: {
             type: "string",
             errorMessage: "Invalid config; dedicatedProxyURL must be a string"

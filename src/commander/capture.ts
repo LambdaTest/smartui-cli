@@ -65,7 +65,8 @@ command
             return;
         }
         //Print Config here in debug mode
-        ctx.log.debug(ctx.config);
+        // .smartui.log is printed in scheduled HyperExecute jobs, so cookie values stay out of it
+        ctx.log.debug({ ...ctx.config, cookies: ctx.config.cookies?.map(({ value, ...cookie }) => cookie) });
 
         let tasks = new Listr<Context>(
             [

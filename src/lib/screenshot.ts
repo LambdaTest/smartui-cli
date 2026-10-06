@@ -156,6 +156,14 @@ async function captureScreenshotsForConfig(
     try {
         const browser = browsers[browserName];
         context = await browser?.newContext(contextOptions);
+        // Set before the first navigation (and the beforeNavigation login script) so consent banners never render
+        if (ctx.config.cookies?.length) {
+            try {
+                await context.addCookies(ctx.config.cookies.map(cookie => ({ ...cookie, path: cookie.path || '/' })));
+            } catch (error: any) {
+                throw new Error(`failed to set cookies (${ctx.config.cookies.map(cookie => cookie.name).join(', ')}): ${error.message}`);
+            }
+        }
         page = await context?.newPage();
 
         if (beforeNavigationScript && beforeNavigationScript !== "") {
