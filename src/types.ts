@@ -34,6 +34,7 @@ export interface Context {
         figma?: FigmaWebConfig;
         ignoreHTTPSErrors : boolean;
         skipBuildCreation?: boolean;
+        skipBuildAutoComplete?: boolean;
         tunnel: tunnelConfig | undefined;
         dedicatedProxyURL?: string;
         geolocation?: string;

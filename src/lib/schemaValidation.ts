@@ -265,6 +265,10 @@ const ConfigSchema = {
             type: "boolean",
             errorMessage: "Invalid config; skipBuildCreation must be true/false"
         },
+        skipBuildAutoComplete: {
+            type: "boolean",
+            errorMessage: "Invalid config; skipBuildAutoComplete must be true/false"
+        },
         tunnel: {
             type: "object",
             properties: {

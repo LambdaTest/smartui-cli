@@ -237,6 +237,7 @@ export default (options: Record<string, string>): Context => {
             useGlobalCache: config.useGlobalCache ?? false,
             ignoreHTTPSErrors: config.ignoreHTTPSErrors ?? false,
             skipBuildCreation: config.skipBuildCreation ?? false,
+            skipBuildAutoComplete: config.skipBuildAutoComplete ?? false,
             tunnel: tunnelObj,
             dedicatedProxyURL: config.dedicatedProxyURL || '',
             geolocation: config.geolocation || '',
