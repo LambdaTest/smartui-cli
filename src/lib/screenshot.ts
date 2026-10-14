@@ -158,10 +158,20 @@ async function captureScreenshotsForConfig(
         context = await browser?.newContext(contextOptions);
         // Set before the first navigation (and the beforeNavigation login script) so consent banners never render
         if (ctx.config.cookies?.length) {
-            try {
-                await context.addCookies(ctx.config.cookies.map(cookie => ({ ...cookie, path: cookie.path || '/' })));
-            } catch (error: any) {
-                throw new Error(`failed to set cookies (${ctx.config.cookies.map(cookie => cookie.name).join(', ')}): ${error.message}`);
+            for (const cookie of ctx.config.cookies) {
+                const cookieToSet = { ...cookie, path: cookie.path || '/' };
+                try {
+                    await context.addCookies([cookieToSet]);
+                } catch (error: any) {
+                    // Firefox refuses a domain cookie on a public suffix (e.g. httpbin.org, github.io); host-only is what it accepts there
+                    try {
+                        if (!cookieToSet.domain?.startsWith('.')) throw error;
+                        await context.addCookies([{ ...cookieToSet, domain: cookieToSet.domain.slice(1) }]);
+                        ctx.log.debug(`URL Capture :: cookie ${cookieToSet.name} set host-only in ${browserName}`);
+                    } catch {
+                        ctx.log.warn(`URL Capture :: cookie ${cookieToSet.name} could not be set in ${browserName}: ${error.message}`);
+                    }
+                }
             }
         }
         page = await context?.newPage();
