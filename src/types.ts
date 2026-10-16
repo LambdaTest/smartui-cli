@@ -291,6 +291,7 @@ export interface cookieConfig {
     domain: string;
     path?: string;
     sameSite?: 'Strict' | 'Lax' | 'None';
+    secure?: boolean;
 }
 
 export interface basicAuth {

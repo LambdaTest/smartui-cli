@@ -159,7 +159,8 @@ async function captureScreenshotsForConfig(
         // Set before the first navigation (and the beforeNavigation login script) so consent banners never render
         if (ctx.config.cookies?.length) {
             for (const cookie of ctx.config.cookies) {
-                const cookieToSet = { ...cookie, path: cookie.path || '/' };
+                // Chromium silently drops a SameSite=None cookie that is not Secure
+                const cookieToSet = { ...cookie, path: cookie.path || '/', ...(cookie.sameSite === 'None' && { secure: true }) };
                 try {
                     await context.addCookies([cookieToSet]);
                 } catch (error: any) {

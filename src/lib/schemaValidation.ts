@@ -352,12 +352,13 @@ const ConfigSchema = {
                     value: { type: "string" },
                     domain: { type: "string", minLength: 1 },
                     path: { type: "string" },
-                    sameSite: { type: "string", enum: ["Strict", "Lax", "None"] }
+                    sameSite: { type: "string", enum: ["Strict", "Lax", "None"] },
+                    secure: { type: "boolean" }
                 },
                 required: ["name", "value", "domain"],
                 additionalProperties: false
             },
-            errorMessage: "Invalid config; cookies must be an array (max 50) of { name, value, domain, path?, sameSite? }"
+            errorMessage: "Invalid config; cookies must be an array (max 50) of { name, value, domain, path?, sameSite?, secure? }"
         },
         dedicatedProxyURL: {
             type: "string",
