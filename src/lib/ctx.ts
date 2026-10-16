@@ -242,6 +242,7 @@ export default (options: Record<string, string>): Context => {
             geolocation: config.geolocation || '',
             userAgent: config.userAgent || '',
             requestHeaders: config.requestHeaders || {},
+            cookies: (config as any).cookies || [],
             allowDuplicateSnapshotNames: allowDuplicateSnapshotNames,
             useLambdaInternal: useLambdaInternal,
             useRemoteDiscovery: useRemoteDiscovery,
