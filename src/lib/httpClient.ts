@@ -7,6 +7,9 @@ import type { Logger } from 'winston'
 import pkgJSON from './../../package.json'
 import https from 'https';
 
+// Cookies are applied by the CLI's own browsers, so their values never need to reach the server
+const withoutCookies = (config: any) => (config ? { ...config, cookies: undefined } : config);
+
 export default class httpClient {
     axiosInstance: AxiosInstance;
     projectToken: string;
@@ -246,7 +249,7 @@ export default class httpClient {
             },
             data: {
                 git,
-                config,
+                config: withoutCookies(config),
                 buildName,
                 isStartExec,
                 packageVersion: pkgJSON.version,
@@ -308,7 +311,7 @@ export default class httpClient {
     getSmartUICapabilities(sessionId: string, config: any, git: any, log: Logger, isStartExec: boolean, baselineBuild: string, env?: any) {
         const data: any = {
             git,
-            config,
+            config: withoutCookies(config),
             isStartExec,
             baselineBuild,
             packageVersion: pkgJSON.version,

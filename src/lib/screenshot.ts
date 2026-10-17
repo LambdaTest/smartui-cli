@@ -156,6 +156,25 @@ async function captureScreenshotsForConfig(
     try {
         const browser = browsers[browserName];
         context = await browser?.newContext(contextOptions);
+        // Set before the first navigation (and the beforeNavigation login script) so consent banners never render
+        if (ctx.config.cookies?.length) {
+            for (const cookie of ctx.config.cookies) {
+                // Chromium silently drops a SameSite=None cookie that is not Secure
+                const cookieToSet = { ...cookie, path: cookie.path || '/', ...(cookie.sameSite === 'None' && { secure: true }) };
+                try {
+                    await context.addCookies([cookieToSet]);
+                } catch (error: any) {
+                    // Firefox refuses a domain cookie on a public suffix (e.g. httpbin.org, github.io); host-only is what it accepts there
+                    try {
+                        if (!cookieToSet.domain?.startsWith('.')) throw error;
+                        await context.addCookies([{ ...cookieToSet, domain: cookieToSet.domain.slice(1) }]);
+                        ctx.log.debug(`URL Capture :: cookie ${cookieToSet.name} set host-only in ${browserName}`);
+                    } catch {
+                        ctx.log.warn(`URL Capture :: cookie ${cookieToSet.name} could not be set in ${browserName}: ${error.message}`);
+                    }
+                }
+            }
+        }
         page = await context?.newPage();
 
         if (beforeNavigationScript && beforeNavigationScript !== "") {
