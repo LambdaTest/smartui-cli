@@ -591,32 +591,27 @@ const SnapshotSchema: JSONSchemaType<Snapshot> = {
                         id: {
                             type: "array",
                             items: { type: "string", minLength: 1, pattern: "^[^;]*$", errorMessage: "Invalid snapshot options; ignoreDOM id cannot be empty or have semicolon" },
-                            uniqueItems: true,
-                            errorMessage: "Invalid snapshot options; ignoreDOM id array must have unique items"
+                            errorMessage: "Invalid snapshot options; ignoreDOM id must be an array"
                         },
                         class: {
                             type: "array",
                             items: { type: "string", minLength: 1, pattern: "^[^;]*$", errorMessage: "Invalid snapshot options; ignoreDOM class cannot be empty or have semicolon" },
-                            uniqueItems: true,
-                            errorMessage: "Invalid snapshot options; ignoreDOM class array must have unique items"
+                            errorMessage: "Invalid snapshot options; ignoreDOM class must be an array"
                         },
                         cssSelector: {
                             type: "array",
                             items: { type: "string", minLength: 1, pattern: "^[^;]*$", errorMessage: "Invalid snapshot options; ignoreDOM cssSelector cannot be empty or have semicolon" },
-                            uniqueItems: true,
-                            errorMessage: "Invalid snapshot options; ignoreDOM cssSelector array must have unique items"
+                            errorMessage: "Invalid snapshot options; ignoreDOM cssSelector must be an array"
                         },
                         xpath: {
                             type: "array",
                             items: { type: "string", minLength: 1 },
-                            uniqueItems: true,
-                            errorMessage: "Invalid snapshot options; ignoreDOM xpath array must have unique and non-empty items"
+                            errorMessage: "Invalid snapshot options; ignoreDOM xpath must be an array of non-empty strings"
                         },
                         coordinates: {
                             type: "array",
                             items: { type: "string", minLength: 1 },
-                            uniqueItems: true,
-                            errorMessage: "Invalid snapshot options; ignoreDOM coordinates array must have unique and non-empty items"
+                            errorMessage: "Invalid snapshot options; ignoreDOM coordinates must be an array of non-empty strings"
                         }
                     }
                 },
@@ -626,32 +621,27 @@ const SnapshotSchema: JSONSchemaType<Snapshot> = {
                         id: {
                             type: "array",
                             items: { type: "string", minLength: 1, pattern: "^[^;]*$", errorMessage: "Invalid snapshot options; selectDOM id cannot be empty or have semicolon" },
-                            uniqueItems: true,
-                            errorMessage: "Invalid snapshot options; selectDOM id array must have unique items"
+                            errorMessage: "Invalid snapshot options; selectDOM id must be an array"
                         },
                         class: {
                             type: "array",
                             items: { type: "string", minLength: 1, pattern: "^[^;]*$", errorMessage: "Invalid snapshot options; selectDOM class cannot be empty or have semicolon" },
-                            uniqueItems: true,
-                            errorMessage: "Invalid snapshot options; selectDOM class array must have unique items"
+                            errorMessage: "Invalid snapshot options; selectDOM class must be an array"
                         },
                         cssSelector: {
                             type: "array",
                             items: { type: "string", minLength: 1, pattern: "^[^;]*$", errorMessage: "Invalid snapshot options; selectDOM cssSelector cannot be empty or have semicolon" },
-                            uniqueItems: true,
-                            errorMessage: "Invalid snapshot options; selectDOM cssSelector array must have unique items"
+                            errorMessage: "Invalid snapshot options; selectDOM cssSelector must be an array"
                         },
                         xpath: {
                             type: "array",
                             items: { type: "string", minLength: 1 },
-                            uniqueItems: true,
-                            errorMessage: "Invalid snapshot options; selectDOM xpath array must have unique and non-empty items"
+                            errorMessage: "Invalid snapshot options; selectDOM xpath must be an array of non-empty strings"
                         },
                         coordinates: {
                             type: "array",
                             items: { type: "string", minLength: 1 },
-                            uniqueItems: true,
-                            errorMessage: "Invalid snapshot options; selectDOM coordinates array must have unique and non-empty items"
+                            errorMessage: "Invalid snapshot options; selectDOM coordinates must be an array of non-empty strings"
                         }
                     }
                 },
@@ -661,32 +651,27 @@ const SnapshotSchema: JSONSchemaType<Snapshot> = {
                         id: {
                             type: "array",
                             items: { type: "string", minLength: 1, pattern: "^[^;]*$", errorMessage: "Invalid snapshot options; ignoreColors id cannot be empty or have semicolon" },
-                            uniqueItems: true,
-                            errorMessage: "Invalid snapshot options; ignoreColors id array must have unique items"
+                            errorMessage: "Invalid snapshot options; ignoreColors id must be an array"
                         },
                         class: {
                             type: "array",
                             items: { type: "string", minLength: 1, pattern: "^[^;]*$", errorMessage: "Invalid snapshot options; ignoreColors class cannot be empty or have semicolon" },
-                            uniqueItems: true,
-                            errorMessage: "Invalid snapshot options; ignoreColors class array must have unique items"
+                            errorMessage: "Invalid snapshot options; ignoreColors class must be an array"
                         },
                         cssSelector: {
                             type: "array",
                             items: { type: "string", minLength: 1, pattern: "^[^;]*$", errorMessage: "Invalid snapshot options; ignoreColors cssSelector cannot be empty or have semicolon" },
-                            uniqueItems: true,
-                            errorMessage: "Invalid snapshot options; ignoreColors cssSelector array must have unique items"
+                            errorMessage: "Invalid snapshot options; ignoreColors cssSelector must be an array"
                         },
                         xpath: {
                             type: "array",
                             items: { type: "string", minLength: 1 },
-                            uniqueItems: true,
-                            errorMessage: "Invalid snapshot options; ignoreColors xpath array must have unique and non-empty items"
+                            errorMessage: "Invalid snapshot options; ignoreColors xpath must be an array of non-empty strings"
                         },
                         coordinates: {
                             type: "array",
                             items: { type: "string", minLength: 1 },
-                            uniqueItems: true,
-                            errorMessage: "Invalid snapshot options; ignoreColors coordinates array must have unique and non-empty items"
+                            errorMessage: "Invalid snapshot options; ignoreColors coordinates must be an array of non-empty strings"
                         },
                         entireScreenshot: {
                             type: "boolean",
