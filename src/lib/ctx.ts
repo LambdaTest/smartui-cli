@@ -308,6 +308,8 @@ export default (options: Record<string, string>): Context => {
         totalSnapshots: -1,
         isStartExec: false,
         isSnapshotCaptured: false,
+        domSerializerFetches: 0,
+        snapshotsReceived: 0,
         sessionCapabilitiesMap: new Map<string, any[]>(),
         sessionTestIdMap: new Map<string, string>(),
         testIdTestNameMap: new Map<string, string>(),

@@ -5,7 +5,7 @@ import { readFileSync, truncate } from 'fs'
 import { Context } from '../types.js'
 import { Logger } from 'winston'
 import { validateSnapshot } from './schemaValidation.js'
-import { pingIntervalId, startPollingForTunnel, stopTunnelHelper, isTunnelPolling } from './utils.js';
+import { pingIntervalId, startPollingForTunnel, stopTunnelHelper, isTunnelPolling, warnUnsentSnapshots } from './utils.js';
 import constants from './constants.js';
 var fp = require("find-free-port")
 
@@ -69,6 +69,7 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 
 	// send dom serializer
 	server.get('/domserializer', opts, (request, reply) => {
+		ctx.domSerializerFetches = (ctx.domSerializerFetches || 0) + 1;
 		reply.code(200).send({ data: { dom: SMARTUI_DOM } });
 	});
 
@@ -76,6 +77,7 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 	server.post('/snapshot', opts, async (request, reply) => {
 		let replyCode: number;
 		let replyBody: Record<string, any>;
+		ctx.snapshotsReceived = (ctx.snapshotsReceived || 0) + 1;
 
 		try {
 			let { snapshot, testType } = request.body;
@@ -198,6 +200,7 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 					}
 				}, 1000);
 			})
+			warnUnsentSnapshots(ctx);
 			let buildUrls = `build url: ${ctx.build.url}\n`;
 
 			for (const [sessionId, capabilities] of ctx.sessionCapabilitiesMap.entries()) {

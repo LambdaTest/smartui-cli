@@ -1020,6 +1020,14 @@ export function displayBranchName(branch: string | undefined): string {
     return branch && branch !== 'unknown-branch' ? branch : '';
 }
 
+// SDKs fetch the serializer once per snapshot and only log failures locally, so this gap is the only trace of lost snapshots
+export function warnUnsentSnapshots(ctx: Context): void {
+    const unsent = (ctx.domSerializerFetches || 0) - (ctx.snapshotsReceived || 0);
+    if (unsent > 0) {
+        ctx.log.warn(`${unsent} snapshot(s) fetched the DOM serializer but were never sent to SmartUI CLI; check your test logs for SmartUI snapshot errors`);
+    }
+}
+
 function printOmniHeader(build: any, project: any) {
     console.log(chalk.green.bold(`\nProject Name: ${project.name}`));
     console.log(chalk.green.bold(`Build Name: ${build.build_name}`));
