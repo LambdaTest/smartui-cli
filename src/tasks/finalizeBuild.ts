@@ -2,7 +2,7 @@ import { ListrTask, ListrRendererFactory } from 'listr2';
 import { Context } from '../types.js'
 import { updateLogContext } from '../lib/logger.js';
 import chalk from 'chalk';
-import { startPolling, pingIntervalId, startPollingForTunnel, stopTunnelHelper, isTunnelPolling } from '../lib/utils.js';
+import { startPolling, pingIntervalId, startPollingForTunnel, stopTunnelHelper, isTunnelPolling, warnUnsentSnapshots } from '../lib/utils.js';
 import { unlinkSync } from 'fs';
 import constants from '../lib/constants.js';
 import fs from 'fs';
@@ -13,6 +13,7 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
         title: `Finalizing build`,
         task: async (ctx, task): Promise<void> => {
             updateLogContext({task: 'finalizeBuild'});
+            warnUnsentSnapshots(ctx);
 
             try {
                 if (ctx.build.id) {

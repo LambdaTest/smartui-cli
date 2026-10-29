@@ -103,6 +103,8 @@ export interface Context {
     testType?: string;
     isStartExec ?: boolean;
     isSnapshotCaptured ?: boolean;
+    domSerializerFetches?: number;
+    snapshotsReceived?: number;
     sessionCapabilitiesMap?: Map<string, any[]>;
     sessionTestIdMap?: Map<string, string>;
     testIdTestNameMap?: Map<string, string>;
