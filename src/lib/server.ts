@@ -5,7 +5,7 @@ import { readFileSync, truncate } from 'fs'
 import { Context } from '../types.js'
 import { Logger } from 'winston'
 import { validateSnapshot } from './schemaValidation.js'
-import { pingIntervalId, startPollingForTunnel, stopTunnelHelper, isTunnelPolling, warnUnsentSnapshots } from './utils.js';
+import { pingIntervalId, startPollingForTunnel, stopTunnelHelper, isTunnelPolling, warnUnsentSnapshots, dedupeSnapshotSelectors } from './utils.js';
 import constants from './constants.js';
 var fp = require("find-free-port")
 
@@ -81,6 +81,8 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 
 		try {
 			let { snapshot, testType } = request.body;
+			const selectorWarnings = dedupeSnapshotSelectors(snapshot);
+			selectorWarnings.forEach(warning => ctx.log.warn(warning));
 			if (!validateSnapshot(snapshot)) throw new Error(validateSnapshot.errors[0].message);
 
 			if (snapshot?.options?.approvalThreshold !== undefined && snapshot?.options?.rejectionThreshold !== undefined) {
@@ -173,7 +175,7 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 
 			ctx.isSnapshotCaptured = true;
 			replyCode = 200;
-			replyBody = { data: { message: "success", warnings: [] } };
+			replyBody = { data: { message: "success", warnings: selectorWarnings } };
 		} catch (error: any) {
 			ctx.log.debug(`snapshot failed; ${error}`)
 			replyCode = 500;

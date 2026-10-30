@@ -1028,6 +1028,24 @@ export function warnUnsentSnapshots(ctx: Context): void {
     }
 }
 
+// A repeated selector resolves to the same boxes, so drop it instead of failing the snapshot
+export function dedupeSnapshotSelectors(snapshot: any): Array<string> {
+    const warnings: Array<string> = [];
+    for (const group of ['ignoreDOM', 'selectDOM', 'ignoreColors']) {
+        const selectors = snapshot?.options?.[group];
+        if (!selectors || typeof selectors !== 'object') continue;
+        for (const [key, values] of Object.entries(selectors)) {
+            if (!Array.isArray(values)) continue;
+            const unique = [...new Set(values)];
+            if (unique.length === values.length) continue;
+            const repeated = [...new Set(values.filter((value, i) => values.indexOf(value) !== i))];
+            selectors[key] = unique;
+            warnings.push(`Snapshot ${snapshot?.name}: ${group} ${key} ${repeated.map(value => JSON.stringify(value)).join(', ')} listed more than once; using it once`);
+        }
+    }
+    return warnings;
+}
+
 function printOmniHeader(build: any, project: any) {
     console.log(chalk.green.bold(`\nProject Name: ${project.name}`));
     console.log(chalk.green.bold(`Build Name: ${build.build_name}`));
