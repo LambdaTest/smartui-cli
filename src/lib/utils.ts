@@ -1040,7 +1040,7 @@ export function dedupeSnapshotSelectors(snapshot: any): Array<string> {
             if (unique.length === values.length) continue;
             const repeated = [...new Set(values.filter((value, i) => values.indexOf(value) !== i))];
             selectors[key] = unique;
-            warnings.push(`Snapshot ${snapshot?.name}: ${group} ${key} ${repeated.map(value => JSON.stringify(value)).join(', ')} listed more than once; using it once`);
+            warnings.push(`Snapshot ${snapshot?.name}: ${group} ${key} ${repeated.map(value => JSON.stringify(value)).join(', ')} listed more than once, using it once`);
         }
     }
     return warnings;
