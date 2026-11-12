@@ -99,9 +99,6 @@ export async function prepareSnapshot(snapshot: Snapshot, ctx: Context): Promise
         if (options.loadDomContent) {
             processedOptions.loadDomContent = true;
         }
-        if (options.useExtendedViewport) {
-            processedOptions.useExtendedViewport = true;
-        }
         if (options.pageCustomScroll) {
             processedOptions.pageCustomScroll = true;
         }
@@ -221,9 +218,8 @@ export async function prepareSnapshot(snapshot: Snapshot, ctx: Context): Promise
     if (ctx.config.loadDomContent) {
         processedOptions.loadDomContent = true;
     }
-    if (ctx.config.useExtendedViewport) {
-        processedOptions.useExtendedViewport = true;
-    }
+    // snapshot-level value (incl. explicit false) overrides the build-level config
+    processedOptions.useExtendedViewport = !!(options?.useExtendedViewport ?? ctx.config.useExtendedViewport);
 
     if (ctx.config.lazyLoadConfiguration && ctx.config.lazyLoadConfiguration.enabled) {
         let stepValue = ctx.config.lazyLoadConfiguration.scrollStep || 250;
@@ -723,9 +719,8 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
     if (ctx.config.loadDomContent) {
         processedOptions.loadDomContent = true;
     }
-    if (ctx.config.useExtendedViewport) {
-        processedOptions.useExtendedViewport = true;
-    }
+    // snapshot-level value (incl. explicit false) overrides the build-level config
+    processedOptions.useExtendedViewport = !!(options?.useExtendedViewport ?? ctx.config.useExtendedViewport);
 
     try {
         if (options?.customCSS) {
