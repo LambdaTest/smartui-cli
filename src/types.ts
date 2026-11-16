@@ -175,10 +175,10 @@ export interface Snapshot {
             coordinates?: Array<string>
         },
         scrollableElement?: {
-            id?: string[],
-            class?: string[],
-            cssSelector?: string[],
-            xpath?: string[]
+            id?: string,
+            class?: string,
+            cssSelector?: string,
+            xpath?: string
         },
         selectDOM?: {
             id?: Array<string>,

@@ -619,28 +619,33 @@ const SnapshotSchema: JSONSchemaType<Snapshot> = {
                     type: "object",
                     properties: {
                         id: {
-                            type: "array",
-                            items: { type: "string", minLength: 1, pattern: "^[^;]*$", errorMessage: "Invalid snapshot options; scrollableElement id cannot be empty or have semicolon" },
-                            errorMessage: "Invalid snapshot options; scrollableElement id must be an array"
+                            type: "string",
+                            minLength: 1,
+                            pattern: "^[^;]*$",
+                            errorMessage: "Invalid snapshot options; scrollableElement id cannot be empty or have semicolon"
                         },
                         class: {
-                            type: "array",
-                            items: { type: "string", minLength: 1, pattern: "^[^;]*$", errorMessage: "Invalid snapshot options; scrollableElement class cannot be empty or have semicolon" },
-                            errorMessage: "Invalid snapshot options; scrollableElement class must be an array"
+                            type: "string",
+                            minLength: 1,
+                            pattern: "^[^;]*$",
+                            errorMessage: "Invalid snapshot options; scrollableElement class cannot be empty or have semicolon"
                         },
                         cssSelector: {
-                            type: "array",
-                            items: { type: "string", minLength: 1, pattern: "^[^;]*$", errorMessage: "Invalid snapshot options; scrollableElement cssSelector cannot be empty or have semicolon" },
-                            errorMessage: "Invalid snapshot options; scrollableElement cssSelector must be an array"
+                            type: "string",
+                            minLength: 1,
+                            pattern: "^[^;]*$",
+                            errorMessage: "Invalid snapshot options; scrollableElement cssSelector cannot be empty or have semicolon"
                         },
                         xpath: {
-                            type: "array",
-                            items: { type: "string", minLength: 1 },
-                            errorMessage: "Invalid snapshot options; scrollableElement xpath must be an array of non-empty strings"
+                            type: "string",
+                            minLength: 1,
+                            errorMessage: "Invalid snapshot options; scrollableElement xpath cannot be empty"
                         }
                     },
                     additionalProperties: false,
-                    errorMessage: "Invalid snapshot options; scrollableElement accepts only id, class, cssSelector and xpath arrays"
+                    minProperties: 1,
+                    maxProperties: 1,
+                    errorMessage: "Invalid snapshot options; scrollableElement takes exactly one of id, class, cssSelector or xpath, as a string"
                 },
                 selectDOM: {
                     type: "object",
