@@ -982,6 +982,8 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
                     if (viewport.height) {
                         pageHeight = viewport.height;
                     }
+                    // with scrollableElement the screenshot is as tall as the extended viewport, not the page
+                    pageHeight = Math.max(pageHeight, processedOptions.scrollableElementHeights?.[viewportString] || 0);
                     const validation = validateCoordinates(
                         coordString,
                         pageHeight,
