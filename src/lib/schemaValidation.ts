@@ -615,6 +615,33 @@ const SnapshotSchema: JSONSchemaType<Snapshot> = {
                         }
                     }
                 },
+                scrollableElement: {
+                    type: "object",
+                    properties: {
+                        id: {
+                            type: "array",
+                            items: { type: "string", minLength: 1, pattern: "^[^;]*$", errorMessage: "Invalid snapshot options; scrollableElement id cannot be empty or have semicolon" },
+                            errorMessage: "Invalid snapshot options; scrollableElement id must be an array"
+                        },
+                        class: {
+                            type: "array",
+                            items: { type: "string", minLength: 1, pattern: "^[^;]*$", errorMessage: "Invalid snapshot options; scrollableElement class cannot be empty or have semicolon" },
+                            errorMessage: "Invalid snapshot options; scrollableElement class must be an array"
+                        },
+                        cssSelector: {
+                            type: "array",
+                            items: { type: "string", minLength: 1, pattern: "^[^;]*$", errorMessage: "Invalid snapshot options; scrollableElement cssSelector cannot be empty or have semicolon" },
+                            errorMessage: "Invalid snapshot options; scrollableElement cssSelector must be an array"
+                        },
+                        xpath: {
+                            type: "array",
+                            items: { type: "string", minLength: 1 },
+                            errorMessage: "Invalid snapshot options; scrollableElement xpath must be an array of non-empty strings"
+                        }
+                    },
+                    additionalProperties: false,
+                    errorMessage: "Invalid snapshot options; scrollableElement accepts only id, class, cssSelector and xpath arrays"
+                },
                 selectDOM: {
                     type: "object",
                     properties: {

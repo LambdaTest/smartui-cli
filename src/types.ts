@@ -174,6 +174,12 @@ export interface Snapshot {
             xpath?: Array<string>,
             coordinates?: Array<string>
         },
+        scrollableElement?: {
+            id?: string[],
+            class?: string[],
+            cssSelector?: string[],
+            xpath?: string[]
+        },
         selectDOM?: {
             id?: Array<string>,
             class?: Array<string>,
@@ -229,7 +235,9 @@ export interface ProcessedSnapshot {
     resources: Record<string, any>,
     options: {
         ignoreBoxes?: Record<string, Array<Record<string, number | string>>>,
-        selectBoxes?: Record<string, Array<Record<string, number | string>>>
+        selectBoxes?: Record<string, Array<Record<string, number | string>>>,
+        scrollableElementSelectors?: Array<string>,
+        scrollableElementHeights?: Record<string, number>
     }
 }
 
