@@ -65,9 +65,9 @@ function flattenSelectorGroups(groups: Record<string, any>, out: Array<string>):
     }
 }
 
-// scrollableElement: the element that scrolls instead of the page. Its selectors are sent to the renderer, which
-// opens a viewport tall enough to show the element's whole content. Returns the flattened selectors ('#id',
-// '.class', css, 'xpath=...'); empty when the option is not used.
+// scrollableElement: the element that scrolls instead of the page. Its selectors are sent to the renderer, which,
+// for full page screenshots only, opens a viewport tall enough to show the element's whole content. Returns the
+// flattened selectors ('#id', '.class', css, 'xpath=...'); empty when the option is not used.
 function collectScrollableElementSelectors(snapshot: Snapshot, processedOptions: Record<string, any>, optionWarnings: Set<string>): Array<string> {
     const group = snapshot.options?.scrollableElement;
     if (!group || typeof group !== 'object') return [];
@@ -83,12 +83,12 @@ function collectScrollableElementSelectors(snapshot: Snapshot, processedOptions:
     return selectors;
 }
 
-// Runs in the page at the current viewport: how tall must the viewport be to show the whole scrollable element.
+// Runs in the page at the current viewport: how tall must a full page screenshot's viewport be to show the whole
+// scrollable element. Only used for full page screenshots.
 //   overflow = largest (scrollHeight - clientHeight) among the matched elements
-//   base     = full-page viewports: max(document height, window height); fixed-height viewports: window height
-//   required = base + overflow
+//   required = max(document height, window height) + overflow
 // Keep in sync with measureScrollableElement in dotui (services/scrollableElement.js).
-function measureScrollableElementInPage({ selectors, fullPage }: { selectors: Array<string>, fullPage: boolean }): { found: number, overflow: number, required: number } {
+function measureScrollableElementInPage({ selectors }: { selectors: Array<string> }): { found: number, overflow: number, required: number } {
     const elements: Array<any> = [];
     for (const selector of selectors) {
         try {
@@ -109,7 +109,7 @@ function measureScrollableElementInPage({ selectors, fullPage }: { selectors: Ar
     const body: any = document.body || {};
     const html = document.documentElement;
     const documentHeight = Math.max(body.scrollHeight || 0, body.offsetHeight || 0, html.scrollHeight || 0, html.offsetHeight || 0);
-    const base = fullPage ? Math.max(documentHeight, window.innerHeight) : window.innerHeight;
+    const base = Math.max(documentHeight, window.innerHeight);
     return { found: elements.length, overflow: Math.max(0, Math.ceil(overflow)), required: Math.ceil(base + Math.max(0, overflow)) };
 }
 
@@ -924,9 +924,12 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
         }
 
         // scrollableElement: viewport height needed to show the whole element at this viewport
-        if (scrollableElementSelectors.length) {
+        if (scrollableElementSelectors.length && !fullPage) {
+            // only full page screenshots are extended; a fixed-height viewport is captured as it is
+            optionWarnings.add(`for snapshot ${snapshot.name} viewport ${viewportString}, scrollableElement is skipped because it works only with full page screenshots`);
+        } else if (scrollableElementSelectors.length) {
             try {
-                const measured = await page.evaluate(measureScrollableElementInPage, { selectors: scrollableElementSelectors, fullPage: !!fullPage });
+                const measured = await page.evaluate(measureScrollableElementInPage, { selectors: scrollableElementSelectors });
                 ctx.log.debug(`scrollableElement for viewport ${viewportString}: ${JSON.stringify(measured)}`);
                 if (!measured.found) {
                     optionWarnings.add(`for snapshot ${snapshot.name} viewport ${viewportString}, no element found for scrollableElement selector ${scrollableElementSelectors.join(', ')}`);
