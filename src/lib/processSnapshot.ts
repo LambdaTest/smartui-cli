@@ -65,10 +65,7 @@ function flattenSelectorGroups(groups: Record<string, any>, out: Array<string>):
     }
 }
 
-// scrollableElement: the one element that scrolls instead of the page. Like `element`, it is a single selector and is
-// sent to the renderer as one string ('#id', '.class', css or 'xpath=...'). For full page screenshots only, the
-// renderer opens a viewport tall enough to show the element's whole content. Returns that selector string, or ''
-// when the option is not used.
+// Returns the scrollableElement option as one selector string ('#id', '.class', css or 'xpath=...'), '' when unused.
 function collectScrollableElementSelector(snapshot: Snapshot, processedOptions: Record<string, any>, optionWarnings: Set<string>): string {
     const group = snapshot.options?.scrollableElement;
     if (!group || typeof group !== 'object') return '';
@@ -86,11 +83,7 @@ function collectScrollableElementSelector(snapshot: Snapshot, processedOptions: 
     return selector;
 }
 
-// Runs in the page at the current viewport: how tall must a full page screenshot's viewport be to show the whole
-// scrollable element. Only used for full page screenshots. When the selector matches several elements the first is used.
-//   overflow = element.scrollHeight - element.clientHeight
-//   required = max(document height, window height) + overflow
-// Keep in sync with measureScrollableElement in dotui (services/scrollableElement.js).
+// Runs in the page: required height = max(document height, window height) + (element.scrollHeight - element.clientHeight)
 function measureScrollableElementInPage({ selector }: { selector: string }): { found: number, overflow: number, required: number } {
     let elements: Array<any> = [];
     try {
@@ -101,7 +94,7 @@ function measureScrollableElementInPage({ selector }: { selector: string }): { f
             elements = Array.from(document.querySelectorAll(selector));
         }
     } catch (e) {
-        // an invalid selector matches nothing
+        // invalid selector: no match
     }
     elements = elements.filter((el) => el && el.nodeType === 1);
     const overflow = elements.length ? elements[0].scrollHeight - elements[0].clientHeight : 0;
@@ -922,9 +915,7 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
             }
         }
 
-        // scrollableElement: viewport height needed to show the whole element at this viewport
         if (scrollableElementSelector && !fullPage) {
-            // only full page screenshots are extended; a fixed-height viewport is captured as it is
             optionWarnings.add(`for snapshot ${snapshot.name} viewport ${viewportString}, scrollableElement is skipped because it works only with full page screenshots`);
         } else if (scrollableElementSelector) {
             try {
@@ -984,7 +975,7 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
                     if (viewport.height) {
                         pageHeight = viewport.height;
                     }
-                    // with scrollableElement the screenshot is as tall as the extended viewport, not the page
+                    // with scrollableElement the screenshot is as tall as the extended viewport
                     pageHeight = Math.max(pageHeight, processedOptions.scrollableElementHeights?.[viewportString] || 0);
                     const validation = validateCoordinates(
                         coordString,
