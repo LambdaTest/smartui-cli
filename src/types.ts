@@ -327,7 +327,7 @@ export interface tunnelConfig {
 
 export interface FigmaWebConfig {
     autoDetectViewports: Array<string>;
-    configs: Array<{ figma_file_token: string, figma_ids: Array<string>, screenshot_names:Array<string> }>;
+    configs: Array<{ figma_file_token: string, figma_ids: Array<string>, screenshot_names:Array<string>, auto_detect_height?: boolean }>;
 }
 
 export interface CustomCookie {

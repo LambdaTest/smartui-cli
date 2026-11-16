@@ -958,6 +958,10 @@ const FigmaWebConfigSchema: JSONSchemaType<Object> = {
                                     "minItems": 1,
                                     "maxItems": 2
                                 }
+                            },
+                            "auto_detect_height": {
+                                type: "boolean",
+                                errorMessage: "Invalid figma config; auto_detect_height must be true/false"
                             }
                         },
                         "required": ["figma_file_token", "figma_ids"]
