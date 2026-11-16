@@ -65,9 +65,10 @@ function flattenSelectorGroups(groups: Record<string, any>, out: Array<string>):
     }
 }
 
-// scrollableElement: the element that scrolls instead of the page. Its selectors are sent to the renderer, which,
-// for full page screenshots only, opens a viewport tall enough to show the element's whole content. Returns the
-// flattened selectors ('#id', '.class', css, 'xpath=...'); empty when the option is not used.
+// scrollableElement: the element that scrolls instead of the page. Like ignoreDOM / selectDOM, the raw selector
+// groups are sent to the renderer, which, for full page screenshots only, opens a viewport tall enough to show the
+// element's whole content. Returns the flattened selectors ('#id', '.class', css, 'xpath=...') for measuring the
+// element here; empty when the option is not used.
 function collectScrollableElementSelectors(snapshot: Snapshot, processedOptions: Record<string, any>, optionWarnings: Set<string>): Array<string> {
     const group = snapshot.options?.scrollableElement;
     if (!group || typeof group !== 'object') return [];
@@ -79,7 +80,6 @@ function collectScrollableElementSelectors(snapshot: Snapshot, processedOptions:
         return [];
     }
     processedOptions.scrollableElement = group;
-    processedOptions.scrollableElementSelectors = selectors;
     return selectors;
 }
 
@@ -133,7 +133,7 @@ export async function prepareSnapshot(snapshot: Snapshot, ctx: Context): Promise
     let options = snapshot.options;
     let optionWarnings: Set<string> = new Set();
     let selectors: Array<string> = [];
-    const scrollableElementSelectors = collectScrollableElementSelectors(snapshot, processedOptions, optionWarnings);
+    collectScrollableElementSelectors(snapshot, processedOptions, optionWarnings);
     let ignoreOrSelectDOM: string;
     let ignoreOrSelectBoxes: string;
 

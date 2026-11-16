@@ -236,7 +236,6 @@ export interface ProcessedSnapshot {
     options: {
         ignoreBoxes?: Record<string, Array<Record<string, number | string>>>,
         selectBoxes?: Record<string, Array<Record<string, number | string>>>,
-        scrollableElementSelectors?: Array<string>,
         scrollableElementHeights?: Record<string, number>
     }
 }
