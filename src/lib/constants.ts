@@ -402,6 +402,10 @@ export default {
         'OnePlus 12': { os: 'android', viewport: { width: 384, height: 884 } },
         'Nothing Phone 1': { os: 'android', viewport: { width: 393, height: 853 } },
         'Nothing Phone 2': { os: 'android', viewport: { width: 393, height: 878 } },
+        'iPhone 18 Pro': { os: 'ios', viewport: { width: 402, height: 874 } },
+        'iPhone 18 Pro Max': { os: 'ios', viewport: { width: 440, height: 956 } },
+        'iPad Pro 13 (2025)': { os: 'ios', viewport: { width: 1032, height: 1376 } },
+        'iPad Pro 11 (2025)': { os: 'ios', viewport: { width: 834, height: 1210 } },
     },
 
     FIGMA_API: 'https://api.figma.com/v1/',

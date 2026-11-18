@@ -174,6 +174,12 @@ export interface Snapshot {
             xpath?: Array<string>,
             coordinates?: Array<string>
         },
+        scrollableElement?: {
+            id?: string,
+            class?: string,
+            cssSelector?: string,
+            xpath?: string
+        },
         selectDOM?: {
             id?: Array<string>,
             class?: Array<string>,
@@ -229,7 +235,8 @@ export interface ProcessedSnapshot {
     resources: Record<string, any>,
     options: {
         ignoreBoxes?: Record<string, Array<Record<string, number | string>>>,
-        selectBoxes?: Record<string, Array<Record<string, number | string>>>
+        selectBoxes?: Record<string, Array<Record<string, number | string>>>,
+        scrollableElementHeights?: Record<string, number>
     }
 }
 
@@ -327,7 +334,7 @@ export interface tunnelConfig {
 
 export interface FigmaWebConfig {
     autoDetectViewports: Array<string>;
-    configs: Array<{ figma_file_token: string, figma_ids: Array<string>, screenshot_names:Array<string> }>;
+    configs: Array<{ figma_file_token: string, figma_ids: Array<string>, screenshot_names:Array<string>, auto_detect_height?: boolean }>;
 }
 
 export interface CustomCookie {
