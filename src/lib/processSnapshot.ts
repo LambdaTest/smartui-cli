@@ -65,6 +65,46 @@ function flattenSelectorGroups(groups: Record<string, any>, out: Array<string>):
     }
 }
 
+// Returns the scrollableElement option as one selector string ('#id', '.class', css or 'xpath=...'), '' when unused.
+function collectScrollableElementSelector(snapshot: Snapshot, processedOptions: Record<string, any>, optionWarnings: Set<string>): string {
+    const group = snapshot.options?.scrollableElement;
+    if (!group || typeof group !== 'object') return '';
+    let selector = '';
+    if (group.id) selector = '#' + group.id;
+    else if (group.class) selector = '.' + group.class;
+    else if (group.cssSelector) selector = group.cssSelector;
+    else if (group.xpath) selector = 'xpath=' + group.xpath;
+    if (!selector) return '';
+    if (snapshot.options?.element && Object.keys(snapshot.options.element).length) {
+        optionWarnings.add(`for snapshot ${snapshot.name}, scrollableElement is ignored because element is set`);
+        return '';
+    }
+    processedOptions.scrollableElement = selector;
+    return selector;
+}
+
+// Runs in the page: required height = max(document height, window height) + (element.scrollHeight - element.clientHeight)
+function measureScrollableElementInPage({ selector }: { selector: string }): { found: number, overflow: number, required: number } {
+    let elements: Array<any> = [];
+    try {
+        if (selector.startsWith('xpath=')) {
+            const result = document.evaluate(selector.slice(6), document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
+            for (let i = 0; i < result.snapshotLength; i++) elements.push(result.snapshotItem(i));
+        } else {
+            elements = Array.from(document.querySelectorAll(selector));
+        }
+    } catch (e) {
+        // invalid selector: no match
+    }
+    elements = elements.filter((el) => el && el.nodeType === 1);
+    const overflow = elements.length ? elements[0].scrollHeight - elements[0].clientHeight : 0;
+    const body: any = document.body || {};
+    const html = document.documentElement;
+    const documentHeight = Math.max(body.scrollHeight || 0, body.offsetHeight || 0, html.scrollHeight || 0, html.offsetHeight || 0);
+    const base = Math.max(documentHeight, window.innerHeight);
+    return { found: elements.length, overflow: Math.max(0, Math.ceil(overflow)), required: Math.ceil(base + Math.max(0, overflow)) };
+}
+
 export async function prepareSnapshot(snapshot: Snapshot, ctx: Context): Promise<Record<string, any>> {
     let processedOptions: Record<string, any> = {};
     processedOptions.cliEnableJavascript = ctx.config.cliEnableJavaScript;
@@ -85,6 +125,7 @@ export async function prepareSnapshot(snapshot: Snapshot, ctx: Context): Promise
     let options = snapshot.options;
     let optionWarnings: Set<string> = new Set();
     let selectors: Array<string> = [];
+    collectScrollableElementSelector(snapshot, processedOptions, optionWarnings);
     let ignoreOrSelectDOM: string;
     let ignoreOrSelectBoxes: string;
 
@@ -576,6 +617,7 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
     });
     let optionWarnings: Set<string> = new Set();
     let selectors: Array<string> = [];
+    const scrollableElementSelector = collectScrollableElementSelector(snapshot, processedOptions, optionWarnings);
     let ignoreOrSelectDOM: string;
     let ignoreOrSelectBoxes: string;
     let ignoreColorsSelectors: Array<string> = [];
@@ -873,6 +915,30 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
             }
         }
 
+        if (scrollableElementSelector && !fullPage) {
+            optionWarnings.add(`for snapshot ${snapshot.name} viewport ${viewportString}, scrollableElement is skipped because it works only with full page screenshots`);
+        } else if (scrollableElementSelector) {
+            try {
+                const measured = await page.evaluate(measureScrollableElementInPage, { selector: scrollableElementSelector });
+                ctx.log.debug(`scrollableElement for viewport ${viewportString}: ${JSON.stringify(measured)}`);
+                if (!measured.found) {
+                    optionWarnings.add(`for snapshot ${snapshot.name} viewport ${viewportString}, no element found for scrollableElement selector ${scrollableElementSelector}`);
+                } else if (measured.overflow > 0) {
+                    if (measured.found > 1) {
+                        optionWarnings.add(`for snapshot ${snapshot.name} viewport ${viewportString}, scrollableElement selector ${scrollableElementSelector} matches ${measured.found} elements; the first one is used`);
+                    }
+                    if (measured.required > constants.MAXIMUM_POSSIBLE_PAGE_HEIGHT) {
+                        optionWarnings.add(`for snapshot ${snapshot.name} viewport ${viewportString}, scrollableElement needs ${measured.required}px of height; only the first ${constants.MAXIMUM_POSSIBLE_PAGE_HEIGHT}px will be captured`);
+                    }
+                    if (!processedOptions.scrollableElementHeights) processedOptions.scrollableElementHeights = {};
+                    processedOptions.scrollableElementHeights[viewportString] = Math.min(measured.required, constants.MAXIMUM_POSSIBLE_PAGE_HEIGHT);
+                }
+            } catch (error: any) {
+                ctx.log.debug(`scrollableElement measurement failed for viewport ${viewportString}: ${error?.message}`);
+                optionWarnings.add(`for snapshot ${snapshot.name} viewport ${viewportString}, scrollableElement could not be measured (${error?.message}); the height will be measured at render time`);
+            }
+        }
+
         // snapshot options
         if (selectors.length || ignoreColorsSelectors.length || ignoreColorsEntireScreenshot) {
             let height = 0;
@@ -910,6 +976,8 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
                     if (viewport.height) {
                         pageHeight = viewport.height;
                     }
+                    // with scrollableElement the screenshot is as tall as the extended viewport
+                    pageHeight = Math.max(pageHeight, processedOptions.scrollableElementHeights?.[viewportString] || 0);
                     const validation = validateCoordinates(
                         coordString,
                         pageHeight,

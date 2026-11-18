@@ -615,6 +615,38 @@ const SnapshotSchema: JSONSchemaType<Snapshot> = {
                         }
                     }
                 },
+                scrollableElement: {
+                    type: "object",
+                    properties: {
+                        id: {
+                            type: "string",
+                            minLength: 1,
+                            pattern: "^[^;]*$",
+                            errorMessage: "Invalid snapshot options; scrollableElement id cannot be empty or have semicolon"
+                        },
+                        class: {
+                            type: "string",
+                            minLength: 1,
+                            pattern: "^[^;]*$",
+                            errorMessage: "Invalid snapshot options; scrollableElement class cannot be empty or have semicolon"
+                        },
+                        cssSelector: {
+                            type: "string",
+                            minLength: 1,
+                            pattern: "^[^;]*$",
+                            errorMessage: "Invalid snapshot options; scrollableElement cssSelector cannot be empty or have semicolon"
+                        },
+                        xpath: {
+                            type: "string",
+                            minLength: 1,
+                            errorMessage: "Invalid snapshot options; scrollableElement xpath cannot be empty"
+                        }
+                    },
+                    additionalProperties: false,
+                    minProperties: 1,
+                    maxProperties: 1,
+                    errorMessage: "Invalid snapshot options; scrollableElement takes exactly one of id, class, cssSelector or xpath, as a string"
+                },
                 selectDOM: {
                     type: "object",
                     properties: {
