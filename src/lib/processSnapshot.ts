@@ -935,6 +935,7 @@ export default async function processSnapshot(snapshot: Snapshot, ctx: Context):
                 }
             } catch (error: any) {
                 ctx.log.debug(`scrollableElement measurement failed for viewport ${viewportString}: ${error?.message}`);
+                optionWarnings.add(`for snapshot ${snapshot.name} viewport ${viewportString}, scrollableElement could not be measured (${error?.message}); the height will be measured at render time`);
             }
         }
 
