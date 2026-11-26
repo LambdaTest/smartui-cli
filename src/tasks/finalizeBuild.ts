@@ -6,6 +6,7 @@ import { startPolling, pingIntervalId, startPollingForTunnel, stopTunnelHelper, 
 import { unlinkSync } from 'fs';
 import constants from '../lib/constants.js';
 import fs from 'fs';
+import { flushSnapshotFailures } from '../lib/snapshotFailures.js';
 
 const uploadDomToS3ViaEnv = process.env.USE_LAMBDA_INTERNAL || false;
 export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRendererFactory>  =>  {
@@ -14,6 +15,7 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
         task: async (ctx, task): Promise<void> => {
             updateLogContext({task: 'finalizeBuild'});
             warnUnsentSnapshots(ctx);
+            await flushSnapshotFailures(ctx);
 
             try {
                 if (ctx.build.id) {

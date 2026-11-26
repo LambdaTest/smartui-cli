@@ -4,6 +4,7 @@ import constants from "./constants.js";
 import processSnapshot, {prepareSnapshot} from "./processSnapshot.js"
 import { v4 as uuidv4 } from 'uuid';
 import { startPolling, stopTunnelHelper, calculateVariantCountFromSnapshot } from "./utils.js";
+import { reportSnapshotFailure, FAILURE_TYPE, FAILURE_REASON, FailureReason } from "./snapshotFailures.js";
 
 const uploadDomToS3ViaEnv = process.env.USE_LAMBDA_INTERNAL || false;
 export default class Queue {
@@ -427,7 +428,20 @@ export default class Queue {
         }
     }
 
+    private reportDuplicate(snapshot: Snapshot): void {
+        const message = `Skipping duplicate SmartUI snapshot '${snapshot.name}'. To capture duplicate screenshots, please set the 'allowDuplicateSnapshotNames' or 'delayedUpload' configuration as true in your config file.`;
+        this.ctx.log.warn(message);
+        reportSnapshotFailure(this.ctx, {
+            type: FAILURE_TYPE.PROCESS,
+            reason: FAILURE_REASON.DUPLICATE_NAME,
+            error: message,
+            snapshotName: snapshot.name,
+            sessionId: snapshot.options?.sessionId,
+        });
+    }
+
     private async processSnapshot(snapshot: Snapshot): Promise<void> {
+        let failureReason: FailureReason = FAILURE_REASON.DISCOVERY_FAILED;
         try {
             this.processingSnapshot = snapshot?.name;
             let drop = false;
@@ -441,11 +455,10 @@ export default class Queue {
                     // check if sessionIdToSnapshotNameMap has snapshot name for the sessionId
                     if (this.ctx.sessionIdToSnapshotNameMap && snapshot.options && snapshot.options.sessionId) {
                         if (this.ctx.sessionIdToSnapshotNameMap.has(snapshot.options.sessionId)) {
-                            console.log(`snapshot.options.sessionId`,snapshot.options.sessionId, `this.ctx.sessionIdToSnapshotNameMap`,JSON.stringify([...this.ctx.sessionIdToSnapshotNameMap]));
                             const existingNames = this.ctx.sessionIdToSnapshotNameMap.get(snapshot.options.sessionId) || [];
                             if (existingNames.includes(snapshot.name)) {
                                 drop = true;
-                                this.ctx.log.info(`Skipping123 duplicate SmartUI snapshot '${snapshot.name}'. To capture duplicate screenshots, please set the 'allowDuplicateSnapshotNames' or 'delayedUpload' configuration as true in your config file.`);
+                                this.reportDuplicate(snapshot);
                             } else {
                                 existingNames.push(snapshot.name);
                                 this.ctx.sessionIdToSnapshotNameMap.set(snapshot.options.sessionId, existingNames);
@@ -455,7 +468,7 @@ export default class Queue {
                         }
                     } else {
                         drop = true;
-                        this.ctx.log.info(`Skipping duplicate SmartUI snapshot '${snapshot.name}'. To capture duplicate screenshots, please set the 'allowDuplicateSnapshotNames' or 'delayedUpload' configuration as true in your config file.`);
+                        this.reportDuplicate(snapshot);
                     }
                 }
 
@@ -505,6 +518,7 @@ export default class Queue {
                          warnings = result.warnings;
                          discoveryErrors = result.discoveryErrors;
                     }
+                    failureReason = FAILURE_REASON.NOT_SAVED;
 
 
                     if (useCapsBuildId) {
@@ -552,6 +566,7 @@ export default class Queue {
                                     useKafkaFlow: resp.data.useKafkaFlow || false,
                                 }
                             } else {
+                                failureReason = FAILURE_REASON.CONFIG_ERROR;
                                 if (this.ctx.autoTunnelStarted) {
                                     await stopTunnelHelper(this.ctx)
                                 }
@@ -584,6 +599,12 @@ export default class Queue {
                             if (!snapshotUploadResponse || Object.keys(snapshotUploadResponse).length === 0) {
                                 this.ctx.log.debug(`snapshot failed; Unable to upload dom to S3`);
                                 this.processedSnapshots.push({ name: snapshot?.name, error: `snapshot failed; Unable to upload dom to S3` });
+                                reportSnapshotFailure(this.ctx, {
+                                    type: FAILURE_TYPE.PROCESS,
+                                    reason: FAILURE_REASON.NOT_SAVED,
+                                    error: 'snapshot failed; Unable to upload dom to S3',
+                                    snapshotName: snapshot?.name,
+                                });
                                 if (this.ctx.browser) {
                                     for (let context of this.ctx.browser.contexts()) {
                                         for (let page of context.pages()) {
@@ -618,6 +639,13 @@ export default class Queue {
             } catch (error: any) {
                 this.ctx.log.debug(`snapshot failed; ${error}`);
                 this.processedSnapshots.push({ name: snapshot?.name, error: error.message });
+                reportSnapshotFailure(this.ctx, {
+                    type: FAILURE_TYPE.PROCESS,
+                    reason: failureReason,
+                    error,
+                    snapshotName: snapshot?.name,
+                    sessionId: snapshot?.options?.sessionId,
+                });
                 if (snapshot?.options?.contextId && this.ctx.contextToSnapshotMap) {
                     this.ctx.contextToSnapshotMap.set(snapshot.options.contextId, '2');
                 }

@@ -472,6 +472,20 @@ export default class httpClient {
     
     
 
+    reportSnapshotFailure(ctx: Context, projectToken: string, payload: Record<string, any>) {
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+        if (projectToken) {
+            headers.projectToken = projectToken;
+        }
+        return this.request({
+            url: '/upload/failed/snapshot',
+            method: 'POST',
+            headers,
+            timeout: 10000,
+            data: payload
+        }, ctx.log);
+    }
+
     uploadScreenshot(
         { id: buildId, name: buildName, baseline }: Build,
         ssPath: string, ssName: string, browserName: string, viewport: string, url: string = '', log: Logger, discoveryErrors?: DiscoveryErrors, ctx?: Context
