@@ -7,6 +7,7 @@ import { Logger } from 'winston'
 import { validateSnapshot } from './schemaValidation.js'
 import { pingIntervalId, startPollingForTunnel, stopTunnelHelper, isTunnelPolling, warnUnsentSnapshots, dedupeSnapshotSelectors } from './utils.js';
 import constants from './constants.js';
+import { reportSnapshotFailure, flushSnapshotFailures, FAILURE_TYPE, FAILURE_REASON, FailureReason } from './snapshotFailures.js';
 var fp = require("find-free-port")
 
 const uploadDomToS3ViaEnv = process.env.USE_LAMBDA_INTERNAL || false;
@@ -77,6 +78,7 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 	server.post('/snapshot', opts, async (request, reply) => {
 		let replyCode: number;
 		let replyBody: Record<string, any>;
+		let failureReason: FailureReason = FAILURE_REASON.INVALID_SNAPSHOT;
 		ctx.snapshotsReceived = (ctx.snapshotsReceived || 0) + 1;
 
 		try {
@@ -90,6 +92,7 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 					throw new Error(`Invalid snapshot options; rejectionThreshold (${snapshot.options.rejectionThreshold}) must be greater than approvalThreshold (${snapshot.options.approvalThreshold})`);
 				}
 			}
+			failureReason = FAILURE_REASON.DISCOVERY_FAILED;
 			snapshot.name = snapshot?.name?.trim();
 
 			// Fetch sessionId from snapshot options if present
@@ -178,6 +181,14 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 			replyBody = { data: { message: "success", warnings: selectorWarnings } };
 		} catch (error: any) {
 			ctx.log.debug(`snapshot failed; ${error}`)
+			const failedSnapshot = (request.body as any)?.snapshot;
+			reportSnapshotFailure(ctx, {
+				type: FAILURE_TYPE.EXEC,
+				reason: failureReason,
+				error,
+				snapshotName: failedSnapshot?.name,
+				sessionId: failedSnapshot?.options?.sessionId,
+			});
 			replyCode = 500;
 			replyBody = { error: { message: error.message } }
 		}
@@ -203,6 +214,7 @@ export default async (ctx: Context): Promise<FastifyInstance<Server, IncomingMes
 				}, 1000);
 			})
 			warnUnsentSnapshots(ctx);
+			await flushSnapshotFailures(ctx);
 			let buildUrls = `build url: ${ctx.build.url}\n`;
 
 			for (const [sessionId, capabilities] of ctx.sessionCapabilitiesMap.entries()) {

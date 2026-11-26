@@ -4,6 +4,7 @@ import chalk from 'chalk'
 import spawn from 'cross-spawn'
 import { updateLogContext } from '../lib/logger.js'
 import { startPolling, startSSEListener } from '../lib/utils.js'
+import { reportSnapshotFailure, FAILURE_TYPE, FAILURE_REASON } from '../lib/snapshotFailures.js'
 import fs from 'fs'
 import path from 'path'
 
@@ -71,6 +72,11 @@ export default (ctx: Context): ListrTask<Context, ListrRendererFactory, ListrRen
                         task.title = `Execution of '${ctx.args.execCommand?.join(' ')}' completed; exited with code ${code}`;
                         if (code !== 0) {
                             process.exitCode = code
+                            reportSnapshotFailure(ctx, {
+                                type: FAILURE_TYPE.EXEC,
+                                reason: FAILURE_REASON.EXEC_FAILED,
+                                error: `Execution of '${ctx.args.execCommand?.join(' ')}' exited with code ${code}; snapshots after this point were not captured`,
+                            });
                         }
                     } else if (signal !== null) {
                         throw new Error(`Child process killed with signal ${signal}`);
